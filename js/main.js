@@ -86,7 +86,7 @@ $('#form-recover').addEventListener('submit', async e => {
 });
 $('#form-newpass').addEventListener('submit', async e => {
   e.preventDefault(); const f = e.target; busyForm(f, true); ui.accMsg('Guardando...');
-  try { await sb.updatePassword(f.password.value); const u = await sb.fetchUser(); ui.accMsg('✅ Contraseña cambiada', 'ok'); f.reset(); ui.showTab('login'); await afterLogin(u); }
+  try { await sb.updatePassword(f.password.value); const u = await sb.fetchUser(); f.reset(); ui.showTab('login'); ui.accMsg('✅ Contraseña cambiada', 'ok'); await afterLogin(u); }
   catch (err) { ui.accMsg('❌ ' + traducir(err.message), 'err'); }
   busyForm(f, false);
 });

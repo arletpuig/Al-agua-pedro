@@ -41,7 +41,7 @@ export function buildScenery(scene) {
   // cartel colgante
   const sign = scene.add.container(270, 150).setDepth(0);
   const sg = scene.add.graphics(); sg.lineStyle(2, 0x6b4f3a); sg.lineBetween(-45, 0, -36, 26); sg.lineBetween(45, 0, 36, 26); sg.fillStyle(0x8d4f21); sg.fillRoundedRect(-62, 26, 124, 46, 6); sg.lineStyle(3, 0x5a3010); sg.strokeRoundedRect(-62, 26, 124, 46, 6);
-  sign.add([sg, scene.add.text(0, 49, '¡TÍRALO\nAL AGUA!', { fontFamily: 'Arial Black, Arial', fontSize: 15, color: '#ffe9a8', align: 'center', fontStyle: 'bold' }).setOrigin(.5)]);
+  sign.add([sg, scene.add.text(0, 49, '¡TÍRALO\nAL AGUA!', { fontFamily: 'Arial Black, Arial', fontSize: 15, color: '#ffe9a8', align: 'center', fontStyle: 'bold', resolution: 2 }).setOrigin(.5)]);
   scene.tweens.add({ targets: sign, angle: { from: -2, to: 2 }, duration: 2500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   // poste de la diana
   const pg = scene.add.graphics().setDepth(1); pg.fillStyle(0x5c6670, 1); pg.fillRect(L.TARGET_X - 5, L.TARGET_Y, 10, L.PLATFORM_Y - L.TARGET_Y); pg.fillRect(L.TARGET_X - 5, L.TARGET_Y - 4, 10, 8);

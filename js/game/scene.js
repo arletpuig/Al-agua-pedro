@@ -1,5 +1,5 @@
 // Escena principal: Pedro, diana, lanzamiento, resultados y efectos.
-import { Pedro, TEX_SCALE } from './pedro.js';
+import { Pedro, TEX_SCALE, CHAIR } from './pedro.js';
 import { buildScenery, L } from './scenery.js';
 import { CONFIG } from '../config.js';
 import { SFX } from '../audio.js';
@@ -11,9 +11,11 @@ export class MainScene extends Phaser.Scene {
     this.load.atlas('atlas', `${this.assetBase || ''}assets/atlas.png`, `${this.assetBase || ''}assets/atlas.json`);
   }
   create() {
+    this.cameras.main.setZoom(this.res || 1).centerOn(400, 300);
     this.sc = buildScenery(this);
-    this.chair = this.add.image(L.SEAT_X + 50 * .85, L.SEAT_Y + 120 * .85, 'atlas', 'chair').setOrigin((50 + 58) / 116, (120 + 102) / 224).setScale(.85 / TEX_SCALE).setDepth(3);
-    this.pedro = new Pedro(this, L.SEAT_X, L.SEAT_Y).setDepth(4); this.pedro.drips.setDepth(4);
+    const PS = 0.8; this.chairHome = { x: L.SEAT_X + CHAIR.pv[0] * PS, y: L.SEAT_Y + CHAIR.pv[1] * PS };
+    this.chair = this.add.image(this.chairHome.x, this.chairHome.y, 'atlas', 'chair').setOrigin((CHAIR.pv[0] - CHAIR.vb[0]) / CHAIR.vb[2], (CHAIR.pv[1] - CHAIR.vb[1]) / CHAIR.vb[3]).setScale(PS / TEX_SCALE).setDepth(3);
+    this.pedro = new Pedro(this, L.SEAT_X, L.SEAT_Y, PS).setDepth(4); this.pedro.drips.setDepth(4);
     this.target = this.add.image(L.TARGET_X, L.TARGET_Y, 'atlas', 'target').setScale(.5).setDepth(2);
     this.track = this.add.graphics().setDepth(6).setAlpha(0); this.track.lineStyle(3, 0xffffff, .6); for (let x = CONFIG.AIM_MIN; x < CONFIG.AIM_MAX; x += 18) this.track.lineBetween(x, L.TARGET_Y, x + 9, L.TARGET_Y);
     this.tomato = this.add.image(0, 0, 'atlas', 'tomato').setScale(.55).setDepth(7).setVisible(false);
@@ -23,11 +25,11 @@ export class MainScene extends Phaser.Scene {
     this.stars = this.add.particles(0, 0, 'atlas', { frame: 'star',  speed: { min: 80, max: 260 }, angle: { min: 0, max: 360 }, lifespan: 900, scale: { start: 1, end: 0 }, rotate: { start: 0, end: 360 }, gravityY: 200, emitting: false, maxParticles: 80 }).setDepth(8);
     this.coins = this.add.particles(0, 0, 'atlas', { frame: 'peseta',  speedY: { min: -360, max: -200 }, speedX: { min: -120, max: 120 }, gravityY: 700, lifespan: 1300, scale: { start: .8, end: .5 }, alpha: { start: 1, end: 0 }, rotate: { start: 0, end: 540 }, emitting: false, maxParticles: 40 }).setDepth(8);
     this.bubble = this.add.container(0, 0).setDepth(9).setVisible(false);
-    this.bubbleBg = this.add.graphics(); this.bubbleTxt = this.add.text(0, 0, '', { fontFamily: 'Arial', fontSize: 16, fontStyle: 'bold', color: '#222', align: 'center', wordWrap: { width: 170 } }).setOrigin(.5);
+    this.bubbleBg = this.add.graphics(); this.bubbleTxt = this.add.text(0, 0, '', { fontFamily: 'Arial', fontSize: 16, fontStyle: 'bold', color: '#222', align: 'center', wordWrap: { width: 170 }, resolution: 2 }).setOrigin(.5);
     this.bubble.add([this.bubbleBg, this.bubbleTxt]);
     this.input.on('pointerdown', () => { if (this.aim) this.stopAim(); });
     this.input.keyboard?.on('keydown-SPACE', () => { if (this.aim) this.stopAim(); });
-    this.bus.emit('ready');
+    this.ready = true; this.bus.emit('ready');
   }
   update(t, dt) {
     this.sc.waves[0].tilePositionX += dt * .03; this.sc.waves[1].tilePositionX -= dt * .025; this.sc.waves[2].tilePositionX += dt * .04;
@@ -43,7 +45,7 @@ export class MainScene extends Phaser.Scene {
 
   // ---------- bocadillo y textos ----------
   say(text, ms = 2200, pos = 'head') {
-    const p = pos === 'water' ? { x: 470, y: 455 } : { x: 520, y: 150 }, tail = pos === 'water' ? 'left' : 'left';
+    const p = pos === 'water' ? { x: 470, y: 455 } : { x: 535, y: 135 }, tail = pos === 'water' ? 'left' : 'left';
     this.bubbleTxt.setText(text); const w = Math.max(90, this.bubbleTxt.width + 26), h = this.bubbleTxt.height + 20;
     this.bubbleBg.clear(); this.bubbleBg.fillStyle(0xffffff, 1); this.bubbleBg.lineStyle(2.5, 0x333333, 1);
     this.bubbleBg.fillRoundedRect(-w / 2, -h / 2, w, h, 12); this.bubbleBg.strokeRoundedRect(-w / 2, -h / 2, w, h, 12);
@@ -53,7 +55,7 @@ export class MainScene extends Phaser.Scene {
   }
   hush() { clearTimeout(this.bubbleTimer); this.bubble.setVisible(false); }
   fxText(text, x, y, color = '#e63946', size = 44) {
-    const t = this.add.text(x, y, text, { fontFamily: 'Arial Black, Arial', fontSize: size, color, stroke: '#fff', strokeThickness: 8, fontStyle: 'bold' }).setOrigin(.5).setDepth(9).setScale(.5).setAlpha(0);
+    const t = this.add.text(x, y, text, { fontFamily: 'Arial Black, Arial', fontSize: size, color, stroke: '#fff', strokeThickness: 8, fontStyle: 'bold', resolution: 2 }).setOrigin(.5).setDepth(9).setScale(.5).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1.1, alpha: 1, duration: 200, ease: 'Back.easeOut' });
     this.tweens.add({ targets: t, y: y - 60, alpha: 0, duration: 900, delay: 500, onComplete: () => t.destroy() });
   }
@@ -89,11 +91,12 @@ export class MainScene extends Phaser.Scene {
     SFX.splat(); this.juice.explode(18, res.x, res.y); this.addSplat(res.x, res.y, res.kind === 'perfect' ? 1.2 : .9);
     if (res.kind === 'perfect' || res.kind === 'near') this.tweens.add({ targets: this.target, scale: { from: .42, to: .5 }, angle: { from: res.kind === 'perfect' ? -12 : -8, to: 0 }, duration: 450, ease: 'Elastic.easeOut' });
     this.cameras.main.shake(120, decision.fall ? .008 : .003);
-    if (decision.fall) await this.fall(res, decision, last);
-    else if (res.kind === 'near') await this.near(last);
-    else if (res.onPedro) await this.hitPedro(last);
-    else await this.miss(last);
-    this.busy = false;
+    try {
+      if (decision.fall) await this.fall(res, decision, last);
+      else if (res.kind === 'near') await this.near(last);
+      else if (res.onPedro) await this.hitPedro(last);
+      else await this.miss(last);
+    } finally { this.busy = false; }
   }
   addSplat(x, y, s) {
     const sp = this.add.image(x, y, 'atlas', 'splat').setScale(0).setAngle(Phaser.Math.Between(-30, 30)); this.splats.add(sp);
@@ -117,7 +120,7 @@ export class MainScene extends Phaser.Scene {
       SFX.angry(); this.say(LINES.wetWater[Phaser.Math.Between(0, LINES.wetWater.length - 1)], 2000, 'water'); await P.angryShake(2000); this.hush();
       await this.tween({ targets: P, y: P.y + 110, alpha: 0, duration: 450, ease: 'Quad.easeIn' });
     } else await this.wait(250);
-    this.tweens.add({ targets: this.chair, angle: 0, x: L.SEAT_X + 50 * .85, y: L.SEAT_Y + 120 * .85, duration: 400, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: this.chair, angle: 0, x: this.chairHome.x, y: this.chairHome.y, duration: 400, ease: 'Back.easeOut' });
     P.setPosition(L.SEAT_X, L.SEAT_Y - 140).setAlpha(0).setAngle(0);
     await this.tween({ targets: P, y: L.SEAT_Y, alpha: 1, duration: 550, ease: 'Bounce.easeOut' });
     P.idle();

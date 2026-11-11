@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-72 -16 144 142" width="144" height="142"><g stroke="#0a0605" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+<rect x="-55" y="30" width="40" height="78" rx="13" fill="#18203f"/><rect x="15" y="30" width="40" height="78" rx="13" fill="#18203f"/>
+<path d="M-62,108 Q-62,96 -40,96 Q-12,96 -10,110 Q-10,120 -36,120 Q-62,120 -62,108Z" fill="#1c1c1c"/><path d="M62,108 Q62,96 40,96 Q12,96 10,110 Q10,120 36,120 Q62,120 62,108Z" fill="#1c1c1c"/>
+<path d="M-56,104 Q-40,99 -18,104" stroke="#555" stroke-width="1.4" fill="none"/><path d="M56,104 Q40,99 18,104" stroke="#555" stroke-width="1.4" fill="none"/>
+<path d="M-64,-12 L-4,-12 L-4,34 Q-4,50 -22,50 L-46,50 Q-64,50 -64,34Z" fill="#222d56"/><path d="M64,-12 L4,-12 L4,34 Q4,50 22,50 L46,50 Q64,50 64,34Z" fill="#222d56"/>
+<path d="M-54,0 Q-56,30 -48,42" stroke="#2f3d72" stroke-width="5" fill="none"/><path d="M14,0 Q12,30 20,42" stroke="#2f3d72" stroke-width="5" fill="none"/>
+<path d="M-46,50 Q-34,44 -22,50 M46,50 Q34,44 22,50" stroke="#0a0605" stroke-width="1.4" fill="none"/></g></svg>

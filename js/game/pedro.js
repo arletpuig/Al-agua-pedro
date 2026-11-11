@@ -1,99 +1,95 @@
-// Pedro: contenedor Phaser con capas independientes (cabeza, brazos, bocas...) y sus animaciones.
-const LAYERS = { // clave: [vbX, vbY, vbW, vbH, pivotX, pivotY]  (unidades de diseño; cadera = 0,0)
-  legs: [-45, -8, 90, 132, 0, 0], body: [-62, -74, 124, 84, 0, 6],
-  armL: [-78, -68, 54, 126, -50, -56], armR: [24, -68, 54, 126, 50, -56],
-  armUp: [38, -184, 54, 142, 50, -56], armNose: [-14, -126, 78, 80, 50, -56], armPoint: [40, -110, 76, 62, 50, -56],
-  head: [-56, -200, 112, 152, 0, -62], pupils: [-24, -128, 48, 14, 0, -121], eyelids: [-30, -130, 60, 20, 0, -129],
-  browL: [-37, -150, 34, 22, -7, -135], browR: [3, -150, 34, 22, 7, -135],
-  mouthSmile: [-26, -92, 52, 44, 0, -80], mouthLaugh: [-26, -92, 52, 44, 0, -80], mouthShock: [-26, -92, 52, 44, 0, -80],
-  mouthAngry: [-26, -92, 52, 44, 0, -80], mouthSmug: [-26, -92, 52, 44, 0, -80],
-  sweat: [40, -138, 18, 24, 48, -134], blush: [-38, -106, 76, 12, 0, -100], chair: [-58, -102, 116, 224, 50, 120],
+// Pedro: contenedor Phaser con capas independientes generadas a partir de la ilustración de referencia
+// (tools/render.mjs): cabeza con 5 expresiones, busto, piernas, antebrazos y gestos.
+// Unidades de diseño: 1 unidad = 5 px de la ilustración original; origen (0,0) = cadera/asiento. Texturas a 2 px por unidad.
+export const TEX_SCALE = 2;
+const ELBOW_L = [-87, -6], ELBOW_R = [89, -8], NECK = [-1.6, -80];
+// clave: { f: frame, vb: [x,y,w,h] caja de la textura en unidades locales, pv: pivote local, at: posición del pivote en el personaje }
+const PARTS = {
+  legs:      { f: 'legs', vb: [-72, -16, 144, 142], pv: [0, 0], at: [0, 0] },
+  bust:      { f: 'bust', vb: [-126, -97, 235, 100], pv: [0, 3], at: [0, 3] },
+  armL:      { f: 'forearm', vb: [-22, -16, 44, 108], pv: [0, 0], at: ELBOW_L },
+  armR:      { f: 'forearm', vb: [-22, -16, 44, 108], pv: [0, 0], at: ELBOW_R },
+  armUp:     { f: 'armUp', vb: [-26, -142, 52, 158], pv: [0, 0], at: ELBOW_R },
+  armNose:   { f: 'armReach', vb: [-24, -140, 48, 156], pv: [0, 0], at: ELBOW_R },
+  armPoint:  { f: 'armPoint', vb: [-60, -96, 92, 112], pv: [0, 0], at: ELBOW_R },
+  head:      { f: 'head', vb: [-66, -232, 120, 160], pv: NECK, at: NECK },
+  noseTomato:{ f: 'noseTomato', vb: [-20, -22, 40, 42], pv: [0, 0], at: [17, -127] },
+  sweat:     { f: 'sweat', vb: [-9, -13, 18, 26], pv: [0, 0], at: [47, -178] },
 };
-export const PEDRO_KEYS = Object.keys(LAYERS);
-export const TEX_SCALE = 2; // los SVG se rasterizan al doble para que se vean nítidos
-const HEAD_PARTS = ['head', 'pupils', 'eyelids', 'browL', 'browR', 'mouthSmile', 'mouthLaugh', 'mouthShock', 'mouthAngry', 'mouthSmug', 'sweat', 'blush'];
-const MOUTHS = ['mouthSmile', 'mouthLaugh', 'mouthShock', 'mouthAngry', 'mouthSmug'];
+const HEAD_PARTS = ['head', 'noseTomato', 'sweat'];
 const GESTURES = ['armUp', 'armNose', 'armPoint'];
+const HEAD_FRAME = { smile: 'head', smug: 'head', laugh: 'headLaugh', shock: 'headShock', angry: 'headAngry' };
+const REST_L = -47, REST_R = 46;
+export const CHAIR = { f: 'chair', vb: [-88, -74, 176, 200], pv: [66, 120] };
 
 export class Pedro extends Phaser.GameObjects.Container {
-  constructor(scene, x, y, s = 0.85) {
+  constructor(scene, x, y, s = 0.8) {
     super(scene, x, y);
     this.s = s; this.setScale(s); scene.add.existing(this);
-    this.p = {};
-    const mk = (key, parent, dx = 0, dy = 0) => {
-      const [vx, vy, vw, vh, px, py] = LAYERS[key];
-      const sp = scene.add.image(px - dx, py - dy, 'atlas', key).setOrigin((px - vx) / vw, (py - vy) / vh).setScale(1 / TEX_SCALE);
-      parent.add(sp); this.p[key] = sp; return sp;
-    };
-    ['legs', 'body', 'armL', 'armR', 'armUp', 'armNose', 'armPoint'].forEach(k => mk(k, this));
-    // Las piezas de la cabeza van directamente en el contenedor (los contenedores anidados fallan en WebGL):
-    // se giran alrededor del cuello (0,-62) por cálculo mediante applyHead().
-    this.NECK = { x: 0, y: -62 }; this.head = { angle: 0, x: 0, y: 0 }; this.headParts = [];
-    HEAD_PARTS.forEach(k => { const sp = mk(k, this); const [, , , , px, py] = LAYERS[k]; sp.base = { x: px, y: py, angle: 0 }; this.headParts.push(sp); });
-    this.p.eyelids.setScale(1 / TEX_SCALE).setVisible(false);
+    this.p = {}; this.head = { angle: 0, x: 0, y: 0 }; this.headParts = [];
+    for (const key of ['legs', 'bust', 'armL', 'armR', 'armUp', 'armNose', 'armPoint', 'head', 'noseTomato', 'sweat']) {
+      const { f, vb, pv, at } = PARTS[key];
+      const sp = scene.add.image(at[0], at[1], 'atlas', f).setOrigin((pv[0] - vb[0]) / vb[2], (pv[1] - vb[1]) / vb[3]).setScale(1 / TEX_SCALE);
+      sp.base = { x: at[0], y: at[1], angle: 0 }; this.add(sp); this.p[key] = sp;
+      if (HEAD_PARTS.includes(key)) this.headParts.push(sp);
+    }
+    this.p.armL.angle = REST_L; this.p.armR.angle = REST_R; this.p.armNose.angle = -31; this.p.armUp.angle = 5;
+    // El emisor va fuera del contenedor (dentro de un contenedor corrompe el dibujado en WebGL)
+    this.drips = scene.add.particles(0, 0, 'atlas', { frame: 'drop', follow: this, followOffset: { x: 0, y: -90 * s }, speedY: { min: 40, max: 90 }, speedX: { min: -10, max: 10 }, lifespan: 700, scale: { start: .7, end: .3 }, alpha: { start: 1, end: 0 }, frequency: 80, quantity: 1, emitting: false, maxParticles: 40 });
+    this.drips.addEmitZone({ type: 'random', source: new Phaser.Geom.Rectangle(-70 * s, -40 * s, 140 * s, 90 * s) });
     this.setMood('smile'); this.setGesture(null);
-    // El emisor va fuera del contenedor (un emisor dentro de un contenedor corrompe el dibujado en WebGL)
-    this.drips = scene.add.particles(0, 0, 'atlas', { frame: 'drop', follow: this, followOffset: { x: 0, y: -70 }, speedY: { min: 40, max: 90 }, speedX: { min: -10, max: 10 }, lifespan: 700, scale: { start: .7, end: .3 }, alpha: { start: 1, end: 0 }, frequency: 90, quantity: 1, emitting: false, maxParticles: 40 });
-    this.drips.addEmitZone({ type: 'random', source: new Phaser.Geom.Rectangle(-34, -10, 68, 40) });
     this.idle();
   }
+  // La cabeza y lo que lleva encima giran alrededor del cuello por cálculo (los contenedores anidados fallan en WebGL)
   applyHead() {
-    const { angle, x, y } = this.head, r = Phaser.Math.DegToRad(angle), c = Math.cos(r), sn = Math.sin(r), N = this.NECK;
-    for (const sp of this.headParts) { const dx = sp.base.x - N.x, dy = sp.base.y - N.y; sp.x = N.x + x + dx * c - dy * sn; sp.y = N.y + y + dx * sn + dy * c; sp.angle = angle + sp.base.angle; }
+    const { angle, x, y } = this.head, r = Phaser.Math.DegToRad(angle), c = Math.cos(r), sn = Math.sin(r);
+    for (const sp of this.headParts) { const dx = sp.base.x - NECK[0], dy = sp.base.y - NECK[1]; sp.x = NECK[0] + x + dx * c - dy * sn; sp.y = NECK[1] + y + dx * sn + dy * c; sp.angle = angle + sp.base.angle; }
   }
   headTween(cfg) { return this.scene.tweens.add({ targets: this.head, ...cfg, onUpdate: () => this.applyHead() }); }
   resetHead() { this.head.angle = 0; this.head.x = 0; this.head.y = 0; this.applyHead(); }
+  restArms() { this.p.armL.angle = REST_L; this.p.armR.angle = REST_R; }
   idle() {
-    const t = this.scene.tweens;
+    const t = this.scene.tweens; this.stopIdle();
     this.idleTweens = [
-      t.add({ targets: this.p.body, scaleY: (1 / TEX_SCALE) * 1.025, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
-      this.headTween({ angle: { from: -2, to: 2 }, duration: 2500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
-      t.add({ targets: this.p.armL, angle: { from: -2, to: 3 }, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
-      t.add({ targets: this.p.armR, angle: { from: 2, to: -3 }, duration: 2300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
-      t.add({ targets: this.p.pupils.base, x: { from: -3, to: 3 }, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 500, onUpdate: () => this.applyHead() }),
+      t.add({ targets: this.p.bust, scaleY: (1 / TEX_SCALE) * 1.03, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+      this.headTween({ angle: { from: -2.5, to: 2.5 }, y: { from: 0, to: -1.5 }, duration: 2400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+      t.add({ targets: this.p.armL, angle: { from: REST_L - 2, to: REST_L + 3 }, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+      t.add({ targets: this.p.armR, angle: { from: REST_R + 2, to: REST_R - 3 }, duration: 2300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
     ];
-    this.blinkEv = this.scene.time.addEvent({ delay: 3800, loop: true, callback: () => this.blink() });
+    this.blinkEv = this.scene.time.addEvent({ delay: 3600, loop: true, callback: () => this.blink() });
   }
-  blink() { if (this.mood === 'laugh') return; const e = this.p.eyelids; e.setVisible(true); this.scene.tweens.add({ targets: e, scaleY: { from: .1 / TEX_SCALE, to: 1 / TEX_SCALE }, duration: 70, yoyo: true, onComplete: () => { if (this.mood !== 'laugh') e.setVisible(false); } }); }
-  stopIdle() { this.idleTweens?.forEach(t => t.stop()); this.blinkEv?.remove(); this.resetHead(); this.p.armL.angle = 0; this.p.armR.angle = 0; }
-  setMood(m) {
-    this.mood = m;
-    MOUTHS.forEach(k => this.p[k].setVisible(false));
-    this.p['mouth' + m[0].toUpperCase() + m.slice(1)].setVisible(true);
-    const dy = m === 'laugh' ? -4 : m === 'shock' ? -7 : m === 'smug' ? -2 : 0;
-    this.p.browL.base.y = this.p.browR.base.y = LAYERS.browL[5] + dy;
-    this.p.browL.base.angle = m === 'angry' ? 18 : m === 'smug' ? -5 : 0; this.p.browR.base.angle = m === 'angry' ? -18 : m === 'smug' ? 5 : 0;
-    this.p.eyelids.setVisible(m === 'laugh'); this.p.eyelids.scaleY = (m === 'laugh' ? 0.5 : 1) / TEX_SCALE;
-    this.p.sweat.setVisible(m === 'shock'); this.p.blush.setVisible(m === 'angry');
-    this.p.pupils.setScale(m === 'shock' ? 1.3 / TEX_SCALE : 1 / TEX_SCALE);
-    this.applyHead();
-  }
-  setGesture(g) { GESTURES.forEach(k => this.p[k].setVisible(k === g)); this.p.armR.setVisible(!g); }
-  setWet(v) { this.wet = v; const tint = v ? 0x9fc3e6 : 0xffffff; ['head', 'body', 'armL', 'armR', 'legs'].forEach(k => this.p[k].setTint(tint)); v ? this.drips.start() : this.drips.stop(); }
+  blink() { if (HEAD_FRAME[this.mood] !== 'head') return; this.p.head.setFrame('headBlink'); this.scene.time.delayedCall(120, () => { if (HEAD_FRAME[this.mood] === 'head') this.p.head.setFrame('head'); }); }
+  stopIdle() { this.idleTweens?.forEach(t => t.stop()); this.idleTweens = null; this.blinkEv?.remove(); this.resetHead(); this.restArms(); this.p.bust.scaleY = 1 / TEX_SCALE; }
+  setMood(m) { this.mood = m; this.p.head.setFrame(HEAD_FRAME[m] || 'head'); this.p.sweat.setVisible(m === 'shock'); }
+  setGesture(g) { GESTURES.forEach(k => this.p[k].setVisible(k === g)); this.p.armR.setVisible(!g); this.p.noseTomato.setVisible(g === 'armNose'); }
+  setWet(v) { this.wet = v; const tint = v ? 0xcfe6f7 : 0xffffff; ['head', 'bust', 'legs', 'armL', 'armR', 'armUp', 'armNose', 'armPoint'].forEach(k => this.p[k].setTint(tint)); v ? this.drips.start() : this.drips.stop(); }
   tween(cfg) { return new Promise(r => this.scene.tweens.add({ ...cfg, onComplete: r })); }
   wait(ms) { return new Promise(r => this.scene.time.delayedCall(ms, r)); }
   // --- reacciones ---
-  peek() { return new Promise(r => this.headTween({ angle: -7, y: -4, duration: 120, yoyo: true, onComplete: r })); }
+  peek() { return new Promise(r => this.headTween({ angle: -8, y: -5, duration: 120, yoyo: true, onComplete: r })); }
   async wobble(ms = 900) {
     this.setMood('shock');
-    const a = this.scene.tweens.add({ targets: [this.p.armL], angle: { from: -60, to: -120 }, duration: 120, yoyo: true, repeat: Math.floor(ms / 240) });
-    const b = this.scene.tweens.add({ targets: [this.p.armR], angle: { from: 60, to: 120 }, duration: 120, yoyo: true, repeat: Math.floor(ms / 240) });
-    await this.tween({ targets: this, angle: { from: -9, to: 8 }, x: this.x - 6, duration: ms / 4, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
-    a.stop(); b.stop(); this.angle = 0; this.p.armL.angle = 0; this.p.armR.angle = 0;
+    const a = this.scene.tweens.add({ targets: this.p.armL, angle: { from: 120, to: 170 }, duration: 110, yoyo: true, repeat: -1 });
+    const b = this.scene.tweens.add({ targets: this.p.armR, angle: { from: -120, to: -170 }, duration: 110, yoyo: true, repeat: -1 });
+    const h = this.headTween({ angle: { from: -7, to: 7 }, duration: 140, yoyo: true, repeat: -1 });
+    const x0 = this.x;
+    await this.tween({ targets: this, angle: { from: -9, to: 8 }, x: { from: x0 - 6, to: x0 + 6 }, duration: ms / 4, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
+    a.stop(); b.stop(); h.stop(); this.angle = 0; this.x = x0; this.restArms(); this.resetHead();
   }
   async laugh(gesture, ms = 1800) {
     this.setMood('laugh'); this.setGesture(gesture);
-    if (gesture === 'armUp') this.p.armUp.angle = 60, this.scene.tweens.add({ targets: this.p.armUp, angle: 0, duration: 300, ease: 'Back.easeOut' });
-    const h = this.headTween({ angle: { from: -6, to: 4 }, y: { from: -4, to: 2 }, duration: 160, yoyo: true, repeat: -1 });
-    const b = this.scene.tweens.add({ targets: this.p.body, y: { from: 6, to: 3 }, duration: 90, yoyo: true, repeat: -1 });
-    const l = this.scene.tweens.add({ targets: this.p.armL, angle: { from: -14, to: 10 }, duration: 200, yoyo: true, repeat: -1 });
-    await this.wait(ms); h.stop(); b.stop(); l.stop(); this.resetHead(); this.p.body.y = 6; this.p.armL.angle = 0;
+    const g = this.p[gesture], a0 = g.angle; g.angle = a0 + 50; this.scene.tweens.add({ targets: g, angle: a0, duration: 300, ease: 'Back.easeOut' });
+    const h = this.headTween({ angle: { from: -6, to: 5 }, y: { from: -5, to: 2 }, duration: 160, yoyo: true, repeat: -1 });
+    const b = this.scene.tweens.add({ targets: this.p.bust, y: { from: 3, to: 0 }, duration: 90, yoyo: true, repeat: -1 });
+    const l = this.scene.tweens.add({ targets: this.p.armL, angle: { from: REST_L - 12, to: REST_L + 10 }, duration: 200, yoyo: true, repeat: -1 });
+    const w = gesture === 'armPoint' ? this.scene.tweens.add({ targets: g, scale: { from: 1 / TEX_SCALE, to: 1.15 / TEX_SCALE }, duration: 180, yoyo: true, repeat: -1 }) : null;
+    await this.wait(ms); h.stop(); b.stop(); l.stop(); w?.stop(); g.setScale(1 / TEX_SCALE).setAngle(a0); this.resetHead(); this.p.bust.y = 3; this.restArms();
     this.setGesture(null); this.setMood('smile');
   }
   async angryShake(ms = 1200) {
     this.setMood('angry');
-    const a = this.scene.tweens.add({ targets: this.p.armL, angle: { from: -100, to: -112 }, duration: 100, yoyo: true, repeat: -1 });
+    const a = this.scene.tweens.add({ targets: this.p.armL, angle: { from: 146, to: 158 }, duration: 100, yoyo: true, repeat: -1 });
     const h = this.headTween({ x: { from: -1.5, to: 1.5 }, duration: 60, yoyo: true, repeat: -1 });
-    await this.wait(ms); a.stop(); h.stop(); this.p.armL.angle = 0; this.resetHead();
+    await this.wait(ms); a.stop(); h.stop(); this.restArms(); this.resetHead();
   }
 }

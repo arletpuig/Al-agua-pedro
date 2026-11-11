@@ -4,14 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>AL AGUA PEDRO</title>
-<meta name="description" content="Lanza tomates y tira a Pedro a la piscina. Juego satírico.">
+<meta name="description" content="Lanza tomates y tira a Pedro a la piscina. Juego arcade satírico.">
+<meta name="theme-color" content="#0b1a3a">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
   <header class="top">
-    <h1 class="title"><span>AL AGUA</span><span class="title-big">PEDRO</span></h1>
+    <div class="brand"><span>AL AGUA</span><b>PEDRO</b></div>
+    <button id="pill-pesetas" class="pill pesetas" title="Pesetas"><svg viewBox="-16 -16 32 32" class="ico"><circle r="14" fill="#f2c14e" stroke="#b8860b" stroke-width="2"/><text x="0" y="5" text-anchor="middle" font-family="Arial" font-weight="900" font-size="14" fill="#8a5a00">₧</text></svg><b id="pesetas-num">0</b></button>
     <div class="top-btns">
       <button id="btn-sound" class="icon-btn" aria-label="Sonido" title="Sonido">🔊</button>
       <button id="btn-stats" class="icon-btn" aria-label="Estadísticas" title="Estadísticas">📊</button>
@@ -20,289 +22,93 @@
     </div>
   </header>
 
-  <div id="scene-wrap">
-  <svg id="scene" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" aria-label="Escenario del juego">
-    <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#5ec8f5"/><stop offset="1" stop-color="#cdefff"/>
-      </linearGradient>
-      <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#2bb3e8"/><stop offset="1" stop-color="#0d6fb3"/>
-      </linearGradient>
-      <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#c58a4a"/><stop offset=".5" stop-color="#a86c33"/><stop offset="1" stop-color="#7d4b1f"/>
-      </linearGradient>
-      <pattern id="stripes" width="40" height="40" patternUnits="userSpaceOnUse">
-        <rect width="20" height="40" fill="#e63946"/><rect x="20" width="20" height="40" fill="#fff5f0"/>
-      </pattern>
-      <radialGradient id="tomatoG" cx=".35" cy=".3" r=".8">
-        <stop offset="0" stop-color="#ff6b5b"/><stop offset=".6" stop-color="#e02b2b"/><stop offset="1" stop-color="#9c1414"/>
-      </radialGradient>
-      <radialGradient id="sunG"><stop offset="0" stop-color="#fff5a0"/><stop offset="1" stop-color="#ffc83d"/></radialGradient>
-      <clipPath id="poolClip"><rect x="60" y="444" width="680" height="156"/></clipPath>
-      <symbol id="tomato-sym" viewBox="-20 -20 40 40">
-        <circle r="17" fill="url(#tomatoG)"/>
-        <ellipse cx="-6" cy="-7" rx="5" ry="3" fill="#fff" opacity=".45" transform="rotate(-30)"/>
-        <path d="M-9,-13 Q-4,-9 0,-14 Q4,-9 9,-13 Q6,-7 0,-8 Q-6,-7 -9,-13Z" fill="#3fa34d"/>
-        <path d="M0,-14 L0,-20" stroke="#2f7d3a" stroke-width="3" stroke-linecap="round"/>
-      </symbol>
-      <symbol id="splat-sym" viewBox="-30 -30 60 60">
-        <path d="M0,-26 Q6,-14 16,-18 Q12,-8 24,-4 Q12,2 18,14 Q6,8 2,22 Q-4,10 -14,18 Q-10,6 -24,4 Q-12,-2 -20,-14 Q-8,-10 -6,-22 Q-2,-14 0,-26Z" fill="#d32f2f" opacity=".92"/>
-        <circle cx="4" cy="-2" r="7" fill="#f05454" opacity=".8"/>
-        <circle cx="-9" cy="6" r="3" fill="#ffd6d6" opacity=".6"/>
-      </symbol>
-    </defs>
+  <main class="layout">
+    <div id="game-wrap">
+      <div id="game"></div>
+      <div id="loading" class="loading"><div class="spinner"></div>Cargando la feria...</div>
+      <div id="falcon-badge" class="badge falcon hidden">✈️ EL FALCÓN ×5 <span id="falcon-time">10:00</span></div>
+      <div id="volley-badge" class="badge volley hidden">🍅 Tomate <b id="volley-i">1</b> / <b id="volley-n">1</b> · toca para parar</div>
+    </div>
 
-    <!-- CIELO Y DECORADO -->
-    <rect width="800" height="600" fill="url(#sky)"/>
-    <g id="sun" transform="translate(690,70)">
-      <g class="sun-rays" fill="#ffd54a" opacity=".55">
-        <path d="M0,-58 L8,-36 L-8,-36Z"/><path d="M0,58 L8,36 L-8,36Z"/><path d="M58,0 L36,8 L36,-8Z"/><path d="M-58,0 L-36,8 L-36,-8Z"/>
-        <path d="M41,-41 L36,-20 L20,-36Z"/><path d="M-41,41 L-36,20 L-20,36Z"/><path d="M41,41 L20,36 L36,20Z"/><path d="M-41,-41 L-20,-36 L-36,-20Z"/>
-      </g>
-      <circle r="34" fill="url(#sunG)"/>
-    </g>
-    <g transform="translate(90,80)"><g class="cloud c1"><ellipse rx="42" ry="18" fill="#fff"/><circle cx="-18" cy="-8" r="18" fill="#fff"/><circle cx="12" cy="-12" r="22" fill="#fff"/><circle cx="32" cy="-2" r="14" fill="#fff"/></g></g>
-    <g transform="translate(560,120)"><g class="cloud c2"><ellipse rx="34" ry="14" fill="#fff" opacity=".9"/><circle cx="-12" cy="-8" r="15" fill="#fff" opacity=".9"/><circle cx="12" cy="-10" r="18" fill="#fff" opacity=".9"/></g></g>
-
-    <!-- PALMERAS -->
-    <g class="palm" transform="translate(70,430)">
-      <path d="M0,0 Q10,-120 -10,-230" stroke="#8d5a2b" stroke-width="14" fill="none" stroke-linecap="round"/>
-      <g transform="translate(-10,-230) scale(1.35)"><g class="palm-leaves">
-        <path d="M0,0 Q-60,-40 -110,-10 Q-60,-20 0,0Z" fill="#2e9e4f"/><path d="M0,0 Q60,-40 110,-10 Q60,-20 0,0Z" fill="#2e9e4f"/>
-        <path d="M0,0 Q-40,-70 -70,-90 Q-40,-50 0,0Z" fill="#35b55c"/><path d="M0,0 Q40,-70 70,-90 Q40,-50 0,0Z" fill="#35b55c"/>
-        <path d="M0,0 Q-10,-70 10,-110 Q10,-60 0,0Z" fill="#2e9e4f"/>
-        <circle cx="-8" cy="6" r="7" fill="#7a4a1c"/><circle cx="8" cy="8" r="7" fill="#7a4a1c"/>
-      </g></g>
-    </g>
-    <g class="palm p2" transform="translate(740,440) scale(-.85,.85)">
-      <path d="M0,0 Q10,-120 -10,-230" stroke="#8d5a2b" stroke-width="14" fill="none" stroke-linecap="round"/>
-      <g transform="translate(-10,-230) scale(1.35)"><g class="palm-leaves">
-        <path d="M0,0 Q-60,-40 -110,-10 Q-60,-20 0,0Z" fill="#2e9e4f"/><path d="M0,0 Q60,-40 110,-10 Q60,-20 0,0Z" fill="#2e9e4f"/>
-        <path d="M0,0 Q-40,-70 -70,-90 Q-40,-50 0,0Z" fill="#35b55c"/><path d="M0,0 Q40,-70 70,-90 Q40,-50 0,0Z" fill="#35b55c"/>
-        <path d="M0,0 Q-10,-70 10,-110 Q10,-60 0,0Z" fill="#2e9e4f"/>
-      </g></g>
-    </g>
-
-    <!-- CASETA DE FERIA (fondo del dunk tank) -->
-    <g id="booth">
-      <rect x="262" y="130" width="336" height="270" fill="#fdf1dc" stroke="#b5884f" stroke-width="4"/>
-      <rect x="262" y="130" width="336" height="270" fill="url(#stripes)" opacity=".16"/>
-      <rect x="250" y="118" width="360" height="24" rx="6" fill="url(#stripes)" stroke="#9a2a2a" stroke-width="3"/>
-      <path d="M250,142 L610,142 L600,160 L590,142 L580,160 L570,142 L560,160 L550,142 L540,160 L530,142 L520,160 L510,142 L500,160 L490,142 L480,160 L470,142 L460,160 L450,142 L440,160 L430,142 L420,160 L410,142 L400,160 L390,142 L380,160 L370,142 L360,160 L350,142 L340,160 L330,142 L320,160 L310,142 L300,160 L290,142 L280,160 L270,142 L260,160Z" fill="#e63946"/>
-      <g id="sign" class="sign">
-        <path d="M290,160 L300,186 M372,160 L362,186" stroke="#6b4f3a" stroke-width="2"/>
-        <rect x="272" y="184" width="118" height="44" rx="6" fill="#8d4f21" stroke="#5a3010" stroke-width="3"/>
-        <text x="331" y="203" text-anchor="middle" class="booth-text">¡TÍRALO</text><text x="331" y="221" text-anchor="middle" class="booth-text">AL AGUA!</text>
-      </g>
-    </g>
-
-    <!-- PISCINA: fondo, postes, agua trasera -->
-    <rect x="40" y="428" width="720" height="172" rx="6" fill="#dfe9ee"/>
-    <g fill="#9fc9dc"><rect x="40" y="428" width="720" height="16" rx="4"/></g>
-    <g stroke="#fff" stroke-width="2" opacity=".6"><path d="M80,428 v16 M120,428 v16 M160,428 v16 M200,428 v16 M240,428 v16 M280,428 v16 M320,428 v16 M360,428 v16 M400,428 v16 M440,428 v16 M480,428 v16 M520,428 v16 M560,428 v16 M600,428 v16 M640,428 v16 M680,428 v16 M720,428 v16"/></g>
-    <rect x="60" y="444" width="680" height="156" fill="url(#water)"/>
-    <g id="posts">
-      <rect x="318" y="384" width="22" height="216" fill="url(#wood)" stroke="#6b3f17" stroke-width="2"/>
-      <rect x="520" y="384" width="22" height="216" fill="url(#wood)" stroke="#6b3f17" stroke-width="2"/>
-      <path d="M318,440 L300,520 M540,440 L558,520" stroke="#8a5a2b" stroke-width="10" stroke-linecap="round"/>
-    </g>
-    <g clip-path="url(#poolClip)">
-      <g class="wave w1" opacity=".55"><path fill="#7fdfff" d="M-800,452 Q-750,440 -700,452 T-600,452 T-500,452 T-400,452 T-300,452 T-200,452 T-100,452 T0,452 T100,452 T200,452 T300,452 T400,452 T500,452 T600,452 T700,452 T800,452 T900,452 V600 H-800Z"/></g>
-      <g class="wave w2" opacity=".35"><path fill="#b9f0ff" d="M-800,458 Q-740,446 -680,458 T-560,458 T-440,458 T-320,458 T-200,458 T-80,458 T40,458 T160,458 T280,458 T400,458 T520,458 T640,458 T760,458 T880,458 V600 H-800Z"/></g>
-      <g id="duck" transform="translate(150,500)"><g class="duck">
-        <ellipse rx="22" ry="14" fill="#ffd400"/><circle cx="14" cy="-14" r="12" fill="#ffd400"/><path d="M24,-14 L36,-10 L24,-6Z" fill="#ff8a00"/><circle cx="17" cy="-17" r="2" fill="#222"/>
-      </g></g>
-      <g id="float" transform="translate(650,520)"><g class="float">
-        <circle r="26" fill="#ff5fa2"/><circle r="12" fill="#2bb3e8"/><path d="M-26,0 A26,26 0 0,1 0,-26" stroke="#fff" stroke-width="6" fill="none"/>
-      </g></g>
-      <g id="ripples"></g>
-    </g>
-
-    <!-- PLATAFORMA -->
-    <g id="platform">
-      <rect x="296" y="380" width="268" height="18" rx="4" fill="url(#wood)" stroke="#6b3f17" stroke-width="2"/>
-      <path d="M310,389 h60 M400,389 h80 M510,389 h40" stroke="#6b3f17" stroke-width="2" opacity=".5"/>
-    </g>
-
-    <!-- PALANCA Y DIANA -->
-    <g id="lever">
-      <rect x="586" y="60" width="8" height="322" fill="#5c6670"/>
-      <rect x="470" y="54" width="122" height="8" rx="4" fill="#5c6670"/>
-      <g id="target" transform="translate(430,58)">
-        <circle r="46" fill="#fff" stroke="#333" stroke-width="3"/>
-        <circle r="36" fill="#e63946"/><circle r="26" fill="#fff"/><circle r="16" fill="#e63946"/><circle r="6" fill="#222"/>
-      </g>
-    </g>
-
-    <!-- SILLA -->
-    <g transform="translate(430,262) scale(.85)">
-      <g id="chair" class="chair">
-        <rect x="-50" y="-100" width="100" height="14" rx="4" fill="#8d4f21"/>
-        <rect x="-44" y="-100" width="10" height="100" fill="#8d4f21"/><rect x="34" y="-100" width="10" height="100" fill="#8d4f21"/>
-        <rect x="-30" y="-78" width="60" height="8" rx="3" fill="#a65f29"/><rect x="-30" y="-56" width="60" height="8" rx="3" fill="#a65f29"/>
-        <rect x="-56" y="-6" width="112" height="16" rx="5" fill="url(#wood)" stroke="#6b3f17" stroke-width="2"/>
-        <rect x="-50" y="8" width="10" height="112" fill="#8d4f21"/><rect x="40" y="8" width="10" height="112" fill="#8d4f21"/>
-      </g>
-    </g>
-
-    <!-- PEDRO -->
-    <g transform="translate(430,262) scale(.85)">
-      <g id="pedro" class="pedro">
-        <g id="p-legs">
-          <path d="M-36,-6 L-8,-6 L-6,44 Q-6,56 -18,56 L-30,56 Q-42,56 -42,44Z" fill="#1d2a4d"/>
-          <path d="M36,-6 L8,-6 L6,44 Q6,56 18,56 L30,56 Q42,56 42,44Z" fill="#1d2a4d"/>
-          <rect x="-41" y="48" width="23" height="62" rx="9" fill="#17224a"/><rect x="18" y="48" width="23" height="62" rx="9" fill="#17224a"/>
-          <ellipse cx="-31" cy="114" rx="18" ry="8" fill="#221a14"/><ellipse cx="31" cy="114" rx="18" ry="8" fill="#221a14"/>
-        </g>
-        <g id="p-body" class="body">
-          <path d="M-54,-60 Q-60,-20 -50,6 L50,6 Q60,-20 54,-60 Q30,-72 0,-70 Q-30,-72 -54,-60Z" fill="#1f2d55"/>
-          <path d="M-20,-67 L0,-8 L20,-67Z" fill="#fff"/>
-          <path d="M-32,-66 L-19,-67 L0,-12 L-16,-32Z" fill="#17224a"/><path d="M32,-66 L19,-67 L0,-12 L16,-32Z" fill="#17224a"/>
-          <path d="M-6,-64 L6,-64 L8,-52 L4,-16 L0,-8 L-4,-16 L-8,-52Z" fill="#c62828"/>
-          <path d="M-6,-64 L6,-64 L4,-57 L-4,-57Z" fill="#8e1b1b"/>
-          <circle cx="0" cy="-4" r="2.6" fill="#0f1733"/>
-          <rect x="30" y="-52" width="12" height="7" fill="#fff" opacity=".9"/>
-        </g>
-        <g id="p-arm-l" class="arm arm-l">
-          <path d="M-50,-56 Q-72,-20 -64,12 Q-58,30 -42,40" stroke="#1f2d55" stroke-width="19" fill="none" stroke-linecap="round"/>
-          <circle cx="-38" cy="44" r="11" fill="#f1c7a3"/>
-        </g>
-        <g id="p-arm-r" class="arm arm-r">
-          <path d="M50,-56 Q72,-20 64,12 Q58,30 42,40" stroke="#1f2d55" stroke-width="19" fill="none" stroke-linecap="round"/>
-          <circle cx="38" cy="44" r="11" fill="#f1c7a3"/>
-        </g>
-        <g id="p-arm-up" class="arm-up">
-          <path d="M50,-56 Q78,-54 76,-96 Q74,-120 70,-138" stroke="#1f2d55" stroke-width="19" fill="none" stroke-linecap="round"/>
-          <ellipse cx="70" cy="-146" rx="13" ry="11" fill="#f1c7a3"/>
-          <rect x="65" y="-178" width="10" height="34" rx="5" fill="#f1c7a3"/>
-          <path d="M60,-150 Q58,-156 62,-158" stroke="#d9a177" stroke-width="2" fill="none"/>
-        </g>
-        <g id="p-head" class="head">
-          <rect x="-12" y="-84" width="24" height="30" rx="6" fill="#e6b48d"/>
-          <ellipse cx="-42" cy="-112" rx="8" ry="12" fill="#f1c7a3"/><ellipse cx="42" cy="-112" rx="8" ry="12" fill="#f1c7a3"/>
-          <path id="p-face" d="M-40,-118 Q-44,-150 -22,-164 Q0,-172 22,-164 Q44,-150 40,-118 Q40,-92 30,-76 Q18,-58 0,-56 Q-18,-58 -30,-76 Q-40,-92 -40,-118Z" fill="#f1c7a3"/>
-          <path d="M-32,-84 Q-18,-62 0,-60 Q18,-62 32,-84 Q22,-66 0,-64 Q-22,-66 -32,-84Z" fill="#6b4a3a" opacity=".16"/><path d="M-24,-104 Q-26,-90 -18,-78 M24,-104 Q26,-90 18,-78" stroke="#c98f66" stroke-width="1.6" fill="none" opacity=".7"/>
-          <g id="p-hair" class="hair">
-            <path d="M-44,-120 Q-50,-160 -30,-180 Q-5,-198 25,-192 Q52,-186 52,-150 Q52,-134 46,-120 Q46,-140 34,-150 Q20,-156 10,-156 Q-10,-158 -28,-150 Q-40,-140 -44,-120Z" fill="#2a1f17"/>
-            <path d="M-44,-120 Q-46,-106 -43,-98 L-37,-102 Q-39,-112 -38,-122Z" fill="#2a1f17"/>
-            <path d="M46,-120 Q47,-106 44,-98 L38,-102 Q40,-112 39,-122Z" fill="#2a1f17"/>
-            <path d="M-44,-120 Q-46,-140 -36,-152 Q-34,-136 -36,-122Z" fill="#b8b8b8" opacity=".9"/>
-            <path d="M46,-120 Q47,-140 36,-152 Q38,-136 38,-122Z" fill="#b8b8b8" opacity=".9"/>
-            <path d="M-22,-168 Q0,-186 26,-180 M-12,-158 Q8,-170 32,-164 M-30,-156 Q-20,-172 -6,-178" stroke="#4a3a2e" stroke-width="2" fill="none" opacity=".55" stroke-linecap="round"/>
-          </g>
-          <g id="p-brows" class="brows">
-            <path class="brow-l" d="M-33,-134 Q-20,-144 -7,-135" stroke="#2a1f17" stroke-width="6" fill="none" stroke-linecap="round"/>
-            <path class="brow-r" d="M33,-134 Q20,-144 7,-135" stroke="#2a1f17" stroke-width="6" fill="none" stroke-linecap="round"/>
-          </g>
-          <g id="p-eyes" class="eyes">
-            <ellipse cx="-17" cy="-121" rx="9.5" ry="6.5" fill="#fff"/><ellipse cx="17" cy="-121" rx="9.5" ry="6.5" fill="#fff"/>
-            <g class="pupils"><circle cx="-16" cy="-121" r="4.3" fill="#3b2a1a"/><circle cx="18" cy="-121" r="4.3" fill="#3b2a1a"/>
-            <circle cx="-14.5" cy="-122.5" r="1.4" fill="#fff"/><circle cx="19.5" cy="-122.5" r="1.4" fill="#fff"/></g>
-          </g>
-          <path d="M3,-122 Q10,-104 0,-99 Q-8,-99 -6,-104" stroke="#c98f66" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          <g id="mouths" transform="translate(0,6)">
-            <g class="mouth m-smile"><path d="M-21,-90 Q0,-72 21,-90 Q0,-84 -21,-90Z" fill="#fff" stroke="#8b3a3a" stroke-width="1.6"/><path d="M-21,-90 Q0,-72 21,-90" stroke="#7a2c2c" stroke-width="2" fill="none"/></g>
-            <g class="mouth m-laugh"><path d="M-23,-93 Q0,-60 23,-93Z" fill="#5a1a1a"/><path d="M-19,-92 L19,-92 L15,-84 L-15,-84Z" fill="#fff"/><ellipse cx="0" cy="-70" rx="9" ry="5" fill="#d9534f"/></g>
-            <g class="mouth m-shock"><ellipse cx="0" cy="-84" rx="9" ry="13" fill="#5a1a1a"/><ellipse cx="0" cy="-78" rx="5" ry="4" fill="#d9534f"/></g>
-            <g class="mouth m-angry"><path d="M-18,-78 Q0,-94 18,-78" stroke="#7a2c2c" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M-13,-84 L13,-84" stroke="#fff" stroke-width="4"/></g>
-            <g class="mouth m-smug"><path d="M-16,-88 Q6,-74 22,-93" stroke="#7a2c2c" stroke-width="3" fill="none" stroke-linecap="round"/></g>
-          </g>
-          <g id="p-sweat" class="sweat"><path d="M48,-134 Q54,-122 48,-118 Q42,-122 48,-134Z" fill="#7fdfff"/></g>
-          <g id="p-drips" class="drips">
-            <path d="M-38,-104 Q-34,-92 -38,-88 Q-42,-92 -38,-104Z" fill="#7fdfff"/><path d="M26,-100 Q30,-86 26,-82 Q22,-86 26,-100Z" fill="#7fdfff"/><path d="M4,-166 Q8,-156 4,-152 Q0,-156 4,-166Z" fill="#7fdfff"/>
-          </g>
-          <g id="p-blush" class="blush"><ellipse cx="-28" cy="-100" rx="8" ry="4" fill="#ef6b6b" opacity=".5"/><ellipse cx="28" cy="-100" rx="8" ry="4" fill="#ef6b6b" opacity=".5"/></g>
-        </g>
-      </g>
-    </g>
-
-    <!-- AGUA FRONTAL (para que Pedro quede sumergido) -->
-    <g clip-path="url(#poolClip)" id="water-front">
-      <g class="wave w3"><path fill="#2bb3e8" opacity=".7" d="M-800,470 Q-750,460 -700,470 T-600,470 T-500,470 T-400,470 T-300,470 T-200,470 T-100,470 T0,470 T100,470 T200,470 T300,470 T400,470 T500,470 T600,470 T700,470 T800,470 T900,470 V600 H-800Z"/></g>
-      <g id="splashes"></g>
-    </g>
-
-    <!-- CAPAS DE JUEGO -->
-    <g id="splats"></g>
-    <g id="track" class="track"><line x1="70" y1="58" x2="730" y2="58" stroke="#fff" stroke-width="3" stroke-dasharray="8 10" opacity=".7"/></g>
-    <g id="tomato" class="tomato-proj" transform="translate(70,58)"><use href="#tomato-sym" x="-20" y="-20" width="40" height="40"/></g>
-    <g id="bubble-pos"><g id="bubble" class="bubble">
-      <path id="bubble-bg" d="" fill="#fff" stroke="#333" stroke-width="2.5"/>
-      <text id="bubble-text" x="0" y="0" class="bubble-text"></text>
-    </g></g>
-    <g id="fx-text"></g>
-    <rect id="tap-layer" width="800" height="600" fill="transparent"/>
-  </svg>
-  </div>
-
-  <section class="panel">
-    <div class="counters">
-      <div class="counter clicks">
-        <div class="counter-label">Clics</div>
-        <div id="clicks-num" class="counter-num">0</div>
-        <div class="bar"><div id="bar-fill" class="bar-fill"></div></div>
-        <div id="bar-text" class="bar-text">0 / 100 para el siguiente tomate</div>
-      </div>
-      <div id="basket" class="counter basket">
-        <div class="counter-label">Tomates</div>
-        <div class="basket-body">
-          <svg viewBox="-20 -20 40 40" class="basket-icon"><use href="#tomato-sym" x="-20" y="-20" width="40" height="40"/></svg>
-          <div id="tomato-num" class="counter-num">0</div>
+    <aside class="hud">
+      <div class="hud-row">
+        <div class="stat">
+          <label>Clics</label><b id="clicks-num" class="num">0</b>
+          <div class="bar"><div id="bar-fill" class="bar-fill"></div></div>
+          <small id="bar-text">0 / 100 para el siguiente tomate</small>
+        </div>
+        <div class="stat tomatoes" id="basket">
+          <label>Tomates</label>
+          <div class="tom"><svg viewBox="-20 -20 40 40" class="ico-tomato"><use href="#svg-tomato"/></svg><b id="tomato-num" class="num">0</b></div>
+          <small id="hist-text">0 conseguidos en total</small>
         </div>
       </div>
-    </div>
-    <div class="actions">
-      <button id="btn-click" class="big-btn btn-click"><span class="btn-emoji">👆</span><span>¡CLIC AQUÍ!</span><small>Consigue tomates</small></button>
-      <button id="btn-throw" class="big-btn btn-throw" disabled><span class="btn-emoji">🍅</span><span id="btn-throw-text">LANZAR TOMATE</span><small id="btn-throw-sub">Necesitas 1 tomate</small></button>
-    </div>
-    <div id="save-status" class="save-status"></div>
-  </section>
+      <button id="btn-click" class="btn-click"><span class="cpt" id="cpt-badge">+1 clic</span><span class="big">¡CLIC AQUÍ!</span><small>Cada 100 clics, un tomate</small></button>
+      <div class="throw">
+        <div class="throw-label">Lanzar tomates</div>
+        <div class="throw-row" id="throw-row">
+          <button class="btn-throw" data-n="1">×1</button><button class="btn-throw" data-n="3">×3</button><button class="btn-throw" data-n="5">×5</button><button class="btn-throw" data-n="10">×10</button>
+        </div>
+        <button id="btn-stop" class="btn-stop hidden">¡AHORA!</button>
+      </div>
+      <nav class="nav">
+        <button data-panel="shop"><span>🎪</span>Tienda</button>
+        <button data-panel="chests"><span>🎁</span>Cofres<i id="chest-dot" class="dot hidden"></i></button>
+        <button data-panel="cards"><span>🃏</span>Cartas</button>
+      </nav>
+      <div id="save-status" class="save-status"></div>
+    </aside>
+  </main>
 
-  <!-- MODALES -->
-  <div id="modal-tutorial" class="modal">
-    <div class="modal-box">
-      <h2>¿Cómo se lanza?</h2>
-      <ol>
-        <li>Al pulsar <b>LANZAR</b>, el tomate se mueve de lado a lado por encima de la diana.</li>
-        <li>Toca la pantalla (o pulsa <b>¡AHORA!</b>) para detenerlo.</li>
-        <li>Cuanto más cerca del <b>centro de la diana</b> lo pares, mejor: en el centro, Pedro cae al agua.</li>
-      </ol>
-      <p class="muted">No hay azar: todo depende de tu puntería.</p>
-      <button class="btn primary" data-close>¡Entendido!</button>
+  <!-- PANELES -->
+  <div id="panel-shop" class="panel"><div class="panel-box">
+    <header><h2>🎪 Tienda</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
+    <div class="panel-body">
+      <p class="muted">Ventajas por vídeo recompensado. Los anuncios se activarán próximamente.</p>
+      <div class="shop-item falcon-item">
+        <div class="shop-art">✈️</div>
+        <div class="shop-info"><h3>El Falcón</h3><p>Multiplica <b>×5</b> los clics de cada pulsación durante <b>10 minutos</b>.</p><div id="falcon-state" class="shop-state"></div></div>
+        <button id="btn-falcon" class="btn ad">📺 Ver vídeo</button>
+      </div>
+      <div class="shop-item sobre-item">
+        <div class="shop-art">✉️</div>
+        <div class="shop-info"><h3>Sobre de la Moncloa</h3><p>Recibe <b>5 pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen.</p><div class="shop-state">Recompensa: 5 ₧</div></div>
+        <button id="btn-sobre" class="btn ad">📺 Ver vídeo</button>
+      </div>
+      <p class="muted small">Sin publicidad integrada todavía: estos botones no conceden recompensas hasta que exista un proveedor verificado.</p>
+      <button class="btn link" data-goto="chests">Ir a los cofres →</button>
     </div>
-  </div>
+  </div></div>
 
-  <div id="modal-stats" class="modal">
-    <div class="modal-box">
-      <h2>Tus estadísticas</h2>
-      <ul id="stats-list" class="stats"></ul>
-      <button class="btn primary" data-close>Cerrar</button>
-    </div>
-  </div>
+  <div id="panel-chests" class="panel"><div class="panel-box">
+    <header><h2>🎁 Cofres</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
+    <div class="panel-body" id="chests-body"></div>
+  </div></div>
 
-  <div id="modal-rank" class="modal">
-    <div class="modal-box">
-      <h2>🏆 Ranking mundial</h2>
-      <p class="muted">Caídas provocadas por jugadores con cuenta.</p>
-      <ol id="rank-list" class="rank"></ol>
-      <button class="btn primary" data-close>Cerrar</button>
-    </div>
-  </div>
+  <div id="panel-cards" class="panel"><div class="panel-box wide">
+    <header><h2>🃏 Cartas y potenciadores</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
+    <div class="panel-body"><p class="muted">Cinco potenciadores permanentes. Consíguelos en los cofres y mejóralos con pesetas y fragmentos.</p><div id="cards-grid" class="cards-grid"></div></div>
+  </div></div>
 
-  <div id="modal-account" class="modal">
-    <div class="modal-box">
+  <div id="panel-rank" class="panel"><div class="panel-box">
+    <header><h2>🏆 Ranking mundial</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
+    <div class="panel-body"><p class="muted">Tomates conseguidos en total por jugadores con cuenta.</p><ol id="rank-list" class="rank"></ol></div>
+  </div></div>
+
+  <div id="panel-stats" class="panel"><div class="panel-box">
+    <header><h2>📊 Tus estadísticas</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
+    <div class="panel-body"><ul id="stats-list" class="stats"></ul></div>
+  </div></div>
+
+  <div id="panel-account" class="panel"><div class="panel-box">
+    <header><h2>👤 Cuenta</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
+    <div class="panel-body">
       <div id="acc-logged" class="hidden">
-        <h2>Tu cuenta</h2>
-        <p>Hola, <b id="acc-name"></b>. Tu progreso se guarda en la nube.</p>
+        <p>Hola, <b id="acc-name"></b>. Tu progreso se guarda en la nube y cuenta para el ranking.</p>
         <button id="btn-logout" class="btn">Cerrar sesión</button>
       </div>
       <div id="acc-forms">
-        <div class="tabs">
-          <button class="tab active" data-tab="login">Entrar</button>
-          <button class="tab" data-tab="register">Registro</button>
-          <button class="tab" data-tab="recover">Recuperar</button>
-        </div>
+        <div class="tabs"><button class="tab active" data-tab="login">Entrar</button><button class="tab" data-tab="register">Registro</button><button class="tab" data-tab="recover">Recuperar</button></div>
         <form id="form-login" class="tabpane active" autocomplete="on">
           <input name="email" type="email" placeholder="Correo electrónico" required autocomplete="email">
           <input name="password" type="password" placeholder="Contraseña" required autocomplete="current-password">
@@ -323,15 +129,46 @@
           <input name="password" type="password" placeholder="Nueva contraseña (mín. 6)" required minlength="6" autocomplete="new-password">
           <button class="btn primary" type="submit">Guardar contraseña</button>
         </form>
-        <p class="muted small">Sin cuenta, el progreso se guarda solo en este navegador.</p>
+        <p class="muted small">Sin cuenta, el progreso se guarda solo en este navegador y no aparece en el ranking.</p>
       </div>
       <p id="acc-msg" class="acc-msg"></p>
-      <button class="btn" data-close>Cerrar</button>
+    </div>
+  </div></div>
+
+  <div id="panel-tutorial" class="panel"><div class="panel-box">
+    <header><h2>¿Cómo se lanza?</h2></header>
+    <div class="panel-body">
+      <ol>
+        <li>Elige cuántos tomates lanzar (×1, ×3, ×5 o ×10).</li>
+        <li>El tomate se mueve de lado a lado por delante de la diana. <b>Toca la pantalla</b> o pulsa <b>¡AHORA!</b> para lanzarlo.</li>
+        <li>Cuanto más cerca del <b>centro amarillo</b>, mejor. En el centro, Pedro cae al agua y ganas <b>pesetas</b>.</li>
+        <li>Con varios tomates, cada uno se lanza por turno: toca una vez por tomate.</li>
+      </ol>
+      <p class="muted">No hay azar en la puntería: todo depende de ti. Las cartas pueden ayudarte.</p>
+      <button class="btn primary" data-close>¡Entendido!</button>
+    </div>
+  </div></div>
+
+  <!-- APERTURA DE COFRE -->
+  <div id="chest-overlay" class="overlay">
+    <div class="chest-stage">
+      <h2 id="chest-title">Cofre de madera</h2>
+      <div id="chest-art" class="chest-art"></div>
+      <div id="chest-rewards" class="chest-rewards"></div>
+      <button id="chest-btn" class="btn primary big">¡ABRIR!</button>
     </div>
   </div>
 
+  <!-- RESUMEN DE LANZAMIENTO MÚLTIPLE -->
+  <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
+
+  <svg width="0" height="0" style="position:absolute"><defs>
+    <radialGradient id="tg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ff6b5b"/><stop offset=".6" stop-color="#e02b2b"/><stop offset="1" stop-color="#9c1414"/></radialGradient>
+    <g id="svg-tomato"><circle r="17" fill="url(#tg)"/><ellipse cx="-6" cy="-7" rx="5" ry="3" fill="#fff" opacity=".45" transform="rotate(-30)"/><path d="M-9,-13 Q-4,-9 0,-14 Q4,-9 9,-13 Q6,-7 0,-8 Q-6,-7 -9,-13Z" fill="#3fa34d"/><path d="M0,-14 L0,-20" stroke="#2f7d3a" stroke-width="3" stroke-linecap="round"/></g>
+  </defs></svg>
 </div>
+<script src="vendor/phaser.min.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

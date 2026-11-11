@@ -48,4 +48,11 @@ export const SFX = {
   win() { if (!enabled) return; [523, 659, 784, 1047, 1319].forEach((f, i) => tone({ f, type: 'square', t: 0.25, vol: 0.2, delay: i * 0.09 })); tone({ f: 1568, type: 'square', t: 0.5, vol: 0.2, delay: 0.5 }); },
   angry() { if (!enabled) return; [0, 0.12, 0.24].forEach(d => tone({ f: 150, f2: 110, type: 'sawtooth', t: 0.12, vol: 0.25, delay: d })); },
   ui() { if (!enabled) return; tone({ f: 700, f2: 900, type: 'sine', t: 0.08, vol: 0.15 }); },
+  coin() { if (!enabled) return; tone({ f: 1760, type: 'square', t: 0.08, vol: 0.18 }); tone({ f: 2349, type: 'square', t: 0.3, vol: 0.18, delay: 0.08 }); },
+  chestOpen() { if (!enabled) return; noise({ t: 0.3, vol: 0.3, filter: 300, sweep: 900, type: 'bandpass', q: 3 }); [392, 523, 659, 784].forEach((f, i) => tone({ f, type: 'triangle', t: 0.3, vol: 0.25, delay: 0.3 + i * 0.08 })); },
+  reward(rar = 0) { if (!enabled) return; const b = [523, 659, 784, 1047][rar] || 523; [b, b * 1.25, b * 1.5].forEach((f, i) => tone({ f, type: 'triangle', t: 0.25, vol: 0.22, delay: i * 0.07 })); },
+  upgrade() { if (!enabled) return; [440, 554, 659, 880, 1109].forEach((f, i) => tone({ f, type: 'square', t: 0.18, vol: 0.16, delay: i * 0.06 })); noise({ t: 0.4, vol: 0.15, filter: 5000, type: 'highpass', delay: 0.3 }); },
+  cheer() { if (!enabled) return; [0, 0.1, 0.25, 0.4].forEach(d => noise({ t: 0.6, vol: 0.18, filter: 1500, q: 0.7, type: 'bandpass', delay: d })); [660, 880, 990].forEach((f, i) => tone({ f, type: 'sawtooth', t: 0.4, vol: 0.06, delay: i * 0.1 + 0.1 })); },
+  falcon() { if (!enabled) return; noise({ t: 1.6, vol: 0.4, filter: 200, sweep: 4000, type: 'bandpass', q: 2 }); tone({ f: 120, f2: 900, type: 'sawtooth', t: 1.4, vol: 0.12 }); },
+  error() { if (!enabled) return; tone({ f: 220, f2: 180, type: 'square', t: 0.2, vol: 0.15 }); },
 };

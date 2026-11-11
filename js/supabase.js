@@ -1,0 +1,94 @@
+// Cliente mínimo de Supabase (Auth + REST) con fetch, sin dependencias.
+import { CONFIG } from './config.js';
+const URL = CONFIG.SUPABASE_URL, KEY = CONFIG.SUPABASE_KEY, SKEY = 'alaguapedro.session';
+let session = null;
+
+export const auth = {
+  get user() { return session?.user || null; },
+  get token() { return session?.access_token || null; },
+};
+export function hasBackend() { return !!(URL && KEY); }
+
+function headers(extra = {}) {
+  const h = { apikey: KEY, 'Content-Type': 'application/json', ...extra };
+  if (session?.access_token) h.Authorization = `Bearer ${session.access_token}`;
+  return h;
+}
+async function req(path, { method = 'GET', body, auth: useAuth = true, keepalive = false, extra = {} } = {}) {
+  const h = headers(extra); if (!useAuth) delete h.Authorization;
+  const r = await fetch(URL + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive });
+  const text = await r.text(); let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+  if (!r.ok) {
+    const msg = data?.msg || data?.message || data?.error_description || data?.error || data?.hint || `Error ${r.status}`;
+    const err = new Error(msg); err.status = r.status; err.code = data?.error_code || data?.code; throw err;
+  }
+  return data;
+}
+function setSession(s) {
+  session = s;
+  try { s ? localStorage.setItem(SKEY, JSON.stringify(s)) : localStorage.removeItem(SKEY); } catch (e) {}
+}
+
+export async function restoreSession() {
+  try { session = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { session = null; }
+  if (!session) return null;
+  if (session.expires_at * 1000 < Date.now() + 60000) {
+    try {
+      const s = await req('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: session.refresh_token }, auth: false });
+      setSession(s);
+    } catch (e) { setSession(null); }
+  }
+  return auth.user;
+}
+// Enlace de recuperación de contraseña: llega como #access_token=...&type=recovery
+export function consumeRecoveryHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('type') === 'recovery' && h.get('access_token')) {
+    setSession({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: Math.floor(Date.now() / 1000) + Number(h.get('expires_in') || 3600), user: null });
+    history.replaceState(null, '', location.pathname);
+    return true;
+  }
+  if (h.get('error_description')) { history.replaceState(null, '', location.pathname); throw new Error(decodeURIComponent(h.get('error_description').replace(/\+/g, ' '))); }
+  return false;
+}
+
+export async function signUp(email, password, username) {
+  const d = await req('/auth/v1/signup', { method: 'POST', body: { email, password, data: { username } }, auth: false });
+  if (d?.access_token) { setSession(d); return { user: d.user, needsConfirm: false }; }
+  return { user: d, needsConfirm: true };
+}
+export async function signIn(email, password) {
+  const s = await req('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password }, auth: false });
+  setSession(s); return s.user;
+}
+export async function signOut() {
+  try { await req('/auth/v1/logout', { method: 'POST' }); } catch (e) {}
+  setSession(null);
+}
+export async function recover(email) {
+  await req('/auth/v1/recover', { method: 'POST', body: { email }, auth: false });
+}
+export async function updatePassword(password) {
+  const u = await req('/auth/v1/user', { method: 'PUT', body: { password } });
+  if (session) { session.user = u; setSession(session); }
+  return u;
+}
+export async function fetchUser() {
+  const u = await req('/auth/v1/user'); if (session) { session.user = u; setSession(session); } return u;
+}
+
+export async function getProfile() {
+  const rows = await req(`/rest/v1/profiles?select=*&user_id=eq.${auth.user.id}`);
+  return rows?.[0] || null;
+}
+// Guarda el progreso a través de la función validada en el servidor. Devuelve la fila resultante.
+export async function saveProgress(stats, keepalive = false) {
+  return req('/rest/v1/rpc/save_progress', {
+    method: 'POST', keepalive,
+    body: { p_total_clicks: stats.totalClicks, p_tomatoes_thrown: stats.tomatoesThrown, p_hits: stats.hits, p_falls: stats.falls },
+  });
+}
+export async function leaderboard() {
+  return req('/rest/v1/leaderboard?select=*&order=falls.desc,hits.desc&limit=20', { auth: false });
+}

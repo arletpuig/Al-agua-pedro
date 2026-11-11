@@ -1,0 +1,238 @@
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0b2a4a;color:#1b1b2f;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;overscroll-behavior:none}
+body{background:radial-gradient(circle at 50% 0,#1b4f7a,#0b2a4a 70%)}
+#app{max-width:900px;margin:0 auto;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);display:flex;flex-direction:column;min-height:100%;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer;touch-action:manipulation}
+
+/* CABECERA */
+.top{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px}
+.title{margin:0;line-height:.9;color:#fff;display:flex;flex-direction:column;font-weight:900;letter-spacing:1px;text-shadow:0 3px 0 #0a3a5c,0 6px 12px rgba(0,0,0,.4)}
+.title span:first-child{font-size:clamp(14px,3.4vw,20px);color:#9fe4ff}
+.title-big{font-size:clamp(28px,7vw,44px);color:#ff4d4d;-webkit-text-stroke:1px #7a0b0b}
+.top-btns{display:flex;gap:6px}
+.icon-btn{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);font-size:20px;color:#fff;transition:transform .15s,background .15s;display:grid;place-items:center}
+.icon-btn:active{transform:scale(.9);background:rgba(255,255,255,.3)}
+.icon-btn.logged{border-color:#5cf08a;box-shadow:0 0 0 2px rgba(92,240,138,.4)}
+
+/* ESCENA */
+#scene-wrap{width:min(100%,calc(58vh * 4 / 3));aspect-ratio:4/3;margin:0 auto;position:relative}
+#scene{width:100%;height:100%;display:block;border-radius:0 0 18px 18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#scene *{transform-box:view-box}
+#tap-layer{cursor:pointer}
+.booth-text{font-size:16px;font-weight:900;fill:#ffe9a8;letter-spacing:1px;font-family:inherit}
+.sign{transform-origin:331px 160px;animation:signSwing 5s ease-in-out infinite alternate}
+@keyframes signSwing{from{transform:rotate(-2deg)}to{transform:rotate(2deg)}}
+
+/* decorado animado */
+.sun-rays{transform-origin:0 0;animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cloud{animation:drift 26s ease-in-out infinite alternate}
+.cloud.c2{animation-duration:34s;animation-delay:-10s}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(36px)}}
+.palm-leaves{transform-origin:0 0;animation:sway 4s ease-in-out infinite alternate}
+.palm.p2 .palm-leaves{animation-delay:-2s}
+@keyframes sway{from{transform:rotate(-3deg)}to{transform:rotate(4deg)}}
+.wave{animation:waveMove 5s linear infinite}
+.wave.w2{animation-duration:7s;animation-direction:reverse}
+.wave.w3{animation-duration:6s}
+@keyframes waveMove{from{transform:translateX(0)}to{transform:translateX(200px)}}
+.wave.w2{animation-name:waveMove2}
+@keyframes waveMove2{from{transform:translateX(0)}to{transform:translateX(240px)}}
+.duck{animation:bob 2.4s ease-in-out infinite alternate}
+.float{animation:bob 3.2s ease-in-out infinite alternate;animation-delay:-1s}
+@keyframes bob{from{transform:translateY(-3px) rotate(-4deg)}to{transform:translateY(4px) rotate(4deg)}}
+
+/* PEDRO: animaciones de reposo */
+.pedro{transform-origin:0 0}
+.body{transform-origin:0 6px;animation:breathe 3.2s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.025)}}
+.head{transform-origin:0 -62px;animation:headIdle 5s ease-in-out infinite}
+@keyframes headIdle{0%,100%{transform:rotate(-2deg) translateY(0)}30%{transform:rotate(2deg) translateY(1px)}60%{transform:rotate(-1deg) translateY(-1px)}}
+.eyes{transform-origin:0 -121px;animation:blink 4.5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+.pupils{animation:look 7s ease-in-out infinite}
+@keyframes look{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,0)}55%{transform:translate(3px,1px)}}
+.brows{transform-origin:0 -138px;transition:transform .25s}
+.arm{transition:transform .3s}
+.arm-l{transform-origin:-50px -56px;animation:armL 4s ease-in-out infinite alternate}
+.arm-r{transform-origin:50px -56px;animation:armR 4.6s ease-in-out infinite alternate}
+@keyframes armL{from{transform:rotate(-2deg)}to{transform:rotate(3deg)}}
+@keyframes armR{from{transform:rotate(2deg)}to{transform:rotate(-3deg)}}
+.arm-up{display:none;transform-origin:50px -56px}
+.mouth{display:none}
+.m-smile{display:block}
+.sweat,.drips,.blush{opacity:0;transition:opacity .3s}
+.hair{transition:filter .4s}
+
+/* PEDRO: estados */
+.pedro.laugh .mouth{display:none}.pedro.laugh .m-laugh{display:block}
+.pedro.laugh .head{animation:laughHead .35s ease-in-out infinite alternate}
+@keyframes laughHead{from{transform:rotate(-6deg) translateY(-4px)}to{transform:rotate(4deg) translateY(2px)}}
+.pedro.laugh .body{animation:laughBody .18s ease-in-out infinite alternate}
+@keyframes laughBody{from{transform:scaleY(1) translateY(0)}to{transform:scaleY(1.04) translateY(-3px)}}
+.pedro.laugh .brows{transform:translateY(-4px)}
+.pedro.laugh .eyes{animation:none;transform:scaleY(.5)}
+.pedro.laugh .arm-up{display:block;animation:fingerUp .5s ease-out both}
+.pedro.laugh .arm-r{display:none}
+.pedro.laugh .arm-l{animation:armWave .4s ease-in-out infinite alternate}
+@keyframes armWave{from{transform:rotate(-14deg)}to{transform:rotate(10deg)}}
+@keyframes fingerUp{from{transform:rotate(60deg)}to{transform:rotate(0)}}
+
+.pedro.shock .mouth{display:none}.pedro.shock .m-shock{display:block}
+.pedro.shock .brows{transform:translateY(-6px)}
+.pedro.shock .eyes{animation:none;transform:scale(1.25)}
+.pedro.shock .sweat{opacity:1}
+.pedro.shock .arm-l{animation:flailL .25s ease-in-out infinite alternate}
+.pedro.shock .arm-r{animation:flailR .25s ease-in-out infinite alternate}
+@keyframes flailL{from{transform:rotate(-60deg)}to{transform:rotate(-120deg)}}
+@keyframes flailR{from{transform:rotate(60deg)}to{transform:rotate(120deg)}}
+
+.pedro.angry .mouth{display:none}.pedro.angry .m-angry{display:block}
+.pedro.angry .brow-l{transform:rotate(18deg);transform-origin:-20px -138px}
+.pedro.angry .brow-r{transform:rotate(-18deg);transform-origin:20px -138px}
+.pedro.angry .blush{opacity:1}
+.pedro.angry .arm-l{animation:shakeFist .3s ease-in-out infinite alternate}
+@keyframes shakeFist{from{transform:rotate(-100deg) translateX(0)}to{transform:rotate(-110deg) translateX(4px)}}
+
+.pedro.smug .mouth{display:none}.pedro.smug .m-smug{display:block}
+.pedro.smug .brows{transform:translateY(-2px) rotate(-5deg)}
+
+.pedro.wet .hair{filter:brightness(.6)}
+.pedro.wet .drips{opacity:1;animation:dripFall 1.2s ease-in infinite}
+@keyframes dripFall{0%{transform:translateY(0);opacity:1}100%{transform:translateY(22px);opacity:0}}
+.pedro.wet .head{animation:shiver .12s linear infinite alternate}
+@keyframes shiver{from{transform:translateX(-1.5px)}to{transform:translateX(1.5px)}}
+
+.pedro.wobble{animation:wobble .9s ease-in-out}
+@keyframes wobble{0%{transform:rotate(0)}15%{transform:rotate(-10deg) translateX(-8px)}35%{transform:rotate(9deg) translateX(6px)}55%{transform:rotate(-6deg)}75%{transform:rotate(4deg)}100%{transform:rotate(0)}}
+.pedro.hit-small{animation:hitSmall .4s ease-out}
+@keyframes hitSmall{0%{transform:translate(0,0)}30%{transform:translate(0,-6px) rotate(-3deg)}100%{transform:translate(0,0)}}
+
+.pedro.fall{animation:fall 1s cubic-bezier(.4,0,.9,.6) forwards}
+@keyframes fall{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-40px,-30px) rotate(-25deg)}100%{transform:translate(-110px,300px) rotate(-120deg)}}
+.pedro.sunk{transform:translate(-110px,300px) rotate(-120deg);opacity:0;transition:opacity .4s}
+.pedro.surface{animation:surface 1.6s ease-out forwards}
+@keyframes surface{0%{transform:translate(-110px,330px) rotate(0);opacity:0}30%{transform:translate(-110px,255px) rotate(0);opacity:1}100%{transform:translate(-110px,262px) rotate(0);opacity:1}}
+.pedro.respawn{animation:respawn .6s cubic-bezier(.2,1.4,.5,1) forwards}
+@keyframes respawn{0%{transform:translate(0,-120px) scale(.9);opacity:0}60%{transform:translate(0,8px) scale(1.02);opacity:1}100%{transform:translate(0,0) scale(1);opacity:1}}
+.pedro.gone{opacity:0}
+.pedro.click-react .head{animation:peek .3s ease-out}
+@keyframes peek{50%{transform:rotate(-6deg) translateY(-3px)}}
+
+/* SILLA, PLATAFORMA, DIANA */
+.chair{transform-origin:50px 120px;transition:transform .3s}
+.chair.tilt{animation:chairTilt .7s ease-in forwards}
+@keyframes chairTilt{0%{transform:rotate(0)}30%{transform:rotate(-8deg)}60%{transform:rotate(-30deg)}100%{transform:rotate(-70deg) translate(-20px,10px)}}
+.chair.reset{animation:chairReset .5s ease-out forwards}
+@keyframes chairReset{from{transform:rotate(-70deg) translate(-20px,10px)}to{transform:rotate(0)}}
+.chair.shake{animation:chairShake .6s ease-in-out}
+@keyframes chairShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(2deg)}}
+#platform{transform-origin:430px 389px}
+#platform.shake{animation:platShake .5s ease-in-out}
+@keyframes platShake{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(4px) rotate(.6deg)}60%{transform:translateY(-2px) rotate(-.4deg)}}
+#target{transition:transform .2s}
+#target.hit{animation:targetHit .6s ease-out}
+@keyframes targetHit{0%{transform:translate(430px,58px) scale(1)}20%{transform:translate(430px,58px) scale(.75) rotate(-12deg)}50%{transform:translate(430px,58px) scale(1.15) rotate(8deg)}100%{transform:translate(430px,58px) scale(1)}}
+#target.wobble{animation:targetWobble .6s ease-out}
+@keyframes targetWobble{0%{transform:translate(430px,58px) rotate(0)}25%{transform:translate(430px,58px) rotate(-10deg)}50%{transform:translate(430px,58px) rotate(8deg)}75%{transform:translate(430px,58px) rotate(-4deg)}100%{transform:translate(430px,58px) rotate(0)}}
+#scene.quake{animation:quake .4s}
+@keyframes quake{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,3px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,2px)}80%{transform:translate(3px,-1px)}}
+
+/* TOMATE */
+.track{opacity:0;transition:opacity .3s}
+.track.on{opacity:1}
+.tomato-proj{opacity:0;transition:opacity .2s}
+.tomato-proj.on{opacity:1}
+.tomato-proj use{transform-origin:0 0}
+.tomato-proj.fly use{animation:tomatoFly .32s ease-in forwards}
+@keyframes tomatoFly{0%{transform:scale(1)}50%{transform:scale(1.5)}100%{transform:scale(.6)}}
+.splat{transform-origin:0 0;animation:splatIn .35s cubic-bezier(.2,1.6,.5,1) both}
+@keyframes splatIn{from{transform:scale(0) rotate(-30deg)}to{transform:scale(1) rotate(0)}}
+.splat.drip{animation:splatDrip 3s ease-in forwards}
+@keyframes splatDrip{0%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(30px) scaleY(1.2)}}
+.ripple{fill:none;stroke:#fff;stroke-width:3;animation:ripple 1.4s ease-out forwards}
+@keyframes ripple{from{transform:scale(.2);opacity:.9}to{transform:scale(3);opacity:0}}
+
+/* BOCADILLO Y TEXTOS */
+.bubble{opacity:0;transition:opacity .2s;transform-origin:0 0}
+.bubble.on{opacity:1;animation:bubblePop .3s cubic-bezier(.2,1.5,.5,1)}
+@keyframes bubblePop{from{transform:scale(.5)}to{transform:scale(1)}}
+.bubble-text{font-size:17px;font-weight:800;fill:#222;font-family:inherit;text-anchor:middle}
+.fx{font-weight:900;font-family:inherit;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:5px;animation:fxUp 1.3s ease-out forwards;transform-origin:0 0}
+@keyframes fxUp{0%{transform:translateY(0) scale(.6);opacity:0}20%{transform:translateY(-10px) scale(1.2);opacity:1}100%{transform:translateY(-70px) scale(1);opacity:0}}
+.fx.big{font-size:48px;stroke-width:8px}
+
+/* PANEL */
+.panel{padding:12px 12px 16px;display:flex;flex-direction:column;gap:12px}
+.counters{display:grid;grid-template-columns:1fr auto;gap:10px}
+.counter{background:rgba(255,255,255,.95);border-radius:16px;padding:10px 14px;box-shadow:0 4px 0 rgba(0,0,0,.25);position:relative}
+.counter-label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:700}
+.counter-num{font-size:30px;font-weight:900;color:#1f2d55;line-height:1.1;display:inline-block}
+.counter-num.pop{animation:pop .25s ease-out}
+@keyframes pop{50%{transform:scale(1.3);color:#e63946}}
+.bar{height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;margin-top:6px}
+.bar-fill{height:100%;width:0;background:linear-gradient(90deg,#ff7a59,#e63946);border-radius:5px;transition:width .15s}
+.bar-text{font-size:12px;color:#6b7280;margin-top:4px}
+.basket{min-width:120px;text-align:center}
+.basket-body{display:flex;align-items:center;justify-content:center;gap:8px}
+.basket-icon{width:38px;height:38px}
+.basket.bounce{animation:bounce .5s cubic-bezier(.2,1.6,.5,1)}
+@keyframes bounce{30%{transform:scale(1.15) rotate(-4deg)}60%{transform:scale(.95) rotate(3deg)}}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.big-btn{border:0;border-radius:20px;padding:16px 10px;min-height:92px;color:#fff;font-weight:900;font-size:clamp(15px,4vw,20px);display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 6px 0 rgba(0,0,0,.3);transition:transform .08s,box-shadow .08s,filter .2s}
+.big-btn small{font-weight:600;font-size:12px;opacity:.85}
+.big-btn .btn-emoji{font-size:28px}
+.big-btn:active,.big-btn.pressed{transform:translateY(5px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.btn-click{background:linear-gradient(180deg,#ffb020,#f0801a)}
+.btn-throw{background:linear-gradient(180deg,#ff5a5a,#c81e1e)}
+.btn-throw:disabled{filter:grayscale(.7) brightness(.8);cursor:not-allowed}
+.btn-throw.stop-mode{background:linear-gradient(180deg,#3ddc84,#15934c);animation:pulse .5s infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.04)}}
+.save-status{text-align:center;font-size:12px;color:#9fe4ff;min-height:16px}
+
+/* flotantes +1 en HTML */
+.floater{position:fixed;pointer-events:none;font-weight:900;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.5);font-size:22px;animation:floatUp .8s ease-out forwards;z-index:50}
+@keyframes floatUp{to{transform:translateY(-60px);opacity:0}}
+.flying-tomato{position:fixed;width:34px;height:34px;pointer-events:none;z-index:60;transition:transform .7s cubic-bezier(.3,-.3,.6,1.2),opacity .7s}
+
+/* MODALES */
+.modal{position:fixed;inset:0;background:rgba(5,15,30,.7);display:none;align-items:center;justify-content:center;padding:16px;z-index:100;backdrop-filter:blur(3px)}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:20px;padding:22px;max-width:420px;width:100%;max-height:90vh;overflow:auto;animation:modalIn .25s cubic-bezier(.2,1.4,.5,1);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+@keyframes modalIn{from{transform:scale(.8);opacity:0}}
+.modal-box h2{margin:0 0 12px;color:#1f2d55}
+.modal-box ol{padding-left:20px;line-height:1.5}
+.muted{color:#6b7280}.small{font-size:12px}
+.btn{width:100%;padding:13px;border:0;border-radius:12px;background:#e5e7eb;font-weight:800;font-size:16px;margin-top:8px;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:#e63946;color:#fff}
+.stats{list-style:none;padding:0;margin:0 0 8px}
+.stats li{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #eee;font-weight:600}
+.stats li b{color:#e63946;font-size:18px}
+.rank{padding-left:22px;max-height:40vh;overflow:auto}
+.rank li{padding:6px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between}
+.tabs{display:flex;gap:4px;margin-bottom:12px;background:#f3f4f6;border-radius:10px;padding:4px}
+.tab{flex:1;border:0;background:transparent;padding:9px;border-radius:8px;font-weight:700;color:#6b7280}
+.tab.active{background:#fff;color:#1f2d55;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.tabpane{display:none;flex-direction:column;gap:8px}
+.tabpane.active{display:flex}
+.tabpane input{padding:13px;border:2px solid #e5e7eb;border-radius:10px;font-size:16px;font-family:inherit}
+.tabpane input:focus{outline:none;border-color:#e63946}
+.acc-msg{min-height:20px;font-weight:600;color:#1f2d55}
+.acc-msg.err{color:#c81e1e}.acc-msg.ok{color:#15934c}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,80px);background:#1f2d55;color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;opacity:0;transition:transform .3s,opacity .3s;z-index:200;max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0);opacity:1}
+
+@media (min-width:700px){
+  #scene-wrap{width:min(100%,calc(62vh * 4 / 3))}
+  .big-btn{min-height:100px}
+}
+@media (max-height:640px){
+  #scene-wrap{width:min(100%,calc(50vh * 4 / 3))}
+  .big-btn{min-height:70px;padding:10px}
+  .big-btn .btn-emoji{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){
+  .cloud,.sun-rays,.palm-leaves{animation:none}
+}

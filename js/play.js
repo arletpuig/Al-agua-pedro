@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import { state, addClicks, useTomatoes, registerThrow, falconActive } from './state.js';
 import * as E from './economy.js';
 import { SFX, unlock } from './audio.js';
-import { LINES, pick } from './game/scene.js';
+import { LINES, pick } from './game/arena.js';
 
 let scene, ui, hooks, busy = false, taps = 0, idleTimer = null;
 export function isBusy() { return busy; }
@@ -58,7 +58,7 @@ export async function throwTomatoes(n) {
     }
   } finally { busy = false; ui.volleyProgress(0, 0); ui.showStop(false); ui.setBusy(false); }
   if (n > 1) ui.volleySummary(results, pesetas);
-  else { const r = results[0], pct = Math.round(r.precision * 100); ui.showToast(r.fall ? `💦 ¡Al agua! +${r.pesetas} ₧ · precisión ${pct}%` : r.kind === 'near' ? `😅 Casi... precisión ${pct}%` : `❌ Fallo · precisión ${pct}%`); }
+  else { const r = results[0], pct = Math.round(r.precision * 100); void pct; }
   hooks.onVolleyEnd?.(results, pesetas); scheduleIdle();
   return results;
 }

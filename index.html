@@ -4,179 +4,196 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>AL AGUA PEDRO</title>
-<meta name="description" content="Lanza tomates y tira a Pedro a la piscina. Juego arcade satírico.">
-<meta name="theme-color" content="#070c24">
+<meta name="description" content="Lanza tomates a la diana y tira a Pedro a la pecera de las pirañas. Juego arcade satírico.">
+<meta name="theme-color" content="#04071a">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
+  <div id="game" data-assets="assets/pedro/"></div>
+
+  <!-- barra superior -->
   <header class="top">
-    <div class="chips">
-      <div class="chip" id="basket" title="Tomates"><svg viewBox="0 0 44 48" class="ico-tomato"><use href="#svg-tomato" width="44" height="48"/></svg><b id="tomato-num">0</b></div>
-      <button class="chip coin" id="pill-pesetas" title="Pesetas"><svg viewBox="0 0 44 44"><use href="#i-coin" width="44" height="44"/></svg><b id="pesetas-num">0</b></button>
-    </div>
-    <div class="top-btns">
-      <button id="btn-sound" class="icon-btn" aria-label="Sonido"><svg viewBox="0 0 48 48"><use href="#i-sound"/></svg></button>
-      <button id="btn-stats" class="icon-btn" aria-label="Estadísticas"><svg viewBox="0 0 48 48"><use href="#i-stats"/></svg></button>
-      <button id="btn-account" class="icon-btn" aria-label="Cuenta"><svg viewBox="0 0 48 48"><use href="#i-user"/></svg></button>
-    </div>
+    <div class="res" id="basket" title="Tomates"><svg class="ri ico-tomato"><use href="#ic-tomato"/></svg><b id="tomato-num">0</b></div>
+    <div class="res coin" id="pill-pesetas" title="Pesetas"><svg class="ri"><use href="#ic-coin"/></svg><b id="pesetas-num">0</b><button class="plus" id="btn-plus" aria-label="Conseguir pesetas">+</button></div>
+    <div class="spacer"></div>
+    <button class="sq" id="btn-settings" aria-label="Ajustes"><svg><use href="#ic-gear"/></svg></button>
   </header>
+  <div id="falcon-badge" class="boost hidden"><svg><use href="#ic-plane"/></svg>FALCÓN ×5 <span class="tm" id="falcon-time">10:00</span></div>
+  <div id="volley-badge" class="volley hidden">TOMATE <b id="volley-i">1</b> DE <b id="volley-n">1</b></div>
+  <div id="aim-hint" class="aim-hint hidden">¡Toca cuando esté en el centro!</div>
+  <div id="save-status" class="save-status"></div>
 
-  <main class="layout">
-    <div id="game-wrap">
-      <div id="game"></div>
-      <div id="loading" class="loading"><div class="spinner"></div>Preparando la atracción</div>
-      <div id="falcon-badge" class="badge falcon hidden">El Falcón ×5 <span id="falcon-time">10:00</span></div>
-      <div id="volley-badge" class="badge volley hidden">Tomate <b id="volley-i">1</b> de <b id="volley-n">1</b></div>
+  <!-- zona de acción -->
+  <div class="action">
+    <div class="throw" id="throw">
+      <div class="seg" id="seg"><button data-n="1">×1</button><button data-n="3">×3</button><button data-n="5">×5</button><button data-n="10">×10</button></div>
+      <button class="btn-y" id="btn-launch"><svg><use href="#ic-tomato"/></svg><span>LANZAR</span><i class="n" id="launch-n">×1</i><i class="shine"></i></button>
+      <button class="btn-stop hidden" id="btn-stop">¡AHORA!</button>
+      <p class="throw-empty hidden" id="throw-empty">Pulsa <b>¡DALE!</b> para conseguir tomates</p>
     </div>
+    <div class="dome-wrap" id="dome-wrap">
+      <svg class="ring" viewBox="0 0 124 124" aria-hidden="true">
+        <circle cx="62" cy="62" r="55" fill="#050a26" stroke="#0a0b18" stroke-width="5"/>
+        <circle cx="62" cy="62" r="55" fill="none" stroke="#1d2a6e" stroke-width="9"/>
+        <circle id="ring-fill" cx="62" cy="62" r="55" fill="none" stroke="url(#gRing)" stroke-width="9" stroke-linecap="round" transform="rotate(-90 62 62)" stroke-dasharray="345.6" stroke-dashoffset="345.6"/>
+        <circle cx="62" cy="62" r="60" fill="none" stroke="#0a0b18" stroke-width="2.5"/>
+      </svg>
+      <button class="dome" id="btn-click" aria-label="Pulsa para conseguir tomates"><span>¡DALE!</span></button>
+      <i class="cpt" id="cpt-badge">+1</i>
+      <div class="dome-count"><span id="bar-text">0</span><small>/100</small></div>
+    </div>
+    <button class="daily" id="btn-daily"><i class="glow"></i><svg><use href="#ic-chest"/></svg><span class="rib" id="daily-rib">GRATIS</span><span class="lbl">Cofre diario</span></button>
+  </div>
 
-    <aside class="dock">
-      <div class="throw">
-        <span class="throw-label">Lanza</span>
-        <div class="throw-row" id="throw-row">
-          <button class="btn-throw" data-n="1">×1</button><button class="btn-throw" data-n="3">×3</button><button class="btn-throw" data-n="5">×5</button><button class="btn-throw" data-n="10">×10</button>
-        </div>
-        <p id="throw-empty" class="throw-empty hidden">Pulsa el botón rojo para conseguir tomates</p>
-        <button id="btn-stop" class="btn-stop hidden">¡Ahora!</button>
-      </div>
-      <div class="pulsador">
-        <div class="meter"><b id="clicks-num" class="num">0</b><small id="bar-text">0 de 100</small></div>
-        <button id="btn-click" class="dome" aria-label="Pulsa para conseguir tomates"><i class="ring"></i><span class="cap"><em>¡Dale!</em></span><span class="cpt" id="cpt-badge">+1</span></button>
-        <div class="meter right"><b id="hist-num" class="num">0</b><small id="hist-text">tomates en total</small></div>
-      </div>
-      <nav class="nav">
-        <button data-panel="shop"><svg viewBox="0 0 48 48"><use href="#i-shop"/></svg>Tienda</button>
-        <button data-panel="chests"><svg viewBox="0 0 48 48"><use href="#i-chest"/></svg>Cofres<i id="chest-dot" class="dot hidden"></i></button>
-        <button data-panel="cards"><svg viewBox="0 0 48 48"><use href="#i-cards"/></svg>Cartas</button>
-        <button data-panel="rank"><svg viewBox="0 0 48 48"><use href="#i-trophy"/></svg>Ranking</button>
-      </nav>
-      <div id="save-status" class="save-status"></div>
-    </aside>
-  </main>
+  <!-- navegación -->
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-panel="shop"><svg><use href="#ic-shop"/></svg><em>Tienda</em></button>
+    <button class="tab" data-panel="chests"><svg><use href="#ic-chest"/></svg><em>Cofres</em><i id="chest-dot" class="badge hidden">1</i></button>
+    <button class="tab play on" data-panel="play"><svg><use href="#ic-target"/></svg><em>JUGAR</em></button>
+    <button class="tab" data-panel="cards"><svg><use href="#ic-cards"/></svg><em>Cartas</em></button>
+    <button class="tab" data-panel="rank"><svg><use href="#ic-trophy"/></svg><em>Ranking</em></button>
+  </nav>
 
   <!-- PANELES -->
-  <div id="panel-shop" class="panel"><div class="panel-box">
-    <header><h2>🎪 Tienda</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
-    <div class="panel-body">
-      <p class="muted">Ventajas por vídeo recompensado. Los anuncios se activarán próximamente.</p>
-      <div class="shop-item falcon-item">
-        <div class="shop-art">✈️</div>
-        <div class="shop-info"><h3>El Falcón</h3><p>Multiplica <b>×5</b> los clics de cada pulsación durante <b>10 minutos</b>.</p><div id="falcon-state" class="shop-state"></div></div>
-        <button id="btn-falcon" class="btn ad">📺 Ver vídeo</button>
-      </div>
-      <div class="shop-item sobre-item">
-        <div class="shop-art">✉️</div>
-        <div class="shop-info"><h3>Sobre de la Moncloa</h3><p>Recibe <b>5 pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen.</p><div class="shop-state">Recompensa: 5 ₧</div></div>
-        <button id="btn-sobre" class="btn ad">📺 Ver vídeo</button>
-      </div>
-      <p class="muted small">Sin publicidad integrada todavía: estos botones no conceden recompensas hasta que exista un proveedor verificado.</p>
-      <button class="btn link" data-goto="chests">Ir a los cofres →</button>
+  <div id="panel-shop" class="panel"><div class="sheet">
+    <div class="title">TIENDA</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body">
+      <div class="offer falcon"><div class="offer-art"><svg><use href="#ic-plane"/></svg></div>
+        <div class="offer-info"><h3>El Falcón</h3><p>Multiplica <b>×5</b> lo que sumas en cada pulsación durante <b>10 minutos</b>.</p><div id="falcon-state" class="offer-state"></div></div>
+        <button id="btn-falcon" class="btn-g sm">VER VÍDEO</button></div>
+      <div class="offer sobre"><div class="offer-art"><svg><use href="#ic-envelope"/></svg></div>
+        <div class="offer-info"><h3>Sobre de la Moncloa</h3><p>Recibe <b>5 pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen.</p><div class="offer-state">Recompensa: 5 pesetas</div></div>
+        <button id="btn-sobre" class="btn-g sm">VER VÍDEO</button></div>
+      <p class="note">Los vídeos recompensados se activarán próximamente.</p>
+      <button class="btn-b" data-goto="chests"><svg><use href="#ic-chest"/></svg>IR A LOS COFRES</button>
     </div>
   </div></div>
 
-  <div id="panel-chests" class="panel"><div class="panel-box">
-    <header><h2>🎁 Cofres</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
-    <div class="panel-body" id="chests-body"></div>
+  <div id="panel-chests" class="panel"><div class="sheet">
+    <div class="title">COFRES</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body" id="chests-body"></div>
   </div></div>
 
-  <div id="panel-cards" class="panel"><div class="panel-box wide">
-    <header><h2>🃏 Cartas y potenciadores</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
-    <div class="panel-body"><p class="muted">Cinco potenciadores permanentes. Consíguelos en los cofres y mejóralos con pesetas y fragmentos.</p><div id="cards-grid" class="cards-grid"></div></div>
+  <div id="panel-cards" class="panel"><div class="sheet">
+    <div class="title">CARTAS</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body"><p class="note top">Potenciadores permanentes. Consíguelos en los cofres y mejóralos con fragmentos y pesetas.</p><div id="cards-grid" class="cards-grid"></div></div>
   </div></div>
 
-  <div id="panel-rank" class="panel"><div class="panel-box">
-    <header><h2>🏆 Ranking mundial</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
-    <div class="panel-body"><p class="muted">Tomates conseguidos en total por jugadores con cuenta.</p><ol id="rank-list" class="rank"></ol></div>
+  <div id="panel-rank" class="panel"><div class="sheet">
+    <div class="title">RANKING</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body"><p class="note top">Tomates conseguidos por los jugadores con cuenta.</p><ol id="rank-list" class="rank"></ol></div>
   </div></div>
 
-  <div id="panel-stats" class="panel"><div class="panel-box">
-    <header><h2>📊 Tus estadísticas</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
-    <div class="panel-body"><ul id="stats-list" class="stats"></ul></div>
+  <div id="panel-stats" class="panel"><div class="sheet">
+    <div class="title">ESTADÍSTICAS</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body"><ul id="stats-list" class="stats"></ul></div>
   </div></div>
 
-  <div id="panel-account" class="panel"><div class="panel-box">
-    <header><h2>👤 Cuenta</h2><button class="x" data-close aria-label="Cerrar">✕</button></header>
-    <div class="panel-body">
+  <div id="panel-settings" class="panel"><div class="sheet short">
+    <div class="title">AJUSTES</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body">
+      <button class="row-btn" id="btn-sound"><svg><use href="#ic-sound"/></svg><span>Efectos de sonido</span><i class="switch" id="sw-sound"></i></button>
+      <button class="row-btn" id="btn-music"><svg><use href="#ic-music"/></svg><span>Música de feria</span><i class="switch" id="sw-music"></i></button>
+      <button class="row-btn" id="btn-stats"><svg><use href="#ic-stats"/></svg><span>Estadísticas</span><i class="go">›</i></button>
+      <button class="row-btn" id="btn-account"><svg><use href="#ic-user"/></svg><span>Cuenta <small id="acc-short">Invitado</small></span><i class="go">›</i></button>
+      <button class="row-btn" id="btn-help"><svg><use href="#ic-help"/></svg><span>Cómo se juega</span><i class="go">›</i></button>
+    </div>
+  </div></div>
+
+  <div id="panel-account" class="panel"><div class="sheet">
+    <div class="title">CUENTA</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body">
       <div id="acc-logged" class="hidden">
-        <p>Hola, <b id="acc-name"></b>. Tu progreso se guarda en la nube y cuenta para el ranking.</p>
-        <button id="btn-logout" class="btn">Cerrar sesión</button>
+        <p class="lead">Hola, <b id="acc-name"></b>. Tu progreso se guarda en la nube y cuenta para el ranking.</p>
+        <button id="btn-logout" class="btn-r">CERRAR SESIÓN</button>
       </div>
       <div id="acc-forms">
-        <div class="tabs"><button class="tab active" data-tab="login">Entrar</button><button class="tab" data-tab="register">Registro</button><button class="tab" data-tab="recover">Recuperar</button></div>
+        <div class="tabsw"><button class="tab-s active" data-tab="login">Entrar</button><button class="tab-s" data-tab="register">Registro</button><button class="tab-s" data-tab="recover">Recuperar</button></div>
         <form id="form-login" class="tabpane active" autocomplete="on">
           <input name="email" type="email" placeholder="Correo electrónico" required autocomplete="email">
           <input name="password" type="password" placeholder="Contraseña" required autocomplete="current-password">
-          <button class="btn primary" type="submit">Entrar</button>
+          <button class="btn-g" type="submit">ENTRAR</button>
         </form>
         <form id="form-register" class="tabpane" autocomplete="on">
           <input name="username" type="text" placeholder="Nombre de jugador" required minlength="2" maxlength="20" autocomplete="nickname">
           <input name="email" type="email" placeholder="Correo electrónico" required autocomplete="email">
           <input name="password" type="password" placeholder="Contraseña (mín. 6)" required minlength="6" autocomplete="new-password">
-          <button class="btn primary" type="submit">Crear cuenta</button>
+          <button class="btn-g" type="submit">CREAR CUENTA</button>
         </form>
         <form id="form-recover" class="tabpane">
           <input name="email" type="email" placeholder="Correo electrónico" required autocomplete="email">
-          <button class="btn primary" type="submit">Enviar enlace</button>
+          <button class="btn-g" type="submit">ENVIAR ENLACE</button>
         </form>
         <form id="form-newpass" class="tabpane">
-          <p>Escribe tu nueva contraseña.</p>
+          <p class="lead">Escribe tu nueva contraseña.</p>
           <input name="password" type="password" placeholder="Nueva contraseña (mín. 6)" required minlength="6" autocomplete="new-password">
-          <button class="btn primary" type="submit">Guardar contraseña</button>
+          <button class="btn-g" type="submit">GUARDAR</button>
         </form>
-        <p class="muted small">Sin cuenta, el progreso se guarda solo en este navegador y no aparece en el ranking.</p>
+        <p class="note">Sin cuenta, el progreso se guarda solo en este navegador y no aparece en el ranking.</p>
       </div>
       <p id="acc-msg" class="acc-msg"></p>
     </div>
   </div></div>
 
-  <div id="panel-tutorial" class="panel"><div class="panel-box">
-    <header><h2>¿Cómo se lanza?</h2></header>
-    <div class="panel-body">
-      <ol>
-        <li>Elige cuántos tomates lanzar (×1, ×3, ×5 o ×10).</li>
-        <li>El tomate se mueve de lado a lado por delante de la diana. <b>Toca la pantalla</b> o pulsa <b>¡AHORA!</b> para lanzarlo.</li>
-        <li>Cuanto más cerca del <b>centro amarillo</b>, mejor. En el centro, Pedro cae al agua y ganas <b>pesetas</b>.</li>
-        <li>Con varios tomates, cada uno se lanza por turno: toca una vez por tomate.</li>
+  <div id="panel-tutorial" class="panel"><div class="sheet short">
+    <div class="title">CÓMO SE JUEGA</div>
+    <div class="sheet-body">
+      <ol class="howto">
+        <li><i>1</i><span>Pulsa <b>¡DALE!</b> para llenar el anillo: cada 100 consigues un <b>tomate</b>.</span></li>
+        <li><i>2</i><span>Elige cuántos lanzar y pulsa <b>LANZAR</b>. El tomate irá de lado a lado por delante de la diana.</span></li>
+        <li><i>3</i><span><b>Toca la pantalla</b> cuando esté sobre el <b>centro</b>. ¡Pedro irá al agua y ganarás <b>pesetas</b>!</span></li>
+        <li><i>4</i><span>Si te quedas cerca, Pedro se tambalea... y se burlará de ti.</span></li>
       </ol>
-      <p class="muted">No hay azar en la puntería: todo depende de ti. Las cartas pueden ayudarte.</p>
-      <button class="btn primary" data-close>¡Entendido!</button>
+      <button class="btn-g" data-close>¡A POR ÉL!</button>
     </div>
   </div></div>
 
-  <!-- APERTURA DE COFRE -->
+  <!-- apertura de cofre -->
   <div id="chest-overlay" class="overlay">
+    <i class="rays"></i>
     <div class="chest-stage">
-      <h2 id="chest-title">Cofre de madera</h2>
+      <h2 id="chest-title" class="t-big">Cofre de madera</h2>
       <div id="chest-art" class="chest-art"></div>
       <div id="chest-rewards" class="chest-rewards"></div>
-      <button id="chest-btn" class="btn primary big">¡ABRIR!</button>
+      <button id="chest-btn" class="btn-g big">¡ABRIR!</button>
     </div>
   </div>
 
-  <!-- RESUMEN DE LANZAMIENTO MÚLTIPLE -->
   <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
-
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-<radialGradient id="g-tom" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="#ff8a6e"/><stop offset=".45" stop-color="#ee2f2a"/><stop offset="1" stop-color="#8f0f12"/></radialGradient>
-<radialGradient id="g-coin" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff3b0"/><stop offset=".55" stop-color="#f5bd2e"/><stop offset="1" stop-color="#a86a00"/></radialGradient>
-<linearGradient id="g-wood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e2a55e"/><stop offset="1" stop-color="#8a5526"/></linearGradient>
-<linearGradient id="g-gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#e09a12"/></linearGradient>
-<symbol id="svg-tomato" viewBox="-22 -25 44 48"><g stroke="#0a0605" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><circle cy="2" r="18" fill="url(#g-tom)"/><path d="M-11,3 Q-12,-8 -3,-11" stroke="#fff" stroke-width="3.2" fill="none" opacity=".55"/><path d="M-10,-13 Q-4,-9 0,-15 Q4,-9 10,-13 Q7,-6 0,-7 Q-7,-6 -10,-13Z" fill="#4db85a" stroke-width="1.6"/><path d="M0,-15 Q1,-20 4,-22" stroke-width="3.4" fill="none"/><path d="M0,-15 Q1,-20 4,-22" stroke="#3a8f45" stroke-width="1.6" fill="none"/></g></symbol>
-<symbol id="i-coin" viewBox="-22 -22 44 44"><g stroke="#0a0605" stroke-width="2.4"><circle r="19" fill="url(#g-coin)"/><circle r="13.5" fill="none" stroke="#a86a00" stroke-width="1.6"/><path d="M-5,9 V-9 h6 a5.2,5.2 0 0 1 0,10.4 h-6 M-9,3 h9" fill="none" stroke="#7a4a00" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M-12,-9 Q-6,-15 2,-15" stroke="#fff" stroke-width="2.4" fill="none" opacity=".7" stroke-linecap="round"/></g></symbol>
-<symbol id="i-shop" viewBox="0 0 48 48"><g stroke="#0a0605" stroke-width="2.4" stroke-linejoin="round"><rect x="8" y="22" width="32" height="20" rx="2" fill="url(#g-wood)"/><rect x="20" y="28" width="9" height="14" fill="#5a3410"/><path d="M4,22 L8,7 H40 L44,22 Q39,28 34,22 Q29,28 24,22 Q19,28 14,22 Q9,28 4,22Z" fill="#fff8ea"/><path d="M14,7 L14,22 Q19,28 24,22 L24,7Z M34,7 V22 Q39,28 44,22 L40,7Z" fill="#e3262e"/></g></symbol>
-<symbol id="i-chest" viewBox="0 0 48 48"><g stroke="#0a0605" stroke-width="2.4" stroke-linejoin="round"><path d="M6,22 Q6,8 24,8 Q42,8 42,22Z" fill="url(#g-wood)"/><rect x="6" y="22" width="36" height="19" rx="3" fill="url(#g-wood)"/><rect x="6" y="19" width="36" height="6" fill="url(#g-gold)"/><rect x="20" y="17" width="8" height="12" rx="2" fill="url(#g-gold)"/><circle cx="24" cy="24" r="1.6" fill="#0a0605" stroke="none"/></g></symbol>
-<symbol id="i-cards" viewBox="0 0 48 48"><g stroke="#0a0605" stroke-width="2.4" stroke-linejoin="round"><rect x="6" y="12" width="20" height="28" rx="3" fill="#3fa9f5" transform="rotate(-14 16 26)"/><rect x="22" y="12" width="20" height="28" rx="3" fill="#b163ff" transform="rotate(14 32 26)"/><rect x="14" y="8" width="20" height="30" rx="3" fill="url(#g-gold)"/><path d="M24,15 l2.6,5.6 6,.6 -4.5,4.1 1.3,6 -5.4,-3.1 -5.4,3.1 1.3,-6 -4.5,-4.1 6,-.6Z" fill="#fff8ea" stroke-width="1.6"/></g></symbol>
-<symbol id="i-trophy" viewBox="0 0 48 48"><g stroke="#0a0605" stroke-width="2.4" stroke-linejoin="round"><path d="M13,12 H5 Q5,24 15,25 M35,12 H43 Q43,24 33,25" fill="none" stroke-width="5"/><path d="M13,12 H5 Q5,24 15,25 M35,12 H43 Q43,24 33,25" fill="none" stroke="#f5bd2e" stroke-width="2"/><path d="M12,6 H36 V18 Q36,30 24,31 Q12,30 12,18Z" fill="url(#g-gold)"/><rect x="21" y="30" width="6" height="7" fill="url(#g-gold)"/><rect x="14" y="36" width="20" height="6" rx="2" fill="url(#g-wood)"/><path d="M17,10 V18 Q17,23 20,25" stroke="#fff" stroke-width="2.4" fill="none" opacity=".7" stroke-linecap="round"/></g></symbol>
-<symbol id="i-sound" viewBox="0 0 48 48"><g stroke="currentColor" fill="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M8,19 H16 L26,10 V38 L16,29 H8Z"/><path d="M32,18 Q37,24 32,30 M37,13 Q45,24 37,35" fill="none"/></g></symbol>
-<symbol id="i-sound-off" viewBox="0 0 48 48"><g stroke="currentColor" fill="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M8,19 H16 L26,10 V38 L16,29 H8Z"/><path d="M33,19 L43,29 M43,19 L33,29" fill="none"/></g></symbol>
-<symbol id="i-music" viewBox="0 0 48 48"><g stroke="currentColor" fill="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M18,34 V11 L38,7 V30" fill="none"/><ellipse cx="13" cy="34" rx="6" ry="4.5"/><ellipse cx="33" cy="30" rx="6" ry="4.5"/></g></symbol>
-<symbol id="i-stats" viewBox="0 0 48 48"><g fill="currentColor"><rect x="7" y="26" width="9" height="15" rx="2"/><rect x="19.5" y="15" width="9" height="26" rx="2"/><rect x="32" y="7" width="9" height="34" rx="2"/></g></symbol>
-<symbol id="i-user" viewBox="0 0 48 48"><g fill="currentColor"><circle cx="24" cy="16" r="9"/><path d="M7,42 Q7,27 24,27 Q41,27 41,42Z"/></g></symbol>
-</defs></svg>
+  <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span></div>
 </div>
-<script src="vendor/phaser.min.js"></script>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<radialGradient id="gTom" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ff9a80"/><stop offset=".45" stop-color="#ee2f2a"/><stop offset="1" stop-color="#8a0d12"/></radialGradient>
+<radialGradient id="gCoin" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff6c0"/><stop offset=".5" stop-color="#ffc62e"/><stop offset="1" stop-color="#b06c00"/></radialGradient>
+<linearGradient id="gWood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e9ae63"/><stop offset="1" stop-color="#8a4f1e"/></linearGradient>
+<linearGradient id="gGold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset=".5" stop-color="#ffc02a"/><stop offset="1" stop-color="#c47a00"/></linearGradient>
+<linearGradient id="gDia" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#d9f6ff"/><stop offset=".45" stop-color="#5fc8ff"/><stop offset="1" stop-color="#2155d6"/></linearGradient>
+<linearGradient id="gSteel" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#b9c2d9"/><stop offset="1" stop-color="#6b7593"/></linearGradient>
+<linearGradient id="gRing" x1="0" x2="1"><stop offset="0" stop-color="#ffe766"/><stop offset="1" stop-color="#ff9d1a"/></linearGradient>
+<symbol id="ic-tomato" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><path d="M32 17 C47 15 58 25 57 39 C56 52 45 59 32 59 C19 59 8 52 7 39 C6 25 17 15 32 17Z" fill="url(#gTom)"/><path d="M16 34 Q15 25 24 21" stroke="#fff" stroke-width="4.5" fill="none" opacity=".65"/><path d="M19 16 Q26 21 32 13 Q38 21 45 16 Q43 25 32 23 Q21 25 19 16Z" fill="#52c24a"/><path d="M32 13 Q33 7 38 5" stroke-width="6" fill="none"/><path d="M32 13 Q33 7 38 5" stroke="#3a9a3a" stroke-width="2.6" fill="none"/></g></symbol>
+<symbol id="ic-coin" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="32" cy="35" rx="26" ry="25" fill="#9a5c00"/><circle cx="32" cy="31" r="26" fill="url(#gCoin)"/><circle cx="32" cy="31" r="19" fill="none" stroke="#b97400" stroke-width="2.4"/><path d="M27 43 V20 h8 a7.5 7.5 0 0 1 0 15 h-8 M22 30 h13" fill="none" stroke="#8a5200" stroke-width="5.5"/><path d="M14 22 Q20 12 32 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".75"/></g></symbol>
+<symbol id="ic-gear" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round"><path d="M57.8,28.6 L57.8,35.4 L50.3,36.9 L48.5,41.5 L52.6,47.8 L47.8,52.6 L41.5,48.5 L36.9,50.3 L35.4,57.8 L28.6,57.8 L27.1,50.3 L22.5,48.5 L16.2,52.6 L11.4,47.8 L15.5,41.5 L13.7,36.9 L6.2,35.4 L6.2,28.6 L13.7,27.1 L15.5,22.5 L11.4,16.2 L16.2,11.4 L22.5,15.5 L27.1,13.7 L28.6,6.2 L35.4,6.2 L36.9,13.7 L41.5,15.5 L47.8,11.4 L52.6,16.2 L48.5,22.5 L50.3,27.1 Z" fill="#ffffff"/><circle cx="32" cy="32" r="9" fill="#3567f0"/></g></symbol>
+<symbol id="ic-plane" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M6 36 L28 30 L44 12 Q50 8 52 12 L42 32 L58 36 Q60 40 56 41 L40 40 L32 52 L26 52 L30 40 L10 42Z" fill="#ffffff"/><path d="M28 30 L42 32" stroke="#3567f0" stroke-width="4"/></g></symbol>
+<symbol id="ic-envelope" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><rect x="6" y="16" width="52" height="36" rx="5" fill="#fff8e6"/><path d="M6 20 L32 38 L58 20" fill="none"/><circle cx="32" cy="38" r="7" fill="#e3262c"/><path d="M8 50 L26 34 M56 50 L38 34" fill="none" stroke-width="2"/></g></symbol>
+<symbol id="ic-chest" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gWood)"/><path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/><path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gWood)"/><path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/><path d="M7 19 C20 16 44 16 57 19" stroke="#00000055" stroke-width="2" fill="none"/><rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/><rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gGold)"/><path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gGold)"/><path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gGold)"/><circle cx="32" cy="29" r="2.6" fill="#0a0b18" stroke="none"/><path d="M32 30 v5" stroke-width="3"/></g></symbol>
+<symbol id="ic-chest-dia" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gDia)"/><path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/><path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gDia)"/><path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/><path d="M24 14 L28 9 M38 40 L44 32 M14 40 L20 34" stroke="#ffffff" stroke-width="2.2" opacity=".7"/><rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/><rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gSteel)"/><path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gSteel)"/><path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gSteel)"/><circle cx="32" cy="29" r="2.6" fill="#0a0b18" stroke="none"/><path d="M32 30 v5" stroke-width="3"/></g></symbol>
+<symbol id="ic-shop" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><rect x="10" y="30" width="44" height="26" rx="3" fill="url(#gWood)"/><rect x="27" y="38" width="11" height="18" fill="#5a3410"/><path d="M5 30 L10 10 H54 L59 30 Q53 37 47 30 Q41 37 35 30 Q29 37 23 30 Q17 37 11 30 Q8 34 5 30Z" fill="#fff8ea"/><path d="M17 10 L17 30 Q23 37 29 30 L29 10Z M41 10 L41 30 Q47 37 53 30 L54 10Z" fill="#e3262e"/><rect x="8" y="5" width="48" height="7" rx="3" fill="url(#gGold)"/></g></symbol>
+<symbol id="ic-cards" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><rect x="8" y="16" width="24" height="34" rx="4" fill="#3fa9f5" transform="rotate(-16 20 33)"/><rect x="32" y="16" width="24" height="34" rx="4" fill="#b163ff" transform="rotate(16 44 33)"/><rect x="20" y="10" width="24" height="38" rx="4" fill="url(#gGold)"/><path d="M32 19 l3.2 6.8 7.3 .8 -5.5 5 1.6 7.3 -6.6 -3.8 -6.6 3.8 1.6 -7.3 -5.5 -5 7.3 -.8Z" fill="#fff8ea" stroke-width="2"/></g></symbol>
+<symbol id="ic-trophy" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M17 14 H7 Q7 31 20 32 M47 14 H57 Q57 31 44 32" fill="none" stroke-width="7"/><path d="M17 14 H7 Q7 31 20 32 M47 14 H57 Q57 31 44 32" fill="none" stroke="#ffc02a" stroke-width="3"/><path d="M16 7 H48 V22 Q48 40 32 41 Q16 40 16 22Z" fill="url(#gGold)"/><rect x="28" y="40" width="8" height="8" fill="url(#gGold)"/><rect x="18" y="47" width="28" height="9" rx="3" fill="url(#gWood)"/><path d="M22 12 V22 Q22 29 26 32" stroke="#fff" stroke-width="3" fill="none" opacity=".75"/></g></symbol>
+<symbol id="ic-target" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3"><circle cx="32" cy="32" r="27" fill="url(#gSteel)"/><circle cx="32" cy="32" r="21" fill="#e5262d"/><circle cx="32" cy="32" r="15" fill="#fff4e4"/><circle cx="32" cy="32" r="9" fill="#e5262d"/><path d="M32 26 l1.8 3.8 4.1 .4 -3.1 2.8 .9 4.1 -3.7 -2.1 -3.7 2.1 .9 -4.1 -3.1 -2.8 4.1 -.4Z" fill="#ffd23f" stroke-width="1.5"/></g></symbol>
+<symbol id="ic-sound" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M7 18 H15 L26 9 V39 L15 30 H7Z" fill="#ffffff"/><path d="M32 17 Q38 24 32 31 M37 12 Q46 24 37 36" fill="none" stroke="#ffffff" stroke-width="3.5"/></g></symbol>
+<symbol id="ic-music" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6" stroke-linejoin="round"><path d="M18 34 V11 L38 7 V30" fill="none" stroke="#ffffff" stroke-width="4"/><ellipse cx="13" cy="34" rx="6.5" ry="5" fill="#ffd23f"/><ellipse cx="33" cy="30" rx="6.5" ry="5" fill="#ffd23f"/></g></symbol>
+<symbol id="ic-stats" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><rect x="7" y="26" width="9" height="15" rx="2" fill="#3fa9f5"/><rect x="19.5" y="15" width="9" height="26" rx="2" fill="#ffd23f"/><rect x="32" y="7" width="9" height="34" rx="2" fill="#2fc43c"/></g></symbol>
+<symbol id="ic-user" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><circle cx="24" cy="16" r="9" fill="#ffd2ad"/><path d="M7 42 Q7 27 24 27 Q41 27 41 42Z" fill="#3567f0"/></g></symbol>
+<symbol id="ic-help" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><circle cx="24" cy="24" r="18" fill="#ffd23f"/><path d="M18 19 Q18 12 24 12 Q30 12 30 18 Q30 22 25 24 L24 29" fill="none" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="35" r="2.6" fill="#0a0b18"/></g></symbol>
+</defs></svg>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

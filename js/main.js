@@ -1,11 +1,11 @@
-// Punto de entrada: une estado, escena Phaser, interfaz, economía y cuenta.
+// Punto de entrada: une estado, escena (canvas), interfaz, economía y cuenta.
 import { CONFIG } from './config.js';
 import { state, load, onChange, applyServer, snapshot, hasProgress, resetProgress, falconActive } from './state.js';
 import * as ui from './ui.js';
 import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { backend } from './backend.js';
-import { createGame } from './game/boot.js';
+import { createArena } from './game/arena.js';
 import { initPlay, throwTomatoes, stopNow, isBusy, testRng } from './play.js';
 import { setEnabled, SFX } from './audio.js';
 
@@ -14,7 +14,7 @@ let username = null, saveTimer = null, saving = null, falconWas = false, opening
 
 load();
 setEnabled(state.sound);
-const { scene } = createGame('game');
+const { scene } = createArena('game', { top: 58, bottom: 214 });
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank });
 ui.setSoundUI(state.sound, state.music); ui.hud();
 const start = () => { ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: () => pushNow() }); };
@@ -82,7 +82,7 @@ async function afterLogin(user) {
 
 // ---------- cuenta ----------
 const hasBackend = sb.hasBackend();
-$('#btn-account').addEventListener('click', () => { ui.openPanel('#panel-account'); if (!hasBackend) ui.accMsg('Las cuentas no están disponibles en esta versión.', 'err'); });
+$('#btn-account').addEventListener('click', () => { ui.closeAll(); ui.openPanel('#panel-account'); if (!hasBackend) ui.accMsg('Las cuentas no están disponibles en esta versión.', 'err'); });
 function busyForm(form, v) { form.querySelectorAll('button,input').forEach(el => el.disabled = v); }
 function onForm(id, fn) { $(id).addEventListener('submit', async e => { e.preventDefault(); const f = e.target; busyForm(f, true); try { await fn(f); } catch (err) { ui.accMsg('❌ ' + traducir(err.message), 'err'); } busyForm(f, false); }); }
 onForm('#form-register', async f => {

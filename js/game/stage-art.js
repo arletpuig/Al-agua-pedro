@@ -27,11 +27,19 @@ function bolt(c, x, y, r = 6) {
   const g = c.createRadialGradient(x - r * 0.4, y - r * 0.4, 0.5, x, y, r); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#6d7690');
   c.fillStyle = g; ell(c, x, y, r, r); c.fill();
 }
+// mancha difuminada con degradado radial (mucho más rápida que ctx.filter = 'blur')
+function soft(c, cx, cy, rx, ry, color, alpha, b) {
+  const m = Math.min(rx, ry), k = Math.max(0.05, Math.min(0.92, m / (m + b * 2)));
+  c.save(); c.globalAlpha *= alpha; c.translate(cx, cy); c.scale(rx + b, ry + b);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, color); g.addColorStop(k, color); g.addColorStop(1, color + '00');
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.fill(); c.restore();
+}
+export { soft as softBlob };
 // ruido determinista
 const rnd = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
 // ---------------------------------------------------------------- fondo
-function background(c, t, spotX) {
+function backgroundStatic(c) {
   const g = c.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#070c2e'); g.addColorStop(0.35, '#13226a'); g.addColorStop(0.7, '#1a2f86'); g.addColorStop(1, '#0a1238');
   c.fillStyle = g; c.fillRect(-400, -400, W + 800, H + 800);
@@ -41,22 +49,6 @@ function background(c, t, spotX) {
     const x = i * 130 - 20, pg = c.createLinearGradient(x, 0, x + 130, 0);
     pg.addColorStop(0, 'rgba(0,0,0,0.5)'); pg.addColorStop(0.5, 'rgba(120,150,255,0.25)'); pg.addColorStop(1, 'rgba(0,0,0,0.5)');
     c.fillStyle = pg; c.fillRect(x, 0, 130, FLOOR);
-  }
-  c.restore();
-  // halo del foco en la pared
-  c.save(); c.globalCompositeOperation = 'lighter';
-  const halo = c.createRadialGradient(spotX, 560, 30, spotX, 640, 620);
-  halo.addColorStop(0, 'rgba(120,160,255,0.35)'); halo.addColorStop(0.5, 'rgba(70,110,230,0.12)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
-  c.fillStyle = halo; c.fillRect(0, 0, W, H);
-  // bokeh
-  for (let i = 0; i < 28; i++) {
-    const x = rnd(i) * W, y = 120 + rnd(i + 50) * 1250, r = 10 + rnd(i + 99) * 34;
-    const warm = rnd(i + 7) > 0.7;
-    const a = 0.05 + 0.06 * (0.5 + 0.5 * Math.sin(t * (0.5 + rnd(i + 3)) + i));
-    const bg = c.createRadialGradient(x, y, 0, x, y, r);
-    bg.addColorStop(0, warm ? `rgba(255,220,150,${a * 1.6})` : `rgba(160,190,255,${a * 1.6})`);
-    bg.addColorStop(0.75, warm ? `rgba(255,210,140,${a})` : `rgba(150,180,255,${a})`); bg.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = bg; ell(c, x + Math.sin(t * 0.15 + i) * 12, y + Math.cos(t * 0.12 + i) * 8, r, r); c.fill();
   }
   c.restore();
   // telones laterales
@@ -70,12 +62,30 @@ function background(c, t, spotX) {
       const x = 8 + k * 26, fg = c.createLinearGradient(x, 0, x + 26, 0);
       fg.addColorStop(0, 'rgba(0,0,0,0.35)'); fg.addColorStop(0.5, 'rgba(190,40,70,0.22)'); fg.addColorStop(1, 'rgba(0,0,0,0.35)');
       c.fillStyle = fg; c.globalAlpha = 1 - k * 0.22;
-      c.beginPath(); c.moveTo(x, 0); c.bezierCurveTo(x + 10, 600, x - 6, 1200, x + 4 + Math.sin(t * 0.6 + k) * 2, FLOOR); c.lineTo(x + 26, FLOOR); c.bezierCurveTo(x + 22, 1200, x + 36, 600, x + 26, 0); c.fill();
+      c.beginPath(); c.moveTo(x, 0); c.bezierCurveTo(x + 10, 600, x - 6, 1200, x + 4, FLOOR); c.lineTo(x + 26, FLOOR); c.bezierCurveTo(x + 22, 1200, x + 36, 600, x + 26, 0); c.fill();
     }
     c.restore();
   }
 }
 
+function lights(c, t, spotX) {
+  // halo del foco en la pared
+  c.save(); c.globalCompositeOperation = 'lighter';
+  const halo = c.createRadialGradient(spotX, 560, 30, spotX, 640, 620);
+  halo.addColorStop(0, 'rgba(120,160,255,0.35)'); halo.addColorStop(0.5, 'rgba(70,110,230,0.12)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = halo; c.fillRect(0, 0, W, H);
+  // bokeh
+  for (let i = 0; i < 18; i++) {
+    const x = rnd(i) * W, y = 120 + rnd(i + 50) * 1250, r = 10 + rnd(i + 99) * 34;
+    const warm = rnd(i + 7) > 0.7;
+    const a = 0.05 + 0.06 * (0.5 + 0.5 * Math.sin(t * (0.5 + rnd(i + 3)) + i));
+    const bg = c.createRadialGradient(x, y, 0, x, y, r);
+    bg.addColorStop(0, warm ? `rgba(255,220,150,${a * 1.6})` : `rgba(160,190,255,${a * 1.6})`);
+    bg.addColorStop(0.75, warm ? `rgba(255,210,140,${a})` : `rgba(150,180,255,${a})`); bg.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = bg; ell(c, x + Math.sin(t * 0.15 + i) * 12, y + Math.cos(t * 0.12 + i) * 8, r, r); c.fill();
+  }
+  c.restore();
+}
 function floor(c, t) {
   const g = c.createLinearGradient(0, FLOOR, 0, H);
   g.addColorStop(0, '#24315f'); g.addColorStop(0.15, '#18224a'); g.addColorStop(1, '#070b1f');
@@ -99,10 +109,8 @@ function floor(c, t) {
   c.fillStyle = pool; c.fillRect(0, FLOOR - 40, W, 260);
   c.restore();
   // sombras de pecera y torre
-  c.save(); c.filter = 'blur(14px)'; c.fillStyle = 'rgba(0,0,0,0.55)';
-  ell(c, (TANK.x0 + TANK.x1) / 2, FLOOR + 10, (TANK.x1 - TANK.x0) / 2 + 30, 22); c.fill();
-  ell(c, (TOWER.x0 + TOWER.x1) / 2, FLOOR + 8, 120, 16); c.fill();
-  c.restore();
+  soft(c, (TANK.x0 + TANK.x1) / 2, FLOOR + 10, (TANK.x1 - TANK.x0) / 2 + 30, 22, '#000000', 0.55, 14);
+  soft(c, (TOWER.x0 + TOWER.x1) / 2, FLOOR + 8, 120, 16, '#000000', 0.55, 14);
 }
 
 // ---------------------------------------------------------------- pecera con pirañas
@@ -148,13 +156,13 @@ function piranha(c, x, y, s, dir, t, seed) {
   c.restore();
 }
 
-function tank(c, t) {
+function tank(c, t, S = {}) {
   const { x0, x1, y0, y1, water } = TANK;
   const ix0 = x0 + 26, ix1 = x1 - 26, iy1 = y1 - 40;
   // interior
   c.fillStyle = '#0b2a52'; c.fillRect(ix0, y0 + 20, ix1 - ix0, iy1 - y0 - 20);
-  // agua
-  c.save(); c.beginPath(); c.rect(ix0, y0, ix1 - ix0, iy1 - y0); c.clip();
+  // agua (el recorte se abre por arriba: lo que hay dentro de la pecera puede asomar por encima)
+  c.save(); c.beginPath(); c.rect(ix0, y0 - 2000, ix1 - ix0, iy1 - y0 + 2000); c.clip();
   const wy = x => water + Math.sin(x * 0.025 + t * 2.2) * 5 + Math.sin(x * 0.06 - t * 3.1) * 2.5;
   const wp = new Path2D(); wp.moveTo(ix0, iy1); for (let x = ix0; x <= ix1; x += 6) wp.lineTo(x, wy(x)); wp.lineTo(ix1, iy1); wp.closePath();
   const wg = c.createLinearGradient(0, water, 0, iy1);
@@ -162,13 +170,12 @@ function tank(c, t) {
   c.fillStyle = wg; c.fill(wp);
   c.save(); c.clip(wp);
   // cáusticas
-  c.globalCompositeOperation = 'lighter'; c.filter = 'blur(6px)';
-  for (let i = 0; i < 14; i++) {
+  c.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 10; i++) {
     const cx = ix0 + ((rnd(i) * (ix1 - ix0) + t * (14 + rnd(i + 3) * 18)) % (ix1 - ix0));
     const cy = water + 40 + rnd(i + 9) * 200;
-    c.fillStyle = 'rgba(160,240,255,0.16)'; ell(c, cx, cy, 30 + rnd(i + 4) * 30, 8 + rnd(i + 5) * 6, Math.sin(t + i) * 0.4); c.fill();
+    soft(c, cx, cy, 30 + rnd(i + 4) * 30, 8 + rnd(i + 5) * 6, '#a0f0ff', 0.2, 6);
   }
-  c.filter = 'none';
   // rayos de luz bajo el agua
   for (let i = 0; i < 4; i++) {
     const x = ix0 + 60 + i * 110 + Math.sin(t * 0.7 + i) * 18;
@@ -200,11 +207,11 @@ function tank(c, t) {
   // pirañas
   const fish = [[0.25, 1560, 1.0, 0], [0.62, 1620, 0.85, 1.7], [0.45, 1670, 0.75, 3.3]];
   for (const [p, fy, s, seed] of fish) {
-    const span = ix1 - ix0 - 150, ph = t * (0.12 + seed * 0.01) + p;
+    const span = ix1 - ix0 - 150, ph = (S.fishT ?? t) * (0.12 + seed * 0.01) + p;
     const tri = 2 * Math.abs((ph % 1) - 0.5);                         // 0..1..0 (va y viene)
     const fx = ix0 + 75 + tri * span;
     const dir = ((ph % 1) < 0.5) ? -1 : 1;
-    piranha(c, fx, fy + Math.sin(t * 1.4 + seed) * 10, s * 0.82, dir, t, seed);
+    piranha(c, fx, fy + Math.sin(t * 1.4 + seed) * 10, s * 0.82, dir, S.fishT ?? t, seed);
   }
   // burbujas
   for (let i = 0; i < 14; i++) {
@@ -214,6 +221,11 @@ function tank(c, t) {
     c.fillStyle = 'rgba(255,255,255,0.8)'; ell(c, bx - r * 0.35, by - r * 0.35, r * 0.25, r * 0.25); c.fill();
   }
   c.restore();
+  // Pedro (u otro objeto) dentro del agua: se dibuja aquí y se tiñe de agua por debajo de la superficie
+  if (S.inside) {
+    S.inside(c);
+    c.save(); c.clip(wp); c.fillStyle = 'rgba(40,150,215,0.38)'; c.fillRect(ix0, water - 20, ix1 - ix0, iy1 - water + 20); c.restore();
+  }
   // superficie: línea de espuma
   c.strokeStyle = 'rgba(220,255,255,0.9)'; c.lineWidth = 4; c.beginPath();
   for (let x = ix0; x <= ix1; x += 6) (x === ix0 ? c.moveTo(x, wy(x)) : c.lineTo(x, wy(x))); c.stroke();
@@ -291,11 +303,11 @@ function pole(c) {
   rr(c, x, TARGET.y - 10, TARGET.x - x, 20, 5); c.fillStyle = steelH(c, TARGET.y - 10, TARGET.y + 10); c.fill();
 }
 
-function target(c, t, hit = 0) {
-  const { x, y, r } = TARGET;
-  c.save(); c.translate(x, y);
+function target(c, t, S = {}) {
+  const { x, y, r } = TARGET, hit = S.party ? 0.5 + 0.5 * Math.sin(t * 22) : 0;
+  c.save(); c.translate(x, y); c.rotate(S.targetRot || 0); c.scale(1 + (S.targetBump || 0), 1 + (S.targetBump || 0));
   // sombra proyectada
-  c.save(); c.filter = 'blur(18px)'; c.fillStyle = 'rgba(0,0,10,0.55)'; ell(c, 18, 24, r + 6, r + 6); c.fill(); c.restore();
+  soft(c, 18, 24, r + 6, r + 6, '#00000a', 0.55, 18);
   c.fillStyle = INK; ell(c, 0, 0, r + 6, r + 6); c.fill();
   const rim = c.createLinearGradient(0, -r, 0, r); rim.addColorStop(0, '#f6f8ff'); rim.addColorStop(0.45, '#a8b1c9'); rim.addColorStop(1, '#4c5571');
   c.fillStyle = rim; ell(c, 0, 0, r, r); c.fill();
@@ -319,6 +331,8 @@ function target(c, t, hit = 0) {
   const gl = c.createLinearGradient(-R, -R, R * 0.2, R * 0.2); gl.addColorStop(0, 'rgba(255,255,255,0.45)'); gl.addColorStop(0.5, 'rgba(255,255,255,0.05)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
   c.fillStyle = gl; ell(c, -R * 0.15, -R * 0.2, R * 0.95, R * 0.75, -0.6); c.fill();
   c.restore();
+  // manchas de tomate pegadas a la diana (coordenadas relativas al centro)
+  if (S.targetSplats) { c.save(); ell(c, 0, 0, r - 4, r - 4); c.clip(); S.targetSplats(c); c.restore(); }
   // bombillas (persecución de luces)
   const n = 14;
   for (let i = 0; i < n; i++) {
@@ -336,8 +350,9 @@ function target(c, t, hit = 0) {
   c.restore();
 }
 
-function plank(c) {
+function plank(c, S = {}) {
   const { x0, x1, y, h } = PLANK, top = 14;
+  c.save(); if (S.plankAng) { c.translate(TOWER.x0 + 6, y); c.rotate(-S.plankAng); c.translate(-(TOWER.x0 + 6), -y); }
   // cara superior (se ve un poco: perspectiva)
   c.lineJoin = 'round';
   c.fillStyle = INK; rr(c, x0 - 5, y - top - 5, x1 - x0 + 10, h + top + 10, 12); c.fill();
@@ -358,6 +373,7 @@ function plank(c) {
   for (let i = -3; i < 6; i++) { c.beginPath(); c.moveTo(x0 + i * 26, y + h); c.lineTo(x0 + i * 26 + 13, y + h); c.lineTo(x0 + i * 26 + 13 + h + top, y - top); c.lineTo(x0 + i * 26 + h + top, y - top); c.fill(); }
   c.restore();
   c.strokeStyle = 'rgba(255,240,200,0.7)'; c.lineWidth = 3; c.beginPath(); c.moveTo(x0 + 6, y - top + 3); c.lineTo(x1 - 6, y - top + 3); c.stroke();
+  c.restore();
   // abrazadera sobre la torre
   const bx0 = TOWER.x0 - 6, bx1 = TOWER.x1 + 6;
   rr(c, bx0 - 4, y - top - 16, bx1 - bx0 + 8, h + top + 32, 8); c.fillStyle = INK; c.fill();
@@ -393,21 +409,25 @@ function vignette(c) {
   c.fillStyle = g; c.fillRect(-400, -400, W + 800, H + 800);
 }
 export function pedroShadow(c, x, spread = 1) {
-  c.save(); c.filter = 'blur(8px)'; c.fillStyle = 'rgba(20,8,0,0.45)';
-  ell(c, x, PLANK.y - 4, 120 * spread, 12); c.fill(); c.restore();
+  soft(c, x, PLANK.y - 4, 120 * spread, 12, '#140800', 0.45, 8);
 }
 
 // escena detrás de Pedro
-export function drawStageBack(c, t, spotX) {
-  background(c, t, spotX);
-  floor(c, t);
-  tank(c, t);
+// partes que no cambian nunca: se pueden pintar una vez y reutilizar (ver arena.js)
+export function drawStatic(c) {
+  backgroundStatic(c);
+  floor(c, 0);
   tower(c);
   strut(c);
   pole(c);
-  target(c, t);
-  plank(c);
-  plankPool(c, spotX);
+}
+export function drawStageBack(c, t, spotX, S = {}) {
+  if (!S.noStatic) drawStatic(c);
+  lights(c, t, spotX);
+  tank(c, t, S);
+  target(c, t, S);
+  plank(c, S);
+  if (!S.plankAng) plankPool(c, spotX);
 }
 // capas por delante de Pedro
 export function drawStageFront(c, t, spotX) {

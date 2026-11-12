@@ -43,11 +43,11 @@ const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFacto
 const page = await ctx.newPage(); const errors = watchErrors(page); await bridge(page); await open(page);
 const txt = s => page.locator(s).innerText();
 const email = `arlet${Date.now()}@test.com`;
-const openChestUI = async sel => { await page.click(sel); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'Recoger' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await page.click('#chest-btn'); await page.waitForTimeout(400); };
+const openChestUI = async sel => { await page.click(sel); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await page.click('#chest-btn'); await page.waitForTimeout(400); };
 
 console.log('A. Invitado juega y luego crea cuenta');
 await page.evaluate(() => { AAP.state.tutorialSeen = true; });
-await tap(page, 250); await page.click('.btn-throw[data-n="1"]'); await stopAt(page, 0, 10); await idle(page);
+await tap(page, 250); await page.click('#seg button[data-n=\"1\"]'); await page.click('#btn-launch'); await stopAt(page, 0, 10); await idle(page);
 let s = await S(page); check('invitado: 250 clics, 1 caída, 1 peseta', s.totalClicks === 250 && s.falls === 1 && s.pesetas === 1);
 await page.click('#btn-account'); await page.click('.tab[data-tab="register"]');
 await page.fill('#form-register [name=username]', 'Arlet'); await page.fill('#form-register [name=email]', email); await page.fill('#form-register [name=password]', 'secreto1'); await page.click('#form-register button'); await page.waitForTimeout(1200);
@@ -59,7 +59,7 @@ await page.click('#panel-account .x');
 console.log('B. Guardado automático validado');
 await tap(page, 150); await page.waitForTimeout(5200); row = db(email); s = await S(page);
 check('autoguardado: el servidor tiene los 400 clics', +row.total_clicks === 400 && row.tomatoes_earned === 4 && s.totalClicks === 400);
-await page.click('.btn-throw[data-n="3"]'); for (let i = 1; i <= 3; i++) { await page.waitForFunction(i => document.querySelector('#volley-i').textContent === String(i) && AAP.scene.aim, i, { timeout: 30000 }); await stopAt(page, 0, 10); }
+await page.click('#seg button[data-n=\"3\"]'); await page.click('#btn-launch'); for (let i = 1; i <= 3; i++) { await page.waitForFunction(i => document.querySelector('#volley-i').textContent === String(i) && AAP.scene.aim, i, { timeout: 30000 }); await stopAt(page, 0, 10); }
 await idle(page); await page.waitForTimeout(1500); row = db(email); s = await S(page);
 check('ráfaga ×3 guardada: 4 caídas, 4 pesetas, 0 tomates', row.falls === 4 && row.pesetas === 4 && row.tomatoes === 0 && row.perfects === 4 && s.pesetas === 4);
 
@@ -72,7 +72,7 @@ check('el cliente adopta los valores del servidor', s.pesetas === row.pesetas &&
 check('escritura directa en la tabla prohibida', (() => { try { psql(`update public.profiles set pesetas_earned = 99999`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
 
 console.log('D. Cofres y cofre diario en el servidor');
-await page.click('.nav [data-panel="chests"]'); await page.waitForTimeout(300);
+await page.click('#tabs [data-panel="chests"]'); await page.waitForTimeout(300);
 await openChestUI('[data-daily]'); row = db(email); s = await S(page);
 check('cofre diario: fecha del servidor guardada', row.daily_claimed_on === madrid(new Date()) && row.chests_opened === 1);
 check('cartas y tomates del cofre iguales en cliente y servidor', Object.keys(s.cards).every(k => s.cards[k].level === row.cards[k].level && s.cards[k].frags === row.cards[k].frags) && Object.values(s.cards).some(c => c.level > 0) && s.tomatoes === row.tomatoes && s.chestTomatoes === row.chest_tomatoes, `(tomates ${s.tomatoes}/${row.tomatoes})`);
@@ -83,14 +83,14 @@ psql(`update public.profiles set falls = 300, hits = 300, perfects = 300, tomato
 await page.reload(); await page.waitForFunction(() => window.AAP?.scene?.ready && AAP.state.stats.falls === 300, null, { timeout: 15000 }); await page.waitForTimeout(400);
 check('la sesión se restaura y carga el progreso de la cuenta', (await S(page)).pesetas === db(email).pesetas && await page.locator('#btn-account').evaluate(e => e.classList.contains('logged')));
 let before = db(email);
-await page.click('.nav [data-panel="chests"]'); await page.waitForTimeout(300); await openChestUI('[data-buy="diamond"]'); row = db(email); s = await S(page);
+await page.click('#tabs [data-panel="chests"]'); await page.waitForTimeout(300); await openChestUI('[data-buy="diamond"]'); row = db(email); s = await S(page);
 check('cofre de diamante en servidor: -80 ₧, 3+ cartas', row.pesetas_spent === before.pesetas_spent + 80 && row.chests_opened === before.chests_opened + 1 && s.pesetas === row.pesetas);
 await openChestUI('[data-buy="wood"]'); row = db(email); s = await S(page);
 check('cofre de madera en servidor: -15 ₧', row.pesetas_spent === before.pesetas_spent + 95 && s.pesetas === row.pesetas && s.tomatoes === row.tomatoes);
 await page.click('#panel-chests .x');
 
 console.log('E. Mejora de cartas en el servidor');
-before = db(email); await page.click('.nav [data-panel="cards"]'); await page.waitForTimeout(300);
+before = db(email); await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(300);
 const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', AAP.state.cards.inflacion.level, AAP.state.cards));
 await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(700); row = db(email); s = await S(page);
 check('mejora validada: nivel +1, precio con descuento de Mariscada idéntico en cliente y servidor', row.cards.inflacion.level === before.cards.inflacion.level + 1 && row.pesetas_spent === before.pesetas_spent + cost && s.pesetas === row.pesetas, `(coste ${cost})`);

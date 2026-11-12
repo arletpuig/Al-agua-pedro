@@ -1,81 +1,99 @@
-// Interfaz HTML: HUD, paneles (tienda, cofres, cartas, ranking, estadísticas, cuenta) y animaciones de recompensa.
+// Interfaz HTML: marcador, pulsador, lanzamiento, navegación, paneles y animaciones de recompensa.
 import { CONFIG } from './config.js';
 import { state, setTutorialSeen, setSound, falconActive } from './state.js';
 import { SFX, setEnabled, setMusic, unlock } from './audio.js';
 import * as E from './economy.js';
-import { CARD_ART, chestSvg } from './cards-art.js';
+import { CARD_ART } from './cards-art.js';
 import { backend } from './backend.js';
 import { adProvider, PLACEMENTS } from './ads.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => n.toLocaleString('es-ES');
-let H = {}, busy = false, toastTimer = null, tutorialCb = null;
+const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
+let H = {}, busy = false, aiming = false, toastTimer = null, tutorialCb = null;
+let sel = 1;
+try { sel = +localStorage.getItem('alaguapedro.sel') || 1; } catch (e) {}
 
 export function init(handlers) {
   H = handlers;
   $$('[data-close]').forEach(b => b.addEventListener('click', () => closePanel(b.closest('.panel'))));
   $$('.panel').forEach(m => m.addEventListener('click', e => { if (e.target === m && m.id !== 'panel-tutorial') closePanel(m); }));
-  $$('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
-  $$('.nav button').forEach(b => b.addEventListener('click', () => openPanel('#panel-' + b.dataset.panel)));
+  $$('.tab-s').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  $$('#tabs .tab').forEach(b => b.addEventListener('click', () => { unlock(); if (b.dataset.panel === 'play') { closeAll(); SFX.ui(); } else { closeAll(); openPanel('#panel-' + b.dataset.panel); } }));
   $$('[data-goto]').forEach(b => b.addEventListener('click', () => { closePanel(b.closest('.panel')); openPanel('#panel-' + b.dataset.goto); }));
-  $('#btn-stats').addEventListener('click', () => { renderStats(); openPanel('#panel-stats'); });
-  $('#btn-sound').addEventListener('click', () => { unlock(); const m = !state.sound ? [true, false] : !state.music ? [true, true] : [false, false]; setSoundUI(m[0], m[1]); showToast(m[1] ? '🎵 Efectos y música' : m[0] ? '🔊 Solo efectos' : '🔇 Sin sonido', 1200); });
-  $('#pill-pesetas').addEventListener('click', () => openPanel('#panel-chests'));
+  $('#btn-settings').addEventListener('click', () => { unlock(); openPanel('#panel-settings'); });
+  $('#btn-sound').addEventListener('click', () => { unlock(); setSoundUI(!state.sound, state.music); SFX.ui(); });
+  $('#btn-music').addEventListener('click', () => { unlock(); setSoundUI(state.music ? state.sound : true, !state.music); });
+  $('#btn-stats').addEventListener('click', () => { renderStats(); closePanel($('#panel-settings')); openPanel('#panel-stats'); });
+  $('#btn-help').addEventListener('click', () => { closePanel($('#panel-settings')); showTutorial(null); });
+  $('#pill-pesetas').addEventListener('click', () => openPanel('#panel-shop'));
   $('#btn-falcon').addEventListener('click', () => H.onAd(PLACEMENTS.FALCON));
   $('#btn-sobre').addEventListener('click', () => H.onAd(PLACEMENTS.SOBRE));
-  $$('.btn-throw').forEach(b => b.addEventListener('click', () => H.onThrow(+b.dataset.n)));
-  $('#btn-stop').addEventListener('click', () => H.onStop());
+  $$('#seg button').forEach(b => b.addEventListener('click', () => { sel = +b.dataset.n; try { localStorage.setItem('alaguapedro.sel', sel); } catch (e) {} SFX.ui(); hud(); }));
+  $('#btn-launch').addEventListener('click', () => { unlock(); H.onThrow(effectiveSel()); });
+  $('#btn-stop').addEventListener('pointerdown', e => { e.preventDefault(); H.onStop(); });
+  $('#btn-daily').addEventListener('click', () => { unlock(); backend.dailyAvailable() ? H.onClaimDaily() : openPanel('#panel-chests'); });
   $('#chests-body').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if ('probs' in b.dataset) { b.closest('.chest-card').querySelector('.probs').classList.toggle('open'); }
+    if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if ('probs' in b.dataset) b.parentElement.querySelector('.probs').classList.toggle('open');
   });
   $('#cards-grid').addEventListener('click', e => { const b = e.target.closest('button[data-upgrade]'); if (b) H.onUpgrade(b.dataset.upgrade); });
 }
-// ---------- HUD ----------
+// cuántos se lanzan: lo elegido, o lo máximo posible si no hay tantos
+function effectiveSel() { const opts = CONFIG.THROW_OPTIONS.filter(n => n <= state.tomatoes); return opts.includes(sel) ? sel : (opts[opts.length - 1] || 1); }
+
+// ---------- marcador ----------
 export function hud(pop = false) {
-  const s = state.stats, cpt = E.clicksPerTap(state.cards, falconActive());
-  $('#clicks-num').textContent = fmt(s.totalClicks);
-  if (pop) popEl($('#clicks-num'));
-  $('#btn-click').style.setProperty('--p', state.clicks / CONFIG.CLICKS_PER_TOMATO * 100);
-  $('#bar-text').textContent = `${state.clicks} de ${CONFIG.CLICKS_PER_TOMATO}`;
-  setNum('#tomato-num', state.tomatoes); setNum('#pesetas-num', state.pesetas, '#pill-pesetas');
-  $('#hist-num').textContent = fmt(s.tomatoesEarned);
+  const cpt = E.clicksPerTap(state.cards, falconActive());
+  $('#ring-fill').setAttribute('stroke-dashoffset', (345.6 * (1 - state.clicks / CONFIG.CLICKS_PER_TOMATO)).toFixed(1));
+  $('#bar-text').textContent = state.clicks;
+  setNum('#tomato-num', state.tomatoes, '#basket'); setNum('#pesetas-num', state.pesetas, '#pill-pesetas');
   $('#cpt-badge').textContent = `+${cpt}`;
   $('#btn-click').classList.toggle('falcon', falconActive());
-  // solo se muestran las cantidades que el jugador puede lanzar
-  $$('.btn-throw').forEach(b => { const ok = state.tomatoes >= +b.dataset.n; b.classList.toggle('hidden', !ok); b.disabled = busy || !ok; });
-  const none = state.tomatoes < 1, aiming = !$('#btn-stop').classList.contains('hidden');
-  $('#throw-row').classList.toggle('hidden', aiming || none);
-  $('#throw-empty').classList.toggle('hidden', !none || aiming || busy); $('.throw-label').classList.toggle('hidden', none && !aiming && !busy);
+  const n = effectiveSel(), none = state.tomatoes < 1;
+  $$('#seg button').forEach(b => { b.classList.toggle('on', +b.dataset.n === n); b.disabled = busy || state.tomatoes < +b.dataset.n; });
+  $('#launch-n').textContent = '×' + n;
+  $('#btn-launch').disabled = busy || none;
+  $('#seg').classList.toggle('hidden', aiming || none);
+  $('#btn-launch').classList.toggle('hidden', aiming || none);
+  $('#throw-empty').classList.toggle('hidden', aiming || !none);
+  $('#btn-stop').classList.toggle('hidden', !aiming);
+  $('#aim-hint').classList.toggle('hidden', !aiming);
   const fb = $('#falcon-badge'); fb.classList.toggle('hidden', !falconActive());
-  if (falconActive()) { const ms = state.falconUntil - Date.now(), m = Math.floor(ms / 60000), sec = Math.floor(ms % 60000 / 1000); $('#falcon-time').textContent = `${m}:${String(sec).padStart(2, '0')}`; }
-  $('#chest-dot').classList.toggle('hidden', !backend.dailyAvailable());
+  if (falconActive()) { const ms = state.falconUntil - Date.now(), m = Math.floor(ms / 60000), s = Math.floor(ms % 60000 / 1000); $('#falcon-time').textContent = `${m}:${String(s).padStart(2, '0')}`; }
+  const daily = backend.dailyAvailable();
+  $('#chest-dot').classList.toggle('hidden', !daily);
+  $('#btn-daily').classList.toggle('off', !daily);
+  if (daily) $('#daily-rib').textContent = 'GRATIS';
+  else { const ms = backend.msToNextDaily(), h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000), s = Math.floor(ms % 60000 / 1000); $('#daily-rib').textContent = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
+  void pop;
 }
-function setNum(sel, v, popSel) { const el = $(sel); if (el.textContent !== fmt(v)) { el.textContent = fmt(v); popEl(popSel ? $(popSel) : el); } }
-function popEl(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
-export function setBusy(b) { busy = b; hud(); }
-export function showStop(v) { $('#btn-stop').classList.toggle('hidden', !v); $('#throw-row').classList.toggle('hidden', v); if (!v) $('#volley-badge').classList.add('hidden'); hud(); }
-export function volleyProgress(i, n) { $('#volley-badge').classList.toggle('hidden', !n); if (n) { $('#volley-i').textContent = i; $('#volley-n').textContent = n; } }
+function setNum(sel2, v, bumpSel) { const el = $(sel2); if (el.textContent !== fmt(v)) { el.textContent = fmt(v); const b = $(bumpSel); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); } }
+export function setBusy(b) { busy = b; $('#btn-click').disabled = false; hud(); }
+export function showStop(v) { aiming = v; if (!v) $('#volley-badge').classList.add('hidden'); hud(); }
+export function volleyProgress(i, n) { $('#volley-badge').classList.toggle('hidden', !n || n < 2); if (n) { $('#volley-i').textContent = i; $('#volley-n').textContent = n; } }
 export function floater(text, x, y) {
   const r = $('#btn-click').getBoundingClientRect(), el = document.createElement('div'); el.className = 'floater'; el.textContent = text;
-  el.style.left = ((x ?? r.left + r.width / 2) + (Math.random() - .5) * 40) + 'px'; el.style.top = ((y ?? r.top + 20) - 24) + 'px';
+  el.style.left = ((x ?? r.left + r.width / 2) - 18 + (Math.random() - .5) * 40) + 'px'; el.style.top = ((y ?? r.top + 10) - 34) + 'px';
   document.body.appendChild(el); setTimeout(() => el.remove(), 800);
 }
 export function flyTomato(n = 1) {
-  const a = $('#btn-click').getBoundingClientRect(), b = $('.ico-tomato').getBoundingClientRect();
+  const a = $('#btn-click').getBoundingClientRect(), b = $('#basket .ri').getBoundingClientRect();
   for (let i = 0; i < Math.min(n, 5); i++) {
-    const el = document.createElement('div'); el.className = 'flying'; el.innerHTML = '<svg viewBox="0 0 44 48" width="34" height="37"><use href="#svg-tomato" width="44" height="48"/></svg>';
-    el.style.left = (a.left + a.width / 2 - 17 + i * 8) + 'px'; el.style.top = (a.top + 10) + 'px'; document.body.appendChild(el);
-    requestAnimationFrame(() => { el.style.transform = `translate(${b.left + b.width / 2 - 17 - (a.left + a.width / 2 - 17 + i * 8)}px,${b.top + b.height / 2 - 17 - (a.top + 10)}px) rotate(540deg) scale(.8)`; });
-    setTimeout(() => { el.remove(); if (!i) { const bk = $('#basket'); bk.classList.remove('bounce'); void bk.offsetWidth; bk.classList.add('bounce'); hud(); } }, 700);
+    const el = document.createElement('div'); el.className = 'flying'; el.innerHTML = '<svg viewBox="0 0 64 64" width="40" height="40"><use href="#ic-tomato"/></svg>';
+    const sx = a.left + a.width / 2 - 20 + i * 8, sy = a.top + 10;
+    el.style.left = sx + 'px'; el.style.top = sy + 'px'; document.body.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transform = `translate(${b.left + b.width / 2 - 20 - sx}px,${b.top + b.height / 2 - 20 - sy}px) rotate(540deg) scale(.9)`; }));
+    setTimeout(() => { el.remove(); if (!i) hud(); }, 720);
   }
 }
+
 // ---------- paneles ----------
 export function openPanel(id) {
   const p = $(id); if (!p) return;
-  if (id === '#panel-shop') renderShop(); if (id === '#panel-chests') renderChests(); if (id === '#panel-cards') renderCards(); if (id === '#panel-rank') H.onRank?.();
+  if (id === '#panel-shop') renderShop(); if (id === '#panel-chests') renderChests(); if (id === '#panel-cards') renderCards(); if (id === '#panel-rank') H.onRank?.(); if (id === '#panel-settings') setSoundUI(state.sound, state.music, false);
   p.classList.add('open'); SFX.ui();
 }
-export function closePanel(el) { el.classList.remove('open'); if (el.id === 'panel-tutorial' && tutorialCb) { const cb = tutorialCb; tutorialCb = null; setTutorialSeen(); cb(); } }
+export function closePanel(el) { if (!el) return; el.classList.remove('open'); if (el.id === 'panel-tutorial') { setTutorialSeen(); if (tutorialCb) { const cb = tutorialCb; tutorialCb = null; cb(); } } }
 export function closeAll() { $$('.panel.open').forEach(p => p.classList.remove('open')); }
 export function showTutorial(cb) { tutorialCb = cb || null; openPanel('#panel-tutorial'); }
 export function showToast(msg, ms = 2400, err = false) { const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), ms); }
@@ -84,29 +102,25 @@ const rarTag = r => `<span class="rar" style="background:${E.RARITIES[r].color}"
 export function renderShop() {
   const avail = adProvider.isAvailable(PLACEMENTS.FALCON);
   $('#btn-falcon').disabled = !avail || falconActive(); $('#btn-sobre').disabled = !adProvider.isAvailable(PLACEMENTS.SOBRE);
-  $('#btn-falcon').textContent = avail ? '📺 Ver vídeo' : '⏳ Próximamente'; $('#btn-sobre').textContent = avail ? '📺 Ver vídeo' : '⏳ Próximamente';
+  $('#btn-falcon').textContent = avail ? 'VER VÍDEO' : 'PRONTO'; $('#btn-sobre').textContent = avail ? 'VER VÍDEO' : 'PRONTO';
   const fs = $('#falcon-state');
-  if (falconActive()) { fs.className = 'shop-state on'; fs.textContent = '✈️ ACTIVO · ' + $('#falcon-time').textContent + ' restantes'; }
-  else { fs.className = 'shop-state'; fs.textContent = 'Inactivo'; }
+  if (falconActive()) { fs.className = 'offer-state on'; fs.textContent = 'ACTIVO · ' + $('#falcon-time').textContent; } else { fs.className = 'offer-state'; fs.textContent = 'Inactivo'; }
 }
 export function renderChests() {
   const daily = backend.dailyAvailable(), ms = backend.msToNextDaily(), h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000);
-  const probs = kind => { const p = E.rarityPercents(kind, state.cards), d = E.CHESTS[kind]; return `<div class="probs"><table>
-    ${Object.keys(p).map(r => `<tr><td>${rarTag(r)} ${E.CARD_IDS.filter(id => E.CARDS[id].rarity === r).map(id => E.CARDS[id].name).join(' / ')}</td><td>${p[r].toFixed(1)}%</td></tr>`).join('')}
-    <tr><td>Cartas por cofre</td><td>${d.cards}${E.level(state.cards, 'amnistia') ? ` (+1 con ${Math.round(E.CARDS.amnistia.value(E.level(state.cards, 'amnistia')) * 100)}%)` : ''}</td></tr>
-    <tr><td>Tomates</td><td>${d.tomatoes[0]}–${d.tomatoes[1]}</td></tr>
-    <tr><td>Pesetas extra</td><td>${Math.round(d.pesetaChance * 100)}% de ${d.pesetas[0]}–${d.pesetas[1]} ₧</td></tr></table></div>`; };
+  const probs = kind => { const p = E.rarityPercents(kind, state.cards), d = E.CHESTS[kind]; return `<div class="probs">
+    ${Object.keys(p).map(r => `<div><span>${E.RARITIES[r].name}</span><b>${p[r].toFixed(1)}%</b></div>`).join('')}
+    <div><span>Pesetas extra</span><b>${Math.round(d.pesetaChance * 100)}% · ${d.pesetas[0]}–${d.pesetas[1]}</b></div></div>`; };
+  const card = kind => { const d = E.CHESTS[kind], ok = state.pesetas >= d.price; return `<div class="chest-card ${kind}">
+      <h3>${d.name.replace(' de ', ' de<br>')}</h3>${icon(kind === 'diamond' ? 'ic-chest-dia' : 'ic-chest', 'c')}
+      <ul><li>${icon('ic-cards')}${d.cards} carta${d.cards > 1 ? 's' : ''}</li><li>${icon('ic-tomato')}${d.tomatoes[0]} – ${d.tomatoes[1]} tomates</li></ul>
+      <button class="price" data-buy="${kind}" ${ok ? '' : 'disabled'}>${icon('ic-coin')}<b>${d.price}</b></button>
+      <button class="probs-btn" data-probs>Probabilidades</button>${probs(kind)}</div>`; };
   $('#chests-body').innerHTML = `
-    <div class="chest-card wood"><div class="chest-head">${chestSvg('wood')}<div><h3>Cofre de madera</h3><p>Uno gratis cada día. Una carta, tomates y a veces alguna peseta.</p></div></div>
-      <div class="chest-actions">
-        <button class="btn gold" data-daily ${daily ? '' : 'disabled'}>${daily ? '🎁 Reclamar gratis' : `⏰ Gratis en ${h}h ${String(m).padStart(2, '0')}m`}</button>
-        <button class="btn primary" data-buy="wood" ${state.pesetas < E.CHESTS.wood.price ? 'disabled' : ''}>Comprar · ${E.CHESTS.wood.price} ₧</button>
-      </div>
-      <button class="btn link" data-probs>Ver probabilidades</button>${probs('wood')}</div>
-    <div class="chest-card diamond"><div class="chest-head">${chestSvg('diamond')}<div><h3>Cofre de diamante</h3><p>Tres cartas, muchos tomates y más posibilidades de cartas raras.</p></div></div>
-      <div class="chest-actions"><button class="btn primary single" data-buy="diamond" ${state.pesetas < E.CHESTS.diamond.price ? 'disabled' : ''}>Comprar · ${E.CHESTS.diamond.price} ₧</button></div>
-      <button class="btn link" data-probs>Ver probabilidades</button>${probs('diamond')}</div>
-    <p class="muted small">Tienes <b>${fmt(state.pesetas)} ₧</b>. Las pesetas se consiguen tirando a Pedro al agua. El cofre diario se reinicia a las 00:00 (hora peninsular).</p>`;
+    <div class="free ${daily ? '' : 'off'}"><i class="rays"></i><span class="tag">COFRE DIARIO</span><span class="sub">${daily ? 'Uno gratis cada día' : `Vuelve en ${h} h ${String(m).padStart(2, '0')} min`}</span>
+      ${icon('ic-chest', 'big')}<button class="btn-g" data-daily ${daily ? '' : 'disabled'}>${daily ? 'ABRIR GRATIS' : 'MAÑANA'}</button></div>
+    <div class="grid2">${card('wood')}${card('diamond')}</div>
+    <p class="note">Tienes <b>${fmt(state.pesetas)} pesetas</b>. Las pesetas se ganan tirando a Pedro al agua.</p>`;
 }
 export function renderCards(upgradedId) {
   $('#cards-grid').innerHTML = E.CARD_IDS.map(id => {
@@ -114,59 +128,66 @@ export function renderCards(upgradedId) {
     const need = owned && !max ? E.fragsNeeded(id, L) : 0, have = E.frags(state.cards, id), cost = owned && !max ? E.upgradeCost(id, L, state.cards) : 0;
     const base = owned && !max ? Math.round(r.baseCost * Math.pow(r.growth, L - 1)) : 0, can = owned && !max && have >= need && state.pesetas >= cost;
     return `<div class="card ${owned ? '' : 'locked'} ${upgradedId === id ? 'upgraded' : ''}" style="--rc:${r.color}">
-      <div class="card-top"><div class="card-art">${CARD_ART[id]}</div><div><h3>${c.name}</h3><div class="lvl">${rarTag(c.rarity)} · ${owned ? `Nivel ${L}/${c.max}` : 'No conseguida'}</div></div></div>
+      <div class="card-art">${CARD_ART[id]}</div><h3>${c.name}</h3>
+      <div class="lvl">${rarTag(c.rarity)}<span>${owned ? `Nv ${L}/${c.max}` : ''}</span></div>
       <p>${c.desc}</p>
-      ${owned ? `<div class="eff">Ahora: ${c.effect(L)}${max ? '<span>Nivel máximo</span>' : `<span>Siguiente: ${c.effect(L + 1)}</span>`}</div>
+      ${owned ? `<div class="eff">${c.effect(L)}${max ? '<span>Nivel máximo</span>' : `<span>Siguiente: ${c.effect(L + 1)}</span>`}</div>
         ${max ? '' : `<div class="frag">Fragmentos ${Math.min(have, need)}/${need}<div class="bar"><div class="bar-fill" style="width:${Math.min(100, have / need * 100)}%"></div></div></div>
-        <button class="btn ${can ? 'primary' : ''}" data-upgrade="${id}" ${can ? '' : 'disabled'}>Mejorar · <span class="price">${base !== cost ? `<del>${base}</del>` : ''}${cost} ₧</span></button>`}`
+        <button class="btn-g" data-upgrade="${id}" ${can ? '' : 'disabled'}>${icon('ic-coin', 'ci')}${base !== cost ? `<del>${base}</del>` : ''}${cost}</button>`}`
       : `<div class="eff">Consíguela en los cofres<span>Nivel 1: ${c.effect(1)}</span></div>`}
     </div>`;
   }).join('');
 }
 export function renderRank(rows, err, myName) {
   const list = $('#rank-list');
-  if (err) { list.innerHTML = `<li class="muted">${err}</li>`; return; }
-  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.username === myName ? 'me' : ''}"><span>${esc(r.username || 'Anónimo')}</span><span><b>${fmt(r.tomatoes_earned)}</b> 🍅 · ${r.falls} caídas</span></li>`).join('') : '<li class="muted">Todavía no hay nadie. ¡Sé el primero!</li>';
+  if (err) { list.innerHTML = `<li class="empty">${err}</li>`; return; }
+  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.username === myName ? 'me' : ''}"><span class="nm">${esc(r.username || 'Anónimo')}</span><span class="sc">${fmt(r.tomatoes_earned)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}</li>`).join('') : '<li class="empty">Todavía no hay nadie. ¡Sé el primero!</li>';
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export function renderStats() {
-  const s = state.stats, rows = [['Tomates conseguidos (total histórico)', s.tomatoesEarned], ['Tomates disponibles', state.tomatoes], ['Clics totales', s.totalClicks], ['Lanzamientos', s.tomatoesThrown], ['Impactos perfectos', s.perfects], ['Impactos válidos', s.hits], ['Derribos (caídas al agua)', s.falls], ['Pesetas acumuladas', s.pesetasEarned + s.chestPesetas], ['Pesetas disponibles', state.pesetas], ['Cofres abiertos', s.chestsOpened], ['Cartas desbloqueadas', E.CARD_IDS.filter(id => E.level(state.cards, id) > 0).length + ' / 5']];
-  $('#stats-list').innerHTML = rows.map(([k, v]) => `<li><span>${k}</span><b>${fmt(v)}</b></li>`).join('') + E.CARD_IDS.map(id => `<li class="sub"><span>${E.CARDS[id].name}</span><span>Nivel ${E.level(state.cards, id)}</span></li>`).join('');
+  const s = state.stats, rows = [['Tomates conseguidos', s.tomatoesEarned], ['Tomates disponibles', state.tomatoes], ['Pulsaciones totales', s.totalClicks], ['Lanzamientos', s.tomatoesThrown], ['Impactos perfectos', s.perfects], ['Impactos en la diana', s.hits], ['Pedro al agua', s.falls], ['Pesetas ganadas', s.pesetasEarned + s.chestPesetas], ['Pesetas disponibles', state.pesetas], ['Cofres abiertos', s.chestsOpened], ['Cartas desbloqueadas', E.CARD_IDS.filter(id => E.level(state.cards, id) > 0).length + ' / 5']];
+  $('#stats-list').innerHTML = rows.map(([k, v]) => `<li><span>${k}</span><b>${typeof v === 'number' ? fmt(v) : v}</b></li>`).join('') + E.CARD_IDS.map(id => `<li class="sub"><span>${E.CARDS[id].name}</span><span>Nivel ${E.level(state.cards, id)}</span></li>`).join('');
 }
+
 // ---------- apertura de cofre ----------
 export function chestOpening(kind, reward) {
   return new Promise(res => {
     const ov = $('#chest-overlay'), art = $('#chest-art'), rw = $('#chest-rewards'), btn = $('#chest-btn');
-    $('#chest-title').textContent = E.CHESTS[kind].name; art.innerHTML = chestSvg(kind); art.className = 'chest-art'; rw.innerHTML = ''; btn.textContent = '¡ABRIR!'; btn.disabled = false;
+    $('#chest-title').textContent = E.CHESTS[kind].name; art.innerHTML = icon(kind === 'diamond' ? 'ic-chest-dia' : 'ic-chest'); art.className = 'chest-art'; rw.innerHTML = ''; btn.textContent = '¡ABRIR!'; btn.disabled = false;
     ov.classList.add('open'); SFX.ui();
     btn.onclick = () => {
       btn.disabled = true; art.classList.add('shake'); SFX.chestOpen();
       setTimeout(() => {
-        art.classList.add('opened');
+        art.classList.remove('shake'); art.classList.add('opened');
         const items = [...reward.cards.map(c => ({ kind: 'card', ...c })), { kind: 'tomatoes', n: reward.tomatoes }, ...(reward.pesetas ? [{ kind: 'pesetas', n: reward.pesetas }] : [])];
         items.forEach((it, i) => setTimeout(() => {
           const d = document.createElement('div');
-          if (it.kind === 'card') { const c = E.CARDS[it.id], r = E.RARITIES[c.rarity]; d.className = 'reward' + (it.isNew ? ' new' : ''); d.style.setProperty('--rc', r.color); d.innerHTML = `<span class="tag">${it.isNew ? '¡NUEVA!' : it.bonus ? 'extra · fragmento' : 'fragmento'}</span>${CARD_ART[it.id]}<div>${c.name}</div>`; SFX.reward(['common', 'rare', 'epic', 'legendary'].indexOf(c.rarity)); }
-          else if (it.kind === 'tomatoes') { d.className = 'reward'; d.style.setProperty('--rc', '#e63946'); d.innerHTML = `<span class="tag">tomates</span><div class="big">🍅</div><div>+${it.n}</div>`; SFX.tomato(); }
-          else { d.className = 'reward'; d.style.setProperty('--rc', '#b8860b'); d.innerHTML = `<span class="tag">pesetas</span><div class="big">₧</div><div>+${it.n}</div>`; SFX.coin(); }
+          if (it.kind === 'card') { const c = E.CARDS[it.id], r = E.RARITIES[c.rarity]; d.className = 'reward' + (it.isNew ? ' new' : ''); d.style.setProperty('--rc', r.color); d.innerHTML = `<span class="tag">${it.isNew ? '¡NUEVA!' : it.bonus ? 'EXTRA' : 'FRAGMENTO'}</span>${CARD_ART[it.id]}<div>${c.name}</div>`; SFX.reward(['common', 'rare', 'epic', 'legendary'].indexOf(c.rarity)); }
+          else if (it.kind === 'tomatoes') { d.className = 'reward'; d.style.setProperty('--rc', '#e3312a'); d.innerHTML = `<span class="tag">TOMATES</span>${icon('ic-tomato')}<div>+${it.n}</div>`; SFX.tomato(); }
+          else { d.className = 'reward'; d.style.setProperty('--rc', '#e0a012'); d.innerHTML = `<span class="tag">PESETAS</span>${icon('ic-coin')}<div>+${it.n}</div>`; SFX.coin(); }
           rw.appendChild(d);
-        }, 500 + i * 380));
-        setTimeout(() => { btn.textContent = 'Recoger'; btn.disabled = false; btn.onclick = () => { ov.classList.remove('open'); hud(); res(); }; }, 500 + items.length * 380);
-      }, 600);
+        }, 450 + i * 380));
+        setTimeout(() => { btn.textContent = 'RECOGER'; btn.disabled = false; btn.onclick = () => { ov.classList.remove('open'); hud(); res(); }; }, 450 + items.length * 380);
+      }, 650);
     };
   });
 }
 export function volleySummary(results, pesetas) {
   const n = results.length, c = k => results.filter(r => r.kind === k).length, falls = results.filter(r => r.fall).length;
-  const el = $('#summary'); el.innerHTML = `<h3>Lanzamiento ×${n}</h3><div class="row"><span>🎯 Perfectos</span><b>${c('perfect')}</b></div><div class="row"><span>😅 Cercanos</span><b>${c('near')}</b></div><div class="row"><span>❌ Fallos</span><b>${c('miss')}</b></div><div class="row"><span>💦 Caídas</span><b>${falls}</b></div><div class="pes">+${pesetas} ₧</div>`;
-  el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 2600);
+  const el = $('#summary'); el.innerHTML = `<h3>LANZAMIENTO ×${n}</h3><div class="row"><span>En el centro</span><b>${c('perfect')}</b></div><div class="row"><span>Casi</span><b>${c('near')}</b></div><div class="row"><span>Fallos</span><b>${c('miss')}</b></div><div class="row"><span>Pedro al agua</span><b>${falls}</b></div><div class="pes">${icon('ic-coin')}+${pesetas}</div>`;
+  el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 2800);
 }
-export function setSoundUI(on, music = state.music) { music = on && music; $('#btn-sound use').setAttribute('href', !on ? '#i-sound-off' : music ? '#i-music' : '#i-sound'); $('#btn-sound').dataset.mode = !on ? 'off' : music ? 'music' : 'sfx'; setEnabled(on); setMusic(music); setSound(on, music); }
+export function setSoundUI(on, music = state.music, apply = true) {
+  music = on && music;
+  $('#sw-sound').classList.toggle('on', on); $('#sw-music').classList.toggle('on', music);
+  if (apply) { setEnabled(on); setMusic(music); setSound(on, music); }
+}
 export function setAccountUI(user, username) {
-  const logged = !!user; $('#acc-logged').classList.toggle('hidden', !logged); $('#acc-forms').classList.toggle('hidden', logged); $('#btn-account').classList.toggle('logged', logged);
+  const logged = !!user; $('#acc-logged').classList.toggle('hidden', !logged); $('#acc-forms').classList.toggle('hidden', logged);
   if (logged) $('#acc-name').textContent = username || user.email;
+  $('#acc-short').textContent = logged ? (username || user.email) : 'Invitado';
 }
 export function accMsg(msg, type = '') { const el = $('#acc-msg'); el.textContent = msg; el.className = 'acc-msg ' + type; }
-export function showTab(name) { $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name)); $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'form-' + name)); accMsg(''); }
+export function showTab(name) { $$('.tab-s').forEach(t => t.classList.toggle('active', t.dataset.tab === name)); $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'form-' + name)); accMsg(''); }
 export function saveStatus(msg) { $('#save-status').textContent = msg; }
 export function loadingOff() { $('#loading').classList.add('off'); }

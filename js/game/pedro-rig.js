@@ -109,7 +109,7 @@ function tubeShade(ctx, pts, w, color, side, width, alpha = 1, blur = 3) {
     const d = (w / 2 - width / 2 - 2) * side;
     off.push([pts[i][0] + n[0] * d, pts[i][1] + n[1] * d]);
   }
-  ctx.save(); ctx.globalAlpha = alpha; ctx.filter = `blur(${blur}px)`;
+  ctx.save(); ctx.globalAlpha = alpha * 0.85; void blur;
   ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.moveTo(...off[0]); for (let i = 1; i < off.length; i++) ctx.lineTo(...off[i]); ctx.stroke();
   ctx.restore();
@@ -119,6 +119,13 @@ function blob(ctx, path, color) {
   ctx.fillStyle = color; ctx.fill(path);
 }
 function ellipse(cx, cy, rx, ry, rot = 0) { const p = new Path2D(); p.ellipse(cx, cy, Math.max(rx, 0.1), Math.max(ry, 0.1), rot, 0, Math.PI * 2); return p; }
+// mancha difuminada con degradado radial (equivale a un desenfoque, pero es mucho más rápido que ctx.filter)
+export function soft(ctx, cx, cy, rx, ry, rot, color, alpha = 1, b = 8) {
+  const m = Math.min(rx, ry), k = Math.max(0.05, Math.min(0.92, m / (m + b * 2)));
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.translate(cx, cy); ctx.rotate(rot); ctx.scale(rx + b, ry + b);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, color); g.addColorStop(k, color); g.addColorStop(1, color + '00');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
 
 // ---------------------------------------------------------------- el personaje
 export class PedroRig {
@@ -188,8 +195,7 @@ export class PedroRig {
     const pv = this.parts.pivots;
     // mejillas sonrojadas (risa)
     if (P.blush > 0) {
-      ctx.save(); ctx.globalAlpha = 0.35 * P.blush; ctx.filter = 'blur(14px)'; ctx.fillStyle = '#ff4a4a';
-      ctx.fill(ellipse(560, 545, 55, 30)); ctx.fill(ellipse(870, 565, 30, 26)); ctx.restore();
+      soft(ctx, 560, 545, 55, 30, 0, '#ff4a4a', 0.35 * P.blush, 14); soft(ctx, 870, 565, 30, 26, 0, '#ff4a4a', 0.35 * P.blush, 14);
     }
     // ojos
     eye(ctx, EYE_L, P.lidL, P, 1);
@@ -292,11 +298,10 @@ export class PedroRig {
     blob(ctx, body, C.navy);
     ctx.save(); ctx.clip(body);
     // volumen: luz del foco arriba a la izquierda, sombra abajo a la derecha, borde de luz fría
-    ctx.filter = 'blur(26px)';
-    ctx.fillStyle = C.navyHi; ctx.globalAlpha = 0.55; ctx.fill(ellipse(520, 1000, 120, 230, -0.2));
-    ctx.fillStyle = C.navySh; ctx.globalAlpha = 0.9; ctx.fill(ellipse(1000, 1250, 90, 330)); ctx.fill(ellipse(X, 1530, 380, 60));
-    ctx.globalAlpha = 0.5; ctx.fill(ellipse(360, 1300, 50, 220));
-    ctx.filter = 'blur(6px)'; ctx.strokeStyle = C.navyRim; ctx.globalAlpha = 0.45; ctx.lineWidth = 10;
+    soft(ctx, 520, 1000, 120, 230, -0.2, C.navyHi, 0.55, 26);
+    soft(ctx, 1000, 1250, 90, 330, 0, C.navySh, 0.9, 26); soft(ctx, X, 1530, 380, 60, 0, C.navySh, 0.9, 26);
+    soft(ctx, 360, 1300, 50, 220, 0, C.navySh, 0.5, 26);
+    ctx.strokeStyle = C.navyRim; ctx.globalAlpha = 0.35; ctx.lineWidth = 10;
     ctx.beginPath(); ctx.moveTo(1030, 1000); ctx.bezierCurveTo(1010, 1150, 985, 1300, 990, 1470); ctx.stroke();
     ctx.filter = 'none'; ctx.globalAlpha = 1;
     // abertura bajo el botón: se ve el pantalón
@@ -306,8 +311,7 @@ export class PedroRig {
     // camisa en la V
     const vee = new Path2D(); vee.moveTo(596, 850); vee.lineTo(784, 850); vee.lineTo(X, 1262); vee.closePath();
     ctx.fillStyle = C.shirt; ctx.fill(vee);
-    ctx.save(); ctx.clip(vee); ctx.filter = 'blur(6px)'; ctx.fillStyle = C.shirtSh; ctx.globalAlpha = 0.85;
-    ctx.fill(ellipse(610, 980, 22, 150, -0.25)); ctx.fill(ellipse(770, 980, 22, 150, 0.25)); ctx.restore();
+    ctx.save(); ctx.clip(vee); soft(ctx, 610, 980, 22, 150, -0.25, C.shirtSh, 0.85, 6); soft(ctx, 770, 980, 22, 150, 0.25, C.shirtSh, 0.85, 6); ctx.restore();
     // corbata
     const tie = new Path2D();
     tie.moveTo(664, 952); tie.lineTo(716, 952); tie.lineTo(742, 1150); tie.lineTo(X, 1228); tie.lineTo(638, 1150); tie.closePath();
@@ -323,7 +327,7 @@ export class PedroRig {
       const c = new Path2D(), x = v => X + side * v;
       c.moveTo(x(150), 830); c.lineTo(x(8), 900); c.lineTo(x(70), 990); c.lineTo(x(165), 905); c.closePath();
       blob(ctx, c, C.shirt);
-      ctx.save(); ctx.clip(c); ctx.filter = 'blur(5px)'; ctx.fillStyle = C.shirtSh; ctx.globalAlpha = 0.9; ctx.fill(ellipse(x(40), 930, 30, 50)); ctx.restore();
+      ctx.save(); ctx.clip(c); soft(ctx, x(40), 930, 30, 50, 0, C.shirtSh, 0.9, 5); ctx.restore();
     }
     // solapas (con muesca), de la clavícula al botón
     for (const side of [-1, 1]) {
@@ -332,8 +336,7 @@ export class PedroRig {
       lp.moveTo(x(150), 838); lp.lineTo(x(208), 990); lp.lineTo(x(178), 1004); lp.lineTo(x(215), 1040);
       lp.quadraticCurveTo(x(150), 1180, x(6), 1272); lp.lineTo(x(92), 980); lp.lineTo(x(95), 905); lp.closePath();
       blob(ctx, lp, C.lapel);
-      ctx.save(); ctx.clip(lp); ctx.filter = 'blur(8px)';
-      ctx.fillStyle = side < 0 ? C.navyHi : C.navySh; ctx.globalAlpha = 0.6; ctx.fill(ellipse(x(150), 1000, 40, 120, side * 0.4)); ctx.restore();
+      ctx.save(); ctx.clip(lp); soft(ctx, x(150), 1000, 40, 120, side * 0.4, side < 0 ? C.navyHi : C.navySh, 0.6, 8); ctx.restore();
     }
     // bolsillos, pañuelo de pecho y botones
     ctx.strokeStyle = C.ink; ctx.lineWidth = 8;
@@ -421,7 +424,7 @@ export class PedroRig {
     ctx.save(); ctx.clip(sh);
     const g = ctx.createRadialGradient(-30, 20, 5, -10, 30, 110); g.addColorStop(0, 'rgba(140,150,190,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.fillRect(-120, -40, 240, 140);
-    ctx.filter = 'blur(2px)'; ctx.fillStyle = '#c9d0ea'; ctx.globalAlpha = 0.8; ctx.fill(ellipse(-34, 26, 26, 11, -0.4));
+    ctx.fillStyle = '#c9d0ea'; ctx.globalAlpha = 0.7; ctx.fill(ellipse(-34, 26, 26, 11, -0.4));
     ctx.restore();
     ctx.strokeStyle = '#000'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-90, 62); ctx.quadraticCurveTo(0, 100, 90, 62); ctx.stroke();
     ctx.restore();
@@ -443,7 +446,7 @@ export class PedroRig {
     ctx.save(); ctx.clip(body);
     ctx.strokeStyle = C.tomSh; ctx.globalAlpha = 0.45; ctx.lineWidth = r * 0.08;
     ctx.beginPath(); ctx.moveTo(-r * 0.12, -r * 0.7); ctx.quadraticCurveTo(-r * 0.45, 0, -r * 0.18, r * 0.9); ctx.stroke();
-    ctx.globalAlpha = 1; ctx.filter = 'blur(2px)'; ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.9; ctx.fillStyle = '#fff';
     ctx.fill(ellipse(-r * 0.45, -r * 0.4, r * 0.2, r * 0.11, -0.7)); ctx.globalAlpha = 0.7; ctx.fill(ellipse(-r * 0.22, -r * 0.6, r * 0.06, r * 0.04));
     ctx.restore();
     // hojas
@@ -497,7 +500,7 @@ function eye(ctx, E, open, P, side) {
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx - r * 0.38, cy - r * 0.32, r * 0.2, 0, 7); ctx.fill();
     ctx.beginPath(); ctx.arc(cx + r * 0.42, cy - r * 0.3, r * 0.14, 0, 7); ctx.fill();
     // sombra del párpado sobre el blanco
-    ctx.filter = 'blur(4px)'; ctx.strokeStyle = C.eyeSh; ctx.lineWidth = 14; ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = C.eyeSh; ctx.lineWidth = 12; ctx.globalAlpha = 0.55;
     ctx.beginPath(); ctx.moveTo(...o); ctx.quadraticCurveTo(u[0], u[1] + 8, ...i); ctx.stroke();
     ctx.restore();
     // línea del párpado inferior
@@ -536,8 +539,7 @@ function mouth(ctx, P, t) {
     ctx.beginPath(); ctx.moveTo(...L); ctx.quadraticCurveTo(L[0] - 8, L[1] - 6, L[0] - 3, L[1] - 15); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(...R); ctx.quadraticCurveTo(R[0] + 10, R[1] - 2, R[0] + 6, R[1] - 12); ctx.stroke();
     // labio inferior: sombra suave
-    ctx.save(); ctx.filter = 'blur(5px)'; ctx.globalAlpha = 0.35; ctx.fillStyle = C.skinSh;
-    ctx.fill(ellipse(upC[0] - 5, upC[1] / 2 + (L[1] + R[1]) / 4 + 22, 70, 9)); ctx.restore();
+    soft(ctx, upC[0] - 5, upC[1] / 2 + (L[1] + R[1]) / 4 + 22, 70, 9, 0, C.skinSh, 0.35, 5);
     ctx.restore();
   }
   if (op + rd > 0.003) {
@@ -611,8 +613,7 @@ function drawHand(ctx, c, spread, mir, palm, wig, t) {
   }
   ctx.fillStyle = C.skin; ctx.fill(palmP);
   // sombreado de la palma/dorso
-  ctx.save(); ctx.clip(palmP); ctx.filter = 'blur(6px)'; ctx.fillStyle = C.skinSh; ctx.globalAlpha = 0.55;
-  ctx.fill(ellipse(-40, 50, 22, 60)); ctx.fillStyle = C.skinHi; ctx.globalAlpha = 0.5; ctx.fill(ellipse(10, 35, 26, 18)); ctx.restore();
+  ctx.save(); ctx.clip(palmP); soft(ctx, -40, 50, 22, 60, 0, C.skinSh, 0.55, 6); soft(ctx, 10, 35, 26, 18, 0, C.skinHi, 0.5, 6); ctx.restore();
   // nudillos de los dedos cerrados sobre la palma
   for (const k of order) {
     const f = fingerPts[k];

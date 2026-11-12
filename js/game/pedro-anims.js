@@ -170,8 +170,9 @@ export const catchNose = compile({
     // vuelo del tomate: parábola que se aleja de la cámara (se hace pequeño) girando
     if (P.tom === 1) {
       const u = Math.min(1, (t - T0) / (T1 - T0)), e = 1 - (1 - u) ** 1.6;
-      P.tomX = bez(START[0], CTRL[0], CATCH[0], e); P.tomY = bez(START[1], CTRL[1], CATCH[1], e);
-      P.tomS = 2.6 - 1.6 * e; P.tomR = u * 5;
+      const st = catchNose.start || START, ctl = catchNose.start ? [(st[0] + CATCH[0]) / 2 + 120, Math.min(st[1], CATCH[1]) - 260] : CTRL;
+      P.tomX = bez(st[0], ctl[0], CATCH[0], e); P.tomY = bez(st[1], ctl[1], CATCH[1], e);
+      P.tomS = (catchNose.start ? 1.3 : 2.6) - (catchNose.start ? 0.3 : 1.6) * e; P.tomR = u * 5;
     }
     const w = win(t, 4.55, 6.2, 0.3);
     const wob = Math.sin((t - 4.55) * 8.5);
@@ -216,4 +217,86 @@ export const peineta = compile({
   },
 });
 
-export const CLIPS = { idle, catchNose, peineta };
+// ------------------------------------------------------------------ reacciones cortas
+// burla: manos a las sienes, dedos meneándose y lengua fuera
+export const mock = compile({
+  dur: 2.9, blinks: [2.6],
+  keys: [
+    { t: 0.01, d: 0, aLhx: 285, aLhy: 520, aRhx: 1035, aRhy: 500 },
+    { t: 0.4, d: 0.4, aLh: 1, aRh: 1, ...hand('L', 'open'), ...hand('R', 'open'), hLf: 1, hRf: 1, hLr: -0.3, hRr: 0.3 },
+    { t: 0.45, d: 0.2, hLw: 1, hRw: 1 },
+    { t: 0.35, d: 0.3, e: 'o', mTongue: 1, mOpen: 0.22, mSmile: 0.6, mTeeth: 0, lidL: 0, lidR: 0, happy: 1, bLy: -12, bRy: -12 },
+    { t: 2.0, d: 0.2, hLw: 0, hRw: 0 },
+    rest(2.6, 0.55),
+  ],
+  fx(P, t) { const w = win(t, 0.4, 2.1, 0.3), wob = Math.sin((t - 0.4) * 8.5); P.hr += wob * 0.09 * w; P.bx += wob * 10 * w; P.by += Math.abs(wob) * 14 * w; P.aLhy += wob * 10 * w; P.aRhy -= wob * 10 * w; },
+});
+// carcajada dándose palmadas en los muslos
+export const laugh = compile({
+  dur: 2.5, blinks: [],
+  keys: [
+    { t: 0.3, d: 0.3, aLx: THIGH_L[0], aLy: THIGH_L[1], aRx: THIGH_R[0], aRy: THIGH_R[1], hLr: -0.5, hRr: 0.5 },
+    { t: 0.2, d: 0.2, e: 'o', mOpen: 1, mTeeth: 1, mSmile: 1.2, blush: 1, hr: -0.09, hy: -10, bLy: -6, bRy: -6, lidL: 0, lidR: 0, happy: 1 },
+    rest(2.3, 0.5),
+  ],
+  fx(P, t) {
+    const l = win(t, 0.2, 1.9, 0.2), k = Math.abs(Math.sin(t * 12));
+    P.by -= k * 14 * l; P.sq += (k - 0.5) * 0.03 * l; P.hy -= k * 8 * l; P.mOpen -= (1 - k) * 0.35 * l; P.lean -= 0.05 * l;
+    P.aLy -= Math.max(0, Math.sin(t * 12)) * 60 * l; P.aRy -= Math.max(0, Math.sin(t * 12 + 1.2)) * 60 * l;
+  },
+});
+// el tablón se mueve: hace equilibrios, se asusta y respira aliviado
+export const wobble = compile({
+  dur: 1.5, blinks: [1.2],
+  keys: [
+    { t: 0.12, d: 0.12, e: 'o', eyeBig: 0.8, bLy: -18, bRy: -18, mRound: 0.7, mSmile: 0, aLx: 260, aLy: 1150, aRx: 1120, aRy: 1150, ...hand('L', 'open'), ...hand('R', 'open'), hLf: 1, hRf: 1, hLr: 1.2, hRr: -1.2 },
+    { t: 0.9, d: 0.3, eyeBig: 0, mRound: 0, mSmile: 0.8, bLy: -6, bRy: -6 },
+    rest(1.4, 0.45),
+  ],
+  fx(P, t) { const w = win(t, 0.05, 1.0, 0.15); P.lean += Math.sin(t * 16) * 0.09 * w * (1 - t / 1.2); P.aLy += Math.sin(t * 16) * 50 * w; P.aRy -= Math.sin(t * 16) * 50 * w; },
+});
+// cayendo: susto, brazos arriba
+export const fall = compile({
+  dur: 1.2, loop: true, blinks: [],
+  keys: [
+    { t: 0.08, d: 0.08, e: 'o', eyeBig: 1, bLy: -22, bRy: -22, mRound: 1, mSmile: -0.3, aLx: 300, aLy: 640, aRx: 1080, aRy: 640, ...hand('L', 'open'), ...hand('R', 'open'), hLf: 1, hRf: 1 },
+  ],
+  fx(P, t) { P.aLx += Math.sin(t * 30) * 30; P.aRx -= Math.sin(t * 30 + 1) * 30; P.aLy += Math.cos(t * 30) * 20; P.aRy += Math.cos(t * 30 + 1) * 20; P.hr += Math.sin(t * 20) * 0.08; },
+});
+// dentro del agua: enfadado, gritando y agitando los puños
+export const inWater = compile({
+  dur: 2.4, loop: true, blinks: [1.6],
+  keys: [
+    { t: 0.15, d: 0.15, e: 'o', bLy: 8, bRy: 8, bLr: 0.22, bRr: -0.22, mOpen: 0.55, mSmile: -0.6, mWide: 0.9, mTeeth: 1, blush: 1, eyeBig: 0.2, lookX: 0, lookY: 0,
+      aLx: 380, aLy: 760, aRx: 1000, aRy: 760, ...hand('L', 'fist'), ...hand('R', 'fist'), hLr: 0.4, hRr: -0.4 },
+  ],
+  fx(P, t) { P.aLy += Math.sin(t * 18) * 40; P.aRy += Math.sin(t * 18 + 2) * 40; P.hr += Math.sin(t * 9) * 0.06; P.mOpen += Math.sin(t * 11) * 0.12; },
+});
+// de vuelta en el tablón, empapado y de morros
+export const landed = compile({
+  dur: 2.6, blinks: [1.1, 2.0],
+  keys: [
+    { t: 0.05, d: 0.05, bLy: 6, bRy: 6, bLr: 0.18, bRr: -0.18, mSmile: -0.6, lidL: 0.75, lidR: 0.75, lookX: 0, lookY: 0.2 },
+    { t: 1.6, d: 0.4, bLr: 0, bRr: 0, bLy: 0, bRy: -10, mSmile: 0.8, mSmirk: 0.6, lidL: 0.9, lidR: 0.9 },
+    rest(2.5, 0.5),
+  ],
+});
+// sorpresa breve (le has conseguido otro tomate)
+export const shock = compile({
+  dur: 1.4, blinks: [],
+  keys: [
+    { t: 0.12, d: 0.12, e: 'o', eyeBig: 0.6, bLy: -16, bRy: -16, mRound: 0.5, mSmile: 0.2, hy: -6 },
+    rest(1.3, 0.5),
+  ],
+});
+// chulería: mira a cámara, ceja arriba y sonrisa ladeada
+export const smug = compile({
+  dur: 2.4, blinks: [2.1],
+  keys: [
+    { t: 0.2, d: 0.18, lookX: 0, lookY: 0 },
+    { t: 0.45, d: 0.3, e: 'o', bRy: -18, bRr: -0.08, mSmirk: 0.9, lidL: 0.75, lidR: 0.75, hr: 0.06 },
+    rest(2.3, 0.5),
+  ],
+});
+
+export const CLIPS = { idle, catchNose, peineta, mock, laugh, wobble, fall, inWater, landed, shock, smug };

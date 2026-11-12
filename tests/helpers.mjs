@@ -26,13 +26,13 @@ export const madrid = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/
 export async function open(page) { await page.goto(URL); await page.waitForFunction(() => window.AAP?.scene?.ready && document.querySelector('#loading.off'), null, { timeout: 20000 }); await page.waitForTimeout(300); }
 export const tap = (page, n) => page.evaluate(n => { const b = document.querySelector('#btn-click'); for (let i = 0; i < n; i++) b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 500 })); }, n);
 export const S = page => page.evaluate(() => ({ ...AAP.state.stats, clicks: AAP.state.clicks, tomatoes: AAP.state.tomatoes, pesetas: AAP.state.pesetas, cards: JSON.parse(JSON.stringify(AAP.state.cards)), daily: AAP.state.dailyClaimedOn, falcon: AAP.state.falconUntil }));
-// Espera a que el tomate esté apuntando y lo detiene cuando su distancia al centro de la diana está en [lo, hi].
+// Espera a que el tomate esté apuntando y lo detiene cuando su distancia horizontal al centro de la diana (x = 905) está en [lo, hi].
 export const stopAt = (page, lo, hi) => page.evaluate(([lo, hi]) => new Promise(res => {
-  const sc = AAP.scene, f = () => { const a = sc.aim; if (a) { const d = Math.hypot(a.x - 640, a.y - 250); if (d >= lo && d <= hi) { sc.stopAim(); return res(d); } } requestAnimationFrame(f); }; f();
+  const sc = AAP.scene, f = () => { const a = sc.aim; if (a) { const d = Math.abs(a.x - 905); if (d >= lo && d <= hi) { sc.stopAim(); return res(d); } } requestAnimationFrame(f); }; f();
 }), [lo, hi]);
 export async function idle(page) {
   try { await page.waitForFunction(() => !AAP.scene.busy && !AAP.scene.aim && document.querySelector('#btn-stop').classList.contains('hidden'), null, { timeout: 60000 }); }
-  catch (e) { console.log('  estado al agotar la espera:', await page.evaluate(() => ({ busy: AAP.scene.busy, aim: !!AAP.scene.aim, stop: !document.querySelector('#btn-stop').classList.contains('hidden'), pedro: [AAP.scene.pedro.x, AAP.scene.pedro.y, AAP.scene.pedro.alpha], fps: AAP.scene.game.loop.actualFps, tweens: AAP.scene.tweens.getTweens().length, panels: [...document.querySelectorAll('.panel.open,.overlay.open')].map(p => p.id), tomatoes: AAP.state.tomatoes })), 'errores:', page.__errors); throw e; }
+  catch (e) { console.log('  estado al agotar la espera:', await page.evaluate(() => ({ busy: AAP.scene.busy, aim: !!AAP.scene.aim, stop: !document.querySelector('#btn-stop').classList.contains('hidden'), pose: AAP.scene.pose, clip: AAP.scene.clipName, tweens: AAP.scene.tw.length, panels: [...document.querySelectorAll('.panel.open,.overlay.open')].map(p => p.id), tomatoes: AAP.state.tomatoes })), 'errores:', page.__errors); throw e; }
   await page.waitForTimeout(250);
 }
 export const give = (page, o) => page.evaluate(o => { const s = AAP.state; if (o.pesetas) s.stats.pesetasEarned += o.pesetas; if (o.tomatoes) s.stats.chestTomatoes += o.tomatoes; if (o.cards) Object.assign(s.cards, o.cards); import('./js/state.js').then(m => m.changed(false)); }, o).then(() => page.waitForTimeout(100));

@@ -10,4 +10,4 @@ Necesitan Node y Playwright (`npm i -D playwright`) y el juego servido en http:/
 | `sh tests/pg-reset.sh && psql -h /tmp -p 5433 -U postgres -d aap -f tests/sql-test.sql` | Funciones SQL y permisos |
 | `node tests/sim-economy.mjs` | Simulación de 30 días de progresión |
 
-Las capturas se guardan en `tests/out/`. `tests/scene-preview.html` muestra solo la escena Phaser.
+Las capturas se guardan en `tests/out/`.

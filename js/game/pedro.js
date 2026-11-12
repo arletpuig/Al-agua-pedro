@@ -62,7 +62,7 @@ export class Pedro extends Phaser.GameObjects.Container {
   stopIdle() { this.idleTweens?.forEach(t => t.stop()); this.idleTweens = null; this.blinkEv?.remove(); this.resetHead(); this.restArms(); this.p.bust.scaleY = 1 / TEX_SCALE; }
   setMood(m) { this.mood = m; this.p.head.setFrame(HEAD_FRAME[m] || 'head'); this.p.sweat.setVisible(m === 'shock'); }
   setGesture(g) { GESTURES.forEach(k => this.p[k].setVisible(k === g)); this.p.armR.setVisible(!g); this.p.noseTomato.setVisible(g === 'armNose'); }
-  setWet(v) { this.wet = v; const tint = v ? 0xcfe6f7 : 0xffffff; ['head', 'bust', 'legs', 'armL', 'armR', 'armUp', 'armNose', 'armPoint'].forEach(k => this.p[k].setTint(tint)); v ? this.drips.start() : this.drips.stop(); }
+  setWet(v) { this.wet = v; const tint = v ? 0xdcecfa : 0xffffff; ['head', 'bust', 'legs', 'armL', 'armR', 'armUp', 'armNose', 'armPoint'].forEach(k => this.p[k].setTint(tint)); v ? this.drips.start() : this.drips.stop(); }
   tween(cfg) { return new Promise(r => this.scene.tweens.add({ ...cfg, onComplete: r })); }
   wait(ms) { return new Promise(r => this.scene.time.delayedCall(ms, r)); }
   // --- reacciones ---

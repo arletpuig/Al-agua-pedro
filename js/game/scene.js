@@ -1,6 +1,6 @@
 // Escena principal: Pedro, diana, lanzamiento, resultados y efectos.
-import { Pedro, TEX_SCALE, CHAIR } from './pedro.js';
-import { buildScenery, L } from './scenery.js';
+import { Pedro, TEX_SCALE } from './pedro.js';
+import { buildStage, L } from './stage.js';
 import { CONFIG } from '../config.js';
 import { SFX } from '../audio.js';
 
@@ -9,14 +9,14 @@ export class MainScene extends Phaser.Scene {
   preload() {
     // Atlas único (tests/rasterize.mjs + tests/build-atlas.py): una sola textura evita fallos del lote multi-textura en WebGL
     this.load.atlas('atlas', `${this.assetBase || ''}assets/atlas.png`, `${this.assetBase || ''}assets/atlas.json`);
+    this.load.image('bg', `${this.assetBase || ''}assets/bg.jpg`);
   }
   create() {
-    this.cameras.main.setZoom(this.res || 1).centerOn(400, 300);
-    this.sc = buildScenery(this);
-    const PS = 0.8; this.chairHome = { x: L.SEAT_X + CHAIR.pv[0] * PS, y: L.SEAT_Y + CHAIR.pv[1] * PS };
-    this.chair = this.add.image(this.chairHome.x, this.chairHome.y, 'atlas', 'chair').setOrigin((CHAIR.pv[0] - CHAIR.vb[0]) / CHAIR.vb[2], (CHAIR.pv[1] - CHAIR.vb[1]) / CHAIR.vb[3]).setScale(PS / TEX_SCALE).setDepth(3);
-    this.pedro = new Pedro(this, L.SEAT_X, L.SEAT_Y, PS).setDepth(4); this.pedro.drips.setDepth(4);
-    this.target = this.add.image(L.TARGET_X, L.TARGET_Y, 'atlas', 'target').setScale(.5).setDepth(2);
+    this.cameras.main.setZoom(this.res || 1).centerOn(L.W / 2, L.VIEW_Y + L.VIEW_H / 2);
+    this.sc = buildStage(this);
+    this.chair = this.sc.plank; this.chairHome = { x: L.HINGE_X, y: L.HINGE_Y };
+    this.pedro = new Pedro(this, L.SEAT_X, L.SEAT_Y, 1).setDepth(5); this.pedro.drips.setDepth(5);
+    this.target = this.sc.target;
     this.track = this.add.graphics().setDepth(6).setAlpha(0); this.track.lineStyle(3, 0xffffff, .6); for (let x = CONFIG.AIM_MIN; x < CONFIG.AIM_MAX; x += 18) this.track.lineBetween(x, L.TARGET_Y, x + 9, L.TARGET_Y);
     this.tomato = this.add.image(0, 0, 'atlas', 'tomato').setScale(.55).setDepth(7).setVisible(false);
     this.splats = this.add.container(0, 0).setDepth(6);
@@ -32,7 +32,7 @@ export class MainScene extends Phaser.Scene {
     this.ready = true; this.bus.emit('ready');
   }
   update(t, dt) {
-    this.sc.waves[0].tilePositionX += dt * .03; this.sc.waves[1].tilePositionX -= dt * .025; this.sc.waves[2].tilePositionX += dt * .04;
+    this.sc.update(dt);
     if (this.aim) {
       const a = this.aim; a.x += a.dir * a.speed * dt; a.t += dt;
       if (a.x >= CONFIG.AIM_MAX) { a.x = CONFIG.AIM_MAX; a.dir = -1; } if (a.x <= CONFIG.AIM_MIN) { a.x = CONFIG.AIM_MIN; a.dir = 1; }
@@ -111,7 +111,7 @@ export class MainScene extends Phaser.Scene {
     this.tweens.add({ targets: this.chair, angle: -75, x: this.chair.x - 18, y: this.chair.y + 8, duration: 650, ease: 'Quad.easeIn' });
     await this.wait(300); this.hush(); SFX.fall();
     await this.tween({ targets: P, x: L.SEAT_X - 95, y: L.WATER_Y + 60, angle: -130, duration: 900, ease: 'Quad.easeIn' });
-    SFX.splash(); this.splash.explode(60, P.x, L.WATER_Y + 10); this.cameras.main.shake(300, .012); this.ripple(P.x, L.WATER_Y + 12); this.sc.cheer(true); this.sc.balloons(); SFX.cheer();
+    SFX.splash(); this.splash.explode(60, P.x, L.WATER_Y + 10); this.cameras.main.shake(300, .012); this.ripple(P.x, L.WATER_Y + 12); this.sc.frenzy(true); this.sc.setBulbs('party'); this.time.delayedCall(2600, () => { this.sc.frenzy(false); this.sc.setBulbs('chase'); }); SFX.cheer();
     if (decision.pesetas) { this.coins.explode(decision.pesetas * 4, P.x, L.WATER_Y); this.fxText(`+${decision.pesetas} ₧`, P.x, L.WATER_Y - 40, '#ffb400', 40); SFX.coin(); }
     await this.tween({ targets: P, y: P.y + 60, alpha: 0, duration: 300, ease: 'Quad.easeIn' });
     P.setMood('angry'); P.setWet(true); P.setAngle(0);

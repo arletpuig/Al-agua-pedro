@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
-const OUT = '.build/hi'; fs.mkdirSync(OUT, { recursive: true });
+const OUT = '.build/hi'; fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch(); const page = await browser.newPage({ deviceScaleFactor: 1 });
 async function shot(name, svg) {
   await page.setContent(`<html><body style="margin:0;background:transparent">${svg}</body></html>`);
@@ -54,4 +54,7 @@ for (const [name, extra] of Object.entries(HEADS)) await shot(name, wrap(HEAD_BO
 await shot('bust', wrap(BUST_BOX, `<polygon points="486,718 495,782 680,882 745,806 836,690 836,640 486,640" fill="#c5633f"/>
   <path clip-rule="evenodd" fill-rule="evenodd" d="M0,0" /><g clip-path="url(#bc)">${img}</g>
   <defs><clipPath id="bc"><path clip-rule="evenodd" d="M0,0 H1312 V1199 H0Z M${HEAD_POLY.split(' ').join(' L')}Z"/></clipPath></defs>`));
+// fondo del escenario a 1440x1920 (el atlas builder lo convierte a JPG)
+await page.setViewportSize({ width: 1440, height: 1920 });
+await shot('../bg', `<img id="o" src="data:image/svg+xml;base64,${fs.readFileSync('assets/src/bg.svg').toString('base64')}" width="1440" height="1920">`);
 await browser.close(); console.log('render ok ->', OUT, fs.readdirSync(OUT).length, 'imágenes');

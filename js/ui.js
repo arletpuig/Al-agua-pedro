@@ -35,11 +35,11 @@ export function hud(pop = false) {
   const s = state.stats, cpt = E.clicksPerTap(state.cards, falconActive());
   $('#clicks-num').textContent = fmt(s.totalClicks);
   if (pop) popEl($('#clicks-num'));
-  $('#bar-fill').style.width = (state.clicks / CONFIG.CLICKS_PER_TOMATO * 100) + '%';
-  $('#bar-text').textContent = `${state.clicks} / ${CONFIG.CLICKS_PER_TOMATO} para el siguiente tomate`;
+  $('#btn-click').style.setProperty('--p', state.clicks / CONFIG.CLICKS_PER_TOMATO * 100);
+  $('#bar-text').textContent = `${state.clicks} de ${CONFIG.CLICKS_PER_TOMATO}`;
   setNum('#tomato-num', state.tomatoes); setNum('#pesetas-num', state.pesetas, '#pill-pesetas');
-  $('#hist-text').textContent = `${fmt(s.tomatoesEarned)} conseguidos en total`;
-  $('#cpt-badge').textContent = `+${cpt} clic${cpt > 1 ? 's' : ''}`;
+  $('#hist-num').textContent = fmt(s.tomatoesEarned);
+  $('#cpt-badge').textContent = `+${cpt}`;
   $('#btn-click').classList.toggle('falcon', falconActive());
   $$('.btn-throw').forEach(b => { b.disabled = busy || state.tomatoes < +b.dataset.n; });
   const fb = $('#falcon-badge'); fb.classList.toggle('hidden', !falconActive());
@@ -59,7 +59,7 @@ export function floater(text, x, y) {
 export function flyTomato(n = 1) {
   const a = $('#btn-click').getBoundingClientRect(), b = $('.ico-tomato').getBoundingClientRect();
   for (let i = 0; i < Math.min(n, 5); i++) {
-    const el = document.createElement('div'); el.className = 'flying'; el.innerHTML = '<svg viewBox="-20 -20 40 40" width="34" height="34"><use href="#svg-tomato"/></svg>';
+    const el = document.createElement('div'); el.className = 'flying'; el.innerHTML = '<svg viewBox="0 0 44 48" width="34" height="37"><use href="#svg-tomato" width="44" height="48"/></svg>';
     el.style.left = (a.left + a.width / 2 - 17 + i * 8) + 'px'; el.style.top = (a.top + 10) + 'px'; document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.transform = `translate(${b.left + b.width / 2 - 17 - (a.left + a.width / 2 - 17 + i * 8)}px,${b.top + b.height / 2 - 17 - (a.top + 10)}px) rotate(540deg) scale(.8)`; });
     setTimeout(() => { el.remove(); if (!i) { const bk = $('#basket'); bk.classList.remove('bounce'); void bk.offsetWidth; bk.classList.add('bounce'); hud(); } }, 700);
@@ -157,7 +157,7 @@ export function volleySummary(results, pesetas) {
   const el = $('#summary'); el.innerHTML = `<h3>Lanzamiento ×${n}</h3><div class="row"><span>🎯 Perfectos</span><b>${c('perfect')}</b></div><div class="row"><span>😅 Cercanos</span><b>${c('near')}</b></div><div class="row"><span>❌ Fallos</span><b>${c('miss')}</b></div><div class="row"><span>💦 Caídas</span><b>${falls}</b></div><div class="pes">+${pesetas} ₧</div>`;
   el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 2600);
 }
-export function setSoundUI(on, music = state.music) { music = on && music; $('#btn-sound').textContent = !on ? '🔇' : music ? '🎵' : '🔊'; setEnabled(on); setMusic(music); setSound(on, music); }
+export function setSoundUI(on, music = state.music) { music = on && music; $('#btn-sound use').setAttribute('href', !on ? '#i-sound-off' : music ? '#i-music' : '#i-sound'); $('#btn-sound').dataset.mode = !on ? 'off' : music ? 'music' : 'sfx'; setEnabled(on); setMusic(music); setSound(on, music); }
 export function setAccountUI(user, username) {
   const logged = !!user; $('#acc-logged').classList.toggle('hidden', !logged); $('#acc-forms').classList.toggle('hidden', logged); $('#btn-account').classList.toggle('logged', logged);
   if (logged) $('#acc-name').textContent = username || user.email;

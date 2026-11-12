@@ -2,7 +2,7 @@
 # Ejecutar tras tools/render.mjs:  python3 tools/build-atlas.py
 import json, os
 from PIL import Image
-SRC = '.build/hi'; PAD = 2; W = 1024
+SRC = '.build/hi'; PAD = 2; W = 2048
 imgs = []
 for f in sorted(os.listdir(SRC)):
     if not f.endswith('.png'): continue
@@ -19,4 +19,5 @@ atlas = Image.new('RGBA', (W, H), (0, 0, 0, 0))
 for im, px, py in placed: atlas.paste(im, (px, py))
 atlas.save('assets/atlas.png', optimize=True)
 json.dump({'frames': frames, 'meta': {'image': 'atlas.png', 'size': {'w': W, 'h': H}, 'scale': '1'}}, open('assets/atlas.json', 'w'))
+Image.open('.build/bg.png').convert('RGB').save('assets/bg.jpg', quality=90, optimize=True)
 print('atlas', W, 'x', H, len(frames), 'frames:', ' '.join(sorted(frames)))

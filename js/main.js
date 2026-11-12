@@ -83,7 +83,6 @@ async function afterLogin(user) {
 // ---------- cuenta ----------
 const hasBackend = sb.hasBackend();
 $('#btn-account').addEventListener('click', () => { ui.openPanel('#panel-account'); if (!hasBackend) ui.accMsg('Las cuentas no están disponibles en esta versión.', 'err'); });
-$('#btn-rank').addEventListener('click', () => ui.openPanel('#panel-rank'));
 function busyForm(form, v) { form.querySelectorAll('button,input').forEach(el => el.disabled = v); }
 function onForm(id, fn) { $(id).addEventListener('submit', async e => { e.preventDefault(); const f = e.target; busyForm(f, true); try { await fn(f); } catch (err) { ui.accMsg('❌ ' + traducir(err.message), 'err'); } busyForm(f, false); }); }
 onForm('#form-register', async f => {

@@ -12,6 +12,7 @@ import { setEnabled, SFX } from './audio.js';
 const $ = s => document.querySelector(s);
 let username = null, saveTimer = null, saving = null, falconWas = false, opening = false;
 
+window.__aapStep?.('Iniciando');
 load();
 setEnabled(state.sound);
 const { scene } = createArena('game', { top: 58, bottom: 252 });

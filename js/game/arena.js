@@ -50,9 +50,13 @@ export class Arena {
     this.init();
   }
   async init() {
-    try { await Promise.all([document.fonts.load('30px "Titan One"'), document.fonts.load('800 30px "Baloo 2"')]); } catch (e) {}
+    // fuentes: como mucho 2,5 s de espera (algunos Safari no terminan nunca de avisar)
+    window.__aapStep?.('Cargando las letras');
+    try { await Promise.race([Promise.all([document.fonts.load('30px "Titan One"'), document.fonts.load('800 30px "Baloo 2"')]), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
+    window.__aapStep?.('Cargando a Pedro');
     try { this.rig = await loadPedro(this.el.dataset.assets || 'assets/pedro/'); }
     catch (e) { window.__aapFail?.('No se han podido cargar las imágenes de Pedro'); throw e; }
+    window.__aapStep?.('Montando el escenario');
     this.play('idle');
     const loop = () => { this.frame(); requestAnimationFrame(loop); };
     requestAnimationFrame(loop);

@@ -312,11 +312,12 @@ svg { display: block; }
   box-shadow: 0 4px 0 #0009; transition: opacity .2s, transform .25s cubic-bezier(.2, 1.5, .4, 1); }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 .toast.err { background: linear-gradient(var(--red1), var(--red2)); color: #fff; }
-.loading { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+.loading { position: absolute; inset: 0; text-align: center; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
   background: radial-gradient(circle at 50% 40%, #1a2f86, #04071a 70%); font: 18px 'Titan One'; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); transition: opacity .4s; }
 .loading.off { opacity: 0; pointer-events: none; }
 .loading .why { max-width: 80%; text-align: center; font: 600 12px 'Baloo 2', sans-serif; color: #c9d4ff; -webkit-text-stroke: 0; }
 .loading .btn-g { -webkit-text-stroke: 5px #0b4a12; }
+.loading .ver { position: absolute; bottom: 14px; font: 600 11px 'Baloo 2', sans-serif; color: #7f8fd0; -webkit-text-stroke: 0; }
 .spinner { width: 64px; height: 64px; border-radius: 50%; border: 8px solid #ffffff22; border-top-color: var(--gold1); animation: spin .8s linear infinite; }
 
 /* el juego es vertical: en móviles apaisados se pide girar */

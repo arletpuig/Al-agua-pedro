@@ -34,7 +34,7 @@ const rnd = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return 
 function background(c, t, spotX) {
   const g = c.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#070c2e'); g.addColorStop(0.35, '#13226a'); g.addColorStop(0.7, '#1a2f86'); g.addColorStop(1, '#0a1238');
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = g; c.fillRect(-400, -400, W + 800, H + 800);
   // pared con paneles verticales muy sutiles
   c.save(); c.globalAlpha = 0.18;
   for (let i = 0; i < 9; i++) {
@@ -79,7 +79,7 @@ function background(c, t, spotX) {
 function floor(c, t) {
   const g = c.createLinearGradient(0, FLOOR, 0, H);
   g.addColorStop(0, '#24315f'); g.addColorStop(0.15, '#18224a'); g.addColorStop(1, '#070b1f');
-  c.fillStyle = g; c.fillRect(0, FLOOR, W, H - FLOOR);
+  c.fillStyle = g; c.fillRect(-400, FLOOR, W + 800, H - FLOOR + 600);
   // tablas en perspectiva
   c.save(); c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 3;
   const vx = W / 2, vy = FLOOR - 900;
@@ -93,7 +93,7 @@ function floor(c, t) {
   c.save(); c.globalCompositeOperation = 'lighter';
   const eg = c.createLinearGradient(0, FLOOR - 6, 0, FLOOR + 30);
   eg.addColorStop(0, 'rgba(140,170,255,0)'); eg.addColorStop(0.25, 'rgba(160,190,255,0.45)'); eg.addColorStop(1, 'rgba(140,170,255,0)');
-  c.fillStyle = eg; c.fillRect(0, FLOOR - 6, W, 36);
+  c.fillStyle = eg; c.fillRect(-400, FLOOR - 6, W + 800, 36);
   const pool = c.createRadialGradient(420, FLOOR + 20, 10, 420, FLOOR + 20, 520);
   pool.addColorStop(0, 'rgba(255,230,170,0.28)'); pool.addColorStop(1, 'rgba(0,0,0,0)');
   c.fillStyle = pool; c.fillRect(0, FLOOR - 40, W, 260);
@@ -390,7 +390,7 @@ function plankPool(c, sx) {
 function vignette(c) {
   const g = c.createRadialGradient(W / 2, H * 0.45, H * 0.25, W / 2, H * 0.5, H * 0.75);
   g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,12,0.6)');
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = g; c.fillRect(-400, -400, W + 800, H + 800);
 }
 export function pedroShadow(c, x, spread = 1) {
   c.save(); c.filter = 'blur(8px)'; c.fillStyle = 'rgba(20,8,0,0.45)';

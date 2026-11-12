@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Al agua Pedro: propuesta de interfaz</title>
+<style>
+@font-face { font-family: 'Titan One'; src: url('../assets/fonts/titan-one-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Baloo 2'; font-weight: 800; src: url('../assets/fonts/baloo-2-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Baloo 2'; font-weight: 600; src: url('../assets/fonts/baloo-2-latin-600-normal.woff2') format('woff2'); }
+:root {
+  --ink: #0a0b18;
+  --navy: #0d1849; --navy2: #070d2c;
+  --gold1: #ffe766; --gold2: #ffb21a; --gold3: #b86a00;
+  --red1: #ff6b55; --red2: #e3262c; --red3: #8c0c12;
+  --green1: #8dff6a; --green2: #2fc43c; --green3: #13751d;
+  --blue1: #7fb2ff; --blue2: #3567f0; --blue3: #16308c;
+  --stroke: 0 0 0 transparent;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #04071a; overflow: hidden; }
+#app { position: relative; width: 390px; height: 693px; margin: 0 auto; overflow: hidden; font-family: 'Baloo 2', sans-serif; color: #fff; user-select: none; }
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+svg { display: block; }
+/* texto de juego: blanco con contorno grueso */
+.t { font-family: 'Titan One', sans-serif; letter-spacing: .02em; paint-order: stroke fill; -webkit-text-stroke: 5px var(--ink); color: #fff; }
+.t.s { -webkit-text-stroke: 4px var(--ink); }
+
+/* ---------------------------------------------------------------- barra superior */
+.top { position: absolute; left: 10px; right: 10px; top: 12px; display: flex; align-items: center; gap: 10px; z-index: 3; }
+.res { position: relative; height: 34px; min-width: 104px; padding: 0 12px 0 40px; display: flex; align-items: center; justify-content: flex-end;
+  border-radius: 18px; background: linear-gradient(#0a1442e6, #040a26e6); border: 2.5px solid var(--ink);
+  box-shadow: inset 0 2px 0 #ffffff26, inset 0 -3px 0 #00000055, 0 3px 0 #0008; }
+.res .ri { position: absolute; left: -8px; top: 50%; width: 46px; height: 46px; transform: translateY(-52%); filter: drop-shadow(0 3px 0 #0007); }
+.res b { font: 20px 'Titan One'; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); }
+.res .plus { position: absolute; right: -10px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 8px;
+  background: linear-gradient(var(--green1), var(--green2) 55%, var(--green3)); border: 2.5px solid var(--ink); box-shadow: inset 0 2px 0 #fff8, 0 2px 0 #0008;
+  font: 20px/18px 'Titan One'; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+.res.coin { padding-right: 22px; }
+.spacer { flex: 1; }
+.sq { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; border: 2.5px solid var(--ink);
+  background: linear-gradient(var(--blue1), var(--blue2) 50%, var(--blue3)); box-shadow: inset 0 3px 0 #ffffff70, inset 0 -4px 0 #0005, 0 4px 0 #000a; }
+.sq svg { width: 28px; height: 28px; filter: drop-shadow(0 2px 0 #0008); }
+
+/* potenciador activo */
+.boost { position: absolute; right: 10px; top: 62px; z-index: 3; display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 12px 0 6px; border-radius: 14px; border: 2px solid var(--ink);
+  background: linear-gradient(90deg, #ff9d1a, #ffcf3a); box-shadow: inset 0 2px 0 #fff8, 0 3px 0 #0008; font: 800 13px 'Baloo 2'; color: #3a1d00; }
+.boost svg { width: 22px; height: 22px; }
+.boost .tm { font: 13px 'Titan One'; color: #fff; -webkit-text-stroke: 3px #6a3300; paint-order: stroke fill; }
+
+/* ---------------------------------------------------------------- zona de acción */
+.action { position: absolute; left: 0; right: 0; bottom: 74px; height: 118px; z-index: 3; }
+.action::before { content: ''; position: absolute; left: -20px; right: -20px; bottom: -30px; height: 170px;
+  background: linear-gradient(#04071a00, #04071acc 55%, #04071a); pointer-events: none; }
+/* pulsador central */
+.dome-wrap { position: absolute; left: 50%; bottom: 2px; width: 124px; height: 124px; transform: translateX(-50%); }
+.ring { position: absolute; inset: 0; }
+.dome { position: absolute; inset: 15px; border-radius: 50%; border: 3px solid var(--ink);
+  background: radial-gradient(circle at 36% 28%, #ffb1a0 0 7%, var(--red1) 18%, var(--red2) 52%, var(--red3) 100%);
+  box-shadow: inset 0 -8px 0 #0005, inset 0 4px 0 #fff6, 0 7px 0 #5a070b, 0 10px 14px #000a;
+  display: grid; place-items: center; transition: none; }
+.dome span { font: 21px 'Titan One'; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; transform: rotate(-6deg); }
+.dome-count { position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%); padding: 1px 9px; border-radius: 10px; white-space: nowrap;
+  background: #050a26; border: 2px solid var(--ink); font: 13px 'Titan One'; color: var(--gold1); box-shadow: 0 2px 0 #0008; }
+.dome-count small { color: #9fb0ff; font-size: 11px; }
+.pop { position: absolute; font: 22px 'Titan One'; color: #fff; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; pointer-events: none; z-index: 5; }
+.fly { position: absolute; width: 40px; height: 40px; z-index: 6; pointer-events: none; filter: drop-shadow(0 4px 0 #0007); }
+
+/* lanzar */
+.throw { position: absolute; left: 12px; bottom: 6px; width: 118px; }
+.seg { display: flex; justify-content: space-between; padding: 3px; margin-bottom: 7px; border-radius: 12px; background: #050a26e6; border: 2px solid var(--ink); box-shadow: inset 0 2px 0 #ffffff1a; }
+.seg button { flex: 1; height: 22px; border-radius: 8px; font: 12px 'Titan One'; color: #9fb0ff; }
+.seg button.on { color: #fff; background: linear-gradient(var(--blue1), var(--blue2)); border: 2px solid var(--ink); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; box-shadow: inset 0 2px 0 #fff6; }
+.btn-y { position: relative; width: 100%; height: 52px; border-radius: 16px; border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; gap: 4px;
+  background: linear-gradient(#fff3a0 0, var(--gold1) 18%, var(--gold2) 70%, #f08a00); box-shadow: inset 0 3px 0 #fffc, inset 0 -5px 0 #c26a0088, 0 6px 0 #7a4200, 0 9px 12px #0009; }
+.btn-y svg { width: 32px; height: 32px; margin-left: -6px; filter: drop-shadow(0 2px 0 #0006); }
+.btn-y span { font: 19px 'Titan One'; color: #fff; -webkit-text-stroke: 5px #6b3300; paint-order: stroke fill; }
+.btn-y .n { position: absolute; right: -8px; top: -11px; min-width: 32px; height: 25px; padding: 0 6px; border-radius: 13px; border: 2.5px solid var(--ink); font-style: normal;
+  background: linear-gradient(var(--red1), var(--red2)); font: 15px/20px 'Titan One'; -webkit-text-stroke: 2.5px var(--ink); paint-order: stroke fill; box-shadow: inset 0 2px 0 #fff6, 0 2px 0 #0008; }
+
+/* cofre diario */
+.daily { position: absolute; right: 12px; bottom: 6px; width: 104px; height: 88px; border-radius: 18px; border: 3px solid var(--ink);
+  background: radial-gradient(120% 90% at 50% 10%, #3b5bdc, #13246f 70%); box-shadow: inset 0 3px 0 #ffffff40, inset 0 -5px 0 #0006, 0 6px 0 #050b2e, 0 9px 12px #0009; overflow: visible; }
+.daily svg { position: absolute; left: 50%; top: 2px; width: 70px; height: 62px; transform: translateX(-50%); filter: drop-shadow(0 3px 0 #0008); }
+.daily .glow { position: absolute; left: 50%; top: 28px; width: 110px; height: 110px; transform: translate(-50%, -50%); border-radius: 50%;
+  background: conic-gradient(from 0deg, #ffe76600, #ffe76655, #ffe76600 20%, #ffe76655 30%, #ffe76600 45%, #ffe76655 55%, #ffe76600 70%, #ffe76655 80%, #ffe76600);
+  mask: radial-gradient(circle, #000 20%, transparent 68%); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); }
+.daily .lbl { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font: 800 11px 'Baloo 2'; color: #c9d4ff; line-height: 1; }
+.daily .rib { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 1px 10px; border-radius: 8px; border: 2px solid var(--ink);
+  background: linear-gradient(var(--green1), var(--green2) 60%, var(--green3)); font: 14px 'Titan One'; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; box-shadow: 0 2px 0 #0008; }
+
+/* ---------------------------------------------------------------- navegación inferior */
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; z-index: 4; display: flex; align-items: flex-end; padding: 0 6px 6px;
+  background: linear-gradient(#1b2d86, #0b1550 40%, #060c33); border-top: 3px solid var(--ink); box-shadow: inset 0 3px 0 #5d7bff66, 0 -6px 18px #0008; }
+.tab { position: relative; flex: 1; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0; border-radius: 14px; }
+.tab svg { width: 40px; height: 40px; filter: drop-shadow(0 3px 0 #0009); }
+.tab em { font-style: normal; font: 800 12px 'Baloo 2'; color: #b9c6ff; line-height: 1.1; }
+.tab.play { flex: 1.25; height: 84px; margin-top: -26px; border-radius: 20px 20px 16px 16px; border: 3px solid var(--ink);
+  background: linear-gradient(#ffe766, #ffb21a 60%, #e98b00); box-shadow: inset 0 3px 0 #fffc, inset 0 -5px 0 #a35700aa, 0 5px 0 #4a2600; }
+.tab.play svg { width: 54px; height: 54px; }
+.tab.play em { font: 15px 'Titan One'; color: #fff; -webkit-text-stroke: 4px #6b3300; paint-order: stroke fill; margin-bottom: 3px; }
+.badge { position: absolute; top: 2px; right: 10px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; border: 2.5px solid var(--ink);
+  background: linear-gradient(var(--red1), var(--red2)); font: 13px/17px 'Titan One'; text-align: center; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; box-shadow: 0 2px 0 #0008; }
+
+/* ---------------------------------------------------------------- panel (cofres) */
+.modal { position: absolute; inset: 0; z-index: 10; background: radial-gradient(circle at 50% 40%, #0a1240cc, #02040fee); display: none; }
+.modal.on { display: block; }
+.sheet { position: absolute; left: 12px; right: 12px; top: 64px; bottom: 86px; border-radius: 24px; border: 3px solid var(--ink);
+  background: linear-gradient(#22399f, #13236e 30%, #0b1550); box-shadow: inset 0 3px 0 #7d98ff88, inset 0 -6px 0 #0006, 0 10px 0 #02051a, 0 16px 30px #000c; }
+.sheet::after { content: ''; position: absolute; inset: 10px; border-radius: 18px; border: 2px dashed #ffffff14; pointer-events: none; }
+.title { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); padding: 4px 34px 8px; border: 3px solid var(--ink); border-radius: 14px;
+  background: linear-gradient(#ffe766, #ffb21a 65%, #e98b00); box-shadow: inset 0 3px 0 #fffc, 0 5px 0 #4a2600; font: 26px 'Titan One'; -webkit-text-stroke: 6px #6b3300; paint-order: stroke fill; white-space: nowrap; }
+.title::before, .title::after { content: ''; position: absolute; top: 12px; width: 26px; height: 30px; background: #c86f00; border: 3px solid var(--ink); z-index: -1; }
+.title::before { left: -18px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 35% 50%); }
+.title::after { right: -18px; clip-path: polygon(0 0, 100% 0, 65% 50%, 100% 100%, 0 100%); }
+.close { position: absolute; right: -8px; top: -14px; width: 40px; height: 40px; border-radius: 12px; border: 3px solid var(--ink);
+  background: linear-gradient(var(--red1), var(--red2) 55%, var(--red3)); box-shadow: inset 0 3px 0 #fff8, 0 4px 0 #000a; font: 20px 'Titan One'; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; }
+.sheet-body { position: absolute; inset: 34px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.free { position: relative; height: 206px; border-radius: 20px; border: 3px solid var(--ink); overflow: hidden;
+  background: radial-gradient(90% 80% at 50% 35%, #ffd96a 0, #f29a1c 30%, #8a3d00 75%); box-shadow: inset 0 3px 0 #fff9, inset 0 -6px 0 #0005, 0 5px 0 #0009; }
+.free .rays { position: absolute; left: 50%; top: 48%; width: 420px; height: 420px; transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(#fff6 0 7deg, #fff0 7deg 20deg); mask: radial-gradient(circle, #000 10%, transparent 62%); -webkit-mask: radial-gradient(circle, #000 10%, transparent 62%); }
+.free svg.big { position: absolute; left: 50%; top: 46px; width: 118px; height: 100px; transform: translateX(-50%); filter: drop-shadow(0 6px 0 #0008); }
+.free .tag { position: absolute; left: 0; right: 0; text-align: center; top: 8px; font: 17px 'Titan One'; -webkit-text-stroke: 4px #6b3300; paint-order: stroke fill; }
+.free .sub { position: absolute; left: 0; right: 0; text-align: center; top: 30px; font: 800 12px 'Baloo 2'; color: #5a2a00; }
+.btn-g { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: 190px; height: 46px; border-radius: 14px; border: 3px solid var(--ink);
+  background: linear-gradient(#d9ffb8 0, var(--green1) 15%, var(--green2) 65%, var(--green3)); box-shadow: inset 0 3px 0 #fffb, inset 0 -5px 0 #0a5a1288, 0 5px 0 #063d0b, 0 8px 10px #0008;
+  font: 20px 'Titan One'; -webkit-text-stroke: 5px #0b4a12; paint-order: stroke fill; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; }
+.chest-card { position: relative; border-radius: 18px; border: 3px solid var(--ink); padding: 8px 8px 10px; display: flex; flex-direction: column; align-items: center;
+  box-shadow: inset 0 3px 0 #ffffff55, inset 0 -5px 0 #0006, 0 5px 0 #0009; }
+.chest-card.wood { background: linear-gradient(#5e8cff, #2846c7 60%, #172b85); }
+.chest-card.dia { background: linear-gradient(#c58bff, #7a3fe0 60%, #44208f); }
+.chest-card h3 { margin: 0; font: 15px 'Titan One'; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-align: center; line-height: 1.05; }
+.chest-card svg.c { width: 112px; height: 96px; margin: 2px 0 0; filter: drop-shadow(0 5px 0 #0008); }
+.chest-card ul { list-style: none; margin: 4px 0 8px; padding: 0; width: 100%; display: grid; gap: 3px; }
+.chest-card li { display: flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 9px; background: #0006; font: 800 12px 'Baloo 2'; color: #e6ebff; }
+.chest-card li svg { width: 20px; height: 20px; }
+.price { margin-top: auto; width: 100%; height: 40px; border-radius: 12px; border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; gap: 4px;
+  background: linear-gradient(#fff3a0 0, var(--gold1) 18%, var(--gold2) 70%, #f08a00); box-shadow: inset 0 3px 0 #fffc, 0 4px 0 #7a4200; }
+.price svg { width: 26px; height: 26px; }
+.price b { font: 19px 'Titan One'; -webkit-text-stroke: 4px #6b3300; paint-order: stroke fill; }
+.shine { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.shine::before { content: ''; position: absolute; top: -40%; left: var(--sx, -60%); width: 40%; height: 180%; transform: rotate(20deg); background: linear-gradient(90deg, #fff0, #fff6, #fff0); }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene" width="1080" height="1920"></canvas>
+  <div id="defs"></div>
+
+  <div class="top">
+    <div class="res" id="r-tom"><svg class="ri"><use href="#ic-tomato"/></svg><b id="n-tom">12</b></div>
+    <div class="res coin" id="r-pes"><svg class="ri"><use href="#ic-coin"/></svg><b id="n-pes">48</b><button class="plus">+</button></div>
+    <div class="spacer"></div>
+    <button class="sq"><svg><use href="#ic-gear"/></svg></button>
+  </div>
+  <div class="boost"><svg><use href="#ic-plane"/></svg>FALCÓN ×5 <span class="tm">9:42</span></div>
+
+  <div class="action">
+    <div class="throw">
+      <div class="seg"><button>×1</button><button class="on" id="seg3">×3</button><button>×5</button><button>×10</button></div>
+      <button class="btn-y" id="launch"><svg><use href="#ic-tomato"/></svg><span>LANZAR</span><i class="n">×3</i><i class="shine" id="launch-shine"></i></button>
+    </div>
+    <div class="dome-wrap" id="dome-wrap">
+      <svg class="ring" viewBox="0 0 124 124">
+        <circle cx="62" cy="62" r="55" fill="#050a26" stroke="#0a0b18" stroke-width="5"/>
+        <circle cx="62" cy="62" r="55" fill="none" stroke="#1d2a6e" stroke-width="9"/>
+        <circle id="ring-fill" cx="62" cy="62" r="55" fill="none" stroke="url(#gRing)" stroke-width="9" stroke-linecap="round" transform="rotate(-90 62 62)" stroke-dasharray="345.6" stroke-dashoffset="217"/>
+        <circle cx="62" cy="62" r="60" fill="none" stroke="#0a0b18" stroke-width="2.5"/>
+      </svg>
+      <button class="dome" id="dome"><span>¡DALE!</span></button>
+      <div class="dome-count"><span id="n-clk">37</span><small>/100</small></div>
+    </div>
+    <button class="daily"><i class="glow" id="daily-glow"></i><svg><use href="#ic-chest"/></svg><span class="rib">GRATIS</span><span class="lbl">Cofre diario</span></button>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab"><svg><use href="#ic-shop"/></svg><em>Tienda</em></button>
+    <button class="tab"><svg><use href="#ic-chest"/></svg><em>Cofres</em><i class="badge">1</i></button>
+    <button class="tab play"><svg><use href="#ic-target"/></svg><em>JUGAR</em></button>
+    <button class="tab"><svg><use href="#ic-cards"/></svg><em>Cartas</em></button>
+    <button class="tab"><svg><use href="#ic-trophy"/></svg><em>Ranking</em></button>
+  </nav>
+
+  <div class="modal" id="modal-cofres">
+    <div class="sheet">
+      <div class="title">COFRES</div>
+      <button class="close">✕</button>
+      <div class="sheet-body">
+        <div class="free">
+          <i class="rays"></i>
+          <span class="tag">COFRE DIARIO</span><span class="sub">Uno gratis cada día</span>
+          <svg class="big"><use href="#ic-chest"/></svg>
+          <button class="btn-g">ABRIR GRATIS</button>
+        </div>
+        <div class="grid2">
+          <div class="chest-card wood">
+            <h3>Cofre de<br>madera</h3>
+            <svg class="c"><use href="#ic-chest"/></svg>
+            <ul><li><svg><use href="#ic-cards"/></svg>1 carta</li><li><svg><use href="#ic-tomato"/></svg>2 – 6 tomates</li></ul>
+            <button class="price"><svg><use href="#ic-coin"/></svg><b>15</b></button>
+          </div>
+          <div class="chest-card dia">
+            <h3>Cofre de<br>diamante</h3>
+            <svg class="c"><use href="#ic-chest-dia"/></svg>
+            <ul><li><svg><use href="#ic-cards"/></svg>3 cartas</li><li><svg><use href="#ic-tomato"/></svg>10 – 25 tomates</li></ul>
+            <button class="price"><svg><use href="#ic-coin"/></svg><b>80</b></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { loadPedro, ROOT } from '../js/game/pedro-rig.js';
+import { CLIPS, sample } from '../js/game/pedro-anims.js';
+import { drawStageBack, drawStageFront, pedroShadow, PLANK } from '../js/game/stage-art.js';
+
+// ------------------------------------------------ iconos (SVG, estilo cartoon con contorno)
+const gear = (() => { let d = ''; const n = 8; for (let i = 0; i < n * 2; i++) { const a0 = (i / (n * 2)) * Math.PI * 2, r = i % 2 ? 19 : 26;
+  for (const da of [-0.13, 0.13]) { const a = a0 + da; d += `${d ? 'L' : 'M'}${(32 + Math.cos(a) * r).toFixed(1)},${(32 + Math.sin(a) * r).toFixed(1)} `; } } return d + 'Z'; })();
+document.getElementById('defs').innerHTML = `<svg width="0" height="0" style="position:absolute"><defs>
+<radialGradient id="gTom" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ff9a80"/><stop offset=".45" stop-color="#ee2f2a"/><stop offset="1" stop-color="#8a0d12"/></radialGradient>
+<radialGradient id="gCoin" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff6c0"/><stop offset=".5" stop-color="#ffc62e"/><stop offset="1" stop-color="#b06c00"/></radialGradient>
+<linearGradient id="gWood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e9ae63"/><stop offset="1" stop-color="#8a4f1e"/></linearGradient>
+<linearGradient id="gGold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset=".5" stop-color="#ffc02a"/><stop offset="1" stop-color="#c47a00"/></linearGradient>
+<linearGradient id="gDia" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#d9f6ff"/><stop offset=".45" stop-color="#5fc8ff"/><stop offset="1" stop-color="#2155d6"/></linearGradient>
+<linearGradient id="gSteel" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#b9c2d9"/><stop offset="1" stop-color="#6b7593"/></linearGradient>
+<linearGradient id="gRing" x1="0" x2="1"><stop offset="0" stop-color="#ffe766"/><stop offset="1" stop-color="#ff9d1a"/></linearGradient>
+<symbol id="ic-tomato" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+ <path d="M32 17 C47 15 58 25 57 39 C56 52 45 59 32 59 C19 59 8 52 7 39 C6 25 17 15 32 17Z" fill="url(#gTom)"/>
+ <path d="M16 34 Q15 25 24 21" stroke="#fff" stroke-width="4.5" fill="none" opacity=".65"/>
+ <path d="M19 16 Q26 21 32 13 Q38 21 45 16 Q43 25 32 23 Q21 25 19 16Z" fill="#52c24a"/>
+ <path d="M32 13 Q33 7 38 5" stroke-width="6" fill="none"/><path d="M32 13 Q33 7 38 5" stroke="#3a9a3a" stroke-width="2.6" fill="none"/></g></symbol>
+<symbol id="ic-coin" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+ <ellipse cx="32" cy="35" rx="26" ry="25" fill="#9a5c00"/><circle cx="32" cy="31" r="26" fill="url(#gCoin)"/>
+ <circle cx="32" cy="31" r="19" fill="none" stroke="#b97400" stroke-width="2.4"/>
+ <path d="M27 43 V20 h8 a7.5 7.5 0 0 1 0 15 h-8 M22 30 h13" fill="none" stroke="#8a5200" stroke-width="5.5"/>
+ <path d="M14 22 Q20 12 32 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".75"/></g></symbol>
+<symbol id="ic-gear" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round"><path d="${gear}" fill="#ffffff"/><circle cx="32" cy="32" r="9" fill="#3567f0"/></g></symbol>
+<symbol id="ic-plane" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M6 36 L28 30 L44 12 Q50 8 52 12 L42 32 L58 36 Q60 40 56 41 L40 40 L32 52 L26 52 L30 40 L10 42Z" fill="#ffffff"/><path d="M28 30 L42 32" stroke="#3567f0" stroke-width="4"/></g></symbol>
+<symbol id="ic-chest" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+ <rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gWood)"/>
+ <path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/>
+ <path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gWood)"/>
+ <path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/>
+ <path d="M7 19 C20 16 44 16 57 19" stroke="#00000055" stroke-width="2" fill="none"/>
+ 
+ <rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/>
+ <rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gGold)"/>
+ <path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gGold)"/>
+ <path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gGold)"/>
+ <circle cx="32" cy="29" r="2.6" fill="#0a0b18" stroke="none"/><path d="M32 30 v5" stroke-width="3"/>
+ <circle cx="17" cy="51" r="1.2" fill="#0a0b18" stroke="none"/><circle cx="47" cy="51" r="1.2" fill="#0a0b18" stroke="none"/></g></symbol>
+<symbol id="ic-chest-dia" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+ <rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gDia)"/>
+ <path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/>
+ <path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gDia)"/>
+ <path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/>
+ <path d="M7 19 C20 16 44 16 57 19" stroke="#00000055" stroke-width="2" fill="none"/>
+ <path d="M24 14 L28 9 M38 40 L44 32 M14 40 L20 34" stroke="#ffffff" stroke-width="2.2" opacity=".7"/>
+ <rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/>
+ <rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gSteel)"/>
+ <path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gSteel)"/>
+ <path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gSteel)"/>
+ <circle cx="32" cy="29" r="2.6" fill="#0a0b18" stroke="none"/><path d="M32 30 v5" stroke-width="3"/>
+ <circle cx="17" cy="51" r="1.2" fill="#0a0b18" stroke="none"/><circle cx="47" cy="51" r="1.2" fill="#0a0b18" stroke="none"/></g></symbol>
+<symbol id="ic-shop" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round">
+ <rect x="10" y="30" width="44" height="26" rx="3" fill="url(#gWood)"/><rect x="27" y="38" width="11" height="18" fill="#5a3410"/>
+ <path d="M5 30 L10 10 H54 L59 30 Q53 37 47 30 Q41 37 35 30 Q29 37 23 30 Q17 37 11 30 Q8 34 5 30Z" fill="#fff8ea"/>
+ <path d="M17 10 L17 30 Q23 37 29 30 L29 10Z M41 10 L41 30 Q47 37 53 30 L54 10Z" fill="#e3262e"/>
+ <rect x="8" y="5" width="48" height="7" rx="3" fill="url(#gGold)"/></g></symbol>
+<symbol id="ic-cards" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round">
+ <rect x="8" y="16" width="24" height="34" rx="4" fill="#3fa9f5" transform="rotate(-16 20 33)"/>
+ <rect x="32" y="16" width="24" height="34" rx="4" fill="#b163ff" transform="rotate(16 44 33)"/>
+ <rect x="20" y="10" width="24" height="38" rx="4" fill="url(#gGold)"/>
+ <path d="M32 19 l3.2 6.8 7.3 .8 -5.5 5 1.6 7.3 -6.6 -3.8 -6.6 3.8 1.6 -7.3 -5.5 -5 7.3 -.8Z" fill="#fff8ea" stroke-width="2"/></g></symbol>
+<symbol id="ic-trophy" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round">
+ <path d="M17 14 H7 Q7 31 20 32 M47 14 H57 Q57 31 44 32" fill="none" stroke-width="7"/><path d="M17 14 H7 Q7 31 20 32 M47 14 H57 Q57 31 44 32" fill="none" stroke="#ffc02a" stroke-width="3"/>
+ <path d="M16 7 H48 V22 Q48 40 32 41 Q16 40 16 22Z" fill="url(#gGold)"/><rect x="28" y="40" width="8" height="8" fill="url(#gGold)"/>
+ <rect x="18" y="47" width="28" height="9" rx="3" fill="url(#gWood)"/><path d="M22 12 V22 Q22 29 26 32" stroke="#fff" stroke-width="3" fill="none" opacity=".75"/></g></symbol>
+<symbol id="ic-target" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3">
+ <circle cx="32" cy="32" r="27" fill="url(#gSteel)"/><circle cx="32" cy="32" r="21" fill="#e5262d"/><circle cx="32" cy="32" r="15" fill="#fff4e4"/><circle cx="32" cy="32" r="9" fill="#e5262d"/>
+ <path d="M32 26 l1.8 3.8 4.1 .4 -3.1 2.8 .9 4.1 -3.7 -2.1 -3.7 2.1 .9 -4.1 -3.1 -2.8 4.1 -.4Z" fill="#ffd23f" stroke-width="1.5"/></g></symbol>
+</defs></svg>`;
+
+// ------------------------------------------------ escena (reducida para dejar sitio a la interfaz)
+await Promise.all([document.fonts.load('20px "Titan One"'), document.fonts.load('800 12px "Baloo 2"')]);
+const cv = document.getElementById('scene'), ctx = cv.getContext('2d');
+const rig = await loadPedro('../assets/pedro/');
+const PED = { s: 0.3, x: 430 }, K = 0.86, TX = 1080 * (1 - K) / 2, TY = -168;
+function scene(name, t) {
+  const P = sample(CLIPS[name], t);
+  const x = PED.x + P.px * PED.s;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = 'none'; ctx.globalAlpha = 1;
+  ctx.fillStyle = '#04071a'; ctx.fillRect(0, 0, 1080, 1920);
+  ctx.setTransform(K, 0, 0, K, TX, TY);
+  drawStageBack(ctx, t, x);
+  pedroShadow(ctx, x, 1 - P.walkAmt * 0.15);
+  ctx.save(); ctx.translate(PED.x, PLANK.y + 4); ctx.scale(PED.s, PED.s); ctx.translate(-ROOT[0], -ROOT[1]);
+  rig.draw(ctx, P, t); ctx.restore();
+  ctx.filter = 'none'; ctx.globalAlpha = 1;
+  drawStageFront(ctx, t, x);
+}
+
+// ------------------------------------------------ guion de la demo de interfaz (determinista, para grabar)
+const $ = id => document.getElementById(id);
+const app = $('app');
+const taps = [0.6, 0.85, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5];   // pulsaciones en el botón rojo
+const pops = [];
+for (let i = 0; i < 6; i++) { const el = document.createElement('div'); el.className = 'pop'; el.textContent = '+7'; el.style.opacity = 0; app.append(el); pops.push(el); }
+const fly = document.createElement('div'); fly.className = 'fly'; fly.innerHTML = '<svg viewBox="0 0 64 64" width="40" height="40"><use href="#ic-tomato"/></svg>'; fly.style.opacity = 0; app.append(fly);
+const easeOut = x => 1 - (1 - x) ** 3, back = x => { const c = 2.2; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; };
+function hud(t) {
+  // pulsador: se hunde al tocar y rebota
+  let press = 0;
+  for (const tp of taps) { const d = t - tp; if (d >= 0 && d < 0.25) press = Math.max(press, d < 0.06 ? d / 0.06 : 1 - back((d - 0.06) / 0.19)); }
+  $('dome').style.transform = `translateY(${press * 5}px) scale(${1 - press * 0.06}, ${1 - press * 0.1})`;
+  $('dome').style.boxShadow = `inset 0 -8px 0 #0005, inset 0 4px 0 #fff6, 0 ${7 - press * 5}px 0 #5a070b, 0 ${10 - press * 6}px 14px #000a`;
+  const n = taps.filter(tp => t >= tp).length;
+  const clicks = Math.min(100, 37 + n * 7);
+  const full = clicks >= 100 && t >= 2.3;
+  const shownClicks = full ? (t < 2.75 ? 100 : 0) : clicks;
+  $('n-clk').textContent = shownClicks;
+  $('ring-fill').setAttribute('stroke-dashoffset', (345.6 * (1 - shownClicks / 100)).toFixed(1));
+  // +7 que salen del botón
+  pops.forEach((el, i) => {
+    const tp = taps[taps.length - 1 - i] ?? -9, d = t - tp;
+    if (d >= 0 && d < 0.6) { el.style.opacity = 1 - d / 0.6; el.style.left = `${180 + ((i * 37) % 30) - 15}px`; el.style.top = `${500 - easeOut(d / 0.6) * 60}px`; el.style.transform = `scale(${0.8 + Math.min(1, d * 8) * 0.4})`; }
+    else el.style.opacity = 0;
+  });
+  // el tomate completo vuela al marcador
+  const fd = (t - 2.45) / 0.55;
+  if (fd > 0 && fd < 1) { const e = easeOut(fd); fly.style.opacity = 1; fly.style.left = `${175 + (14 - 175) * e}px`; fly.style.top = `${520 + (8 - 520) * e - Math.sin(fd * Math.PI) * 120}px`; fly.style.transform = `scale(${1.6 - 0.6 * e}) rotate(${fd * 360}deg)`; }
+  else fly.style.opacity = 0;
+  const gained = t >= 3.0;
+  $('n-tom').textContent = gained ? 13 : 12;
+  const bump = Math.max(0, 1 - Math.abs(t - 3.05) / 0.18);
+  $('r-tom').style.transform = `scale(${1 + bump * 0.18})`;
+  // brillo que recorre el botón de lanzar y luz del cofre diario
+  const sh = ((t * 0.5) % 1.6) / 1.6;
+  $('launch-shine').style.setProperty('--sx', `${-60 + sh * 260}%`);
+  $('daily-glow').style.transform = `translate(-50%, -50%) rotate(${t * 40}deg)`;
+}
+window.frame = (t, opts = {}) => { scene(opts.clip || 'idle', t); hud(t); $('modal-cofres').classList.toggle('on', !!opts.cofres); };
+window.ready = true;
+const q = new URLSearchParams(location.search);
+if (!q.has('manual')) { const t0 = performance.now(); (function loop() { window.frame(((performance.now() - t0) / 1000) % 6, { cofres: q.has('cofres') }); requestAnimationFrame(loop); })(); }
+</script>
+</body>
+</html>

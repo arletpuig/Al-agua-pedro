@@ -9,7 +9,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 <div id="app">
@@ -192,6 +192,36 @@
 <symbol id="ic-user" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><circle cx="24" cy="16" r="9" fill="#ffd2ad"/><path d="M7 42 Q7 27 24 27 Q41 27 41 42Z" fill="#3567f0"/></g></symbol>
 <symbol id="ic-help" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><circle cx="24" cy="24" r="18" fill="#ffd23f"/><path d="M18 19 Q18 12 24 12 Q30 12 30 18 Q30 22 25 24 L24 29" fill="none" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="35" r="2.6" fill="#0a0b18"/></g></symbol>
 </defs></svg>
-<script type="module" src="js/main.js"></script>
+<script>
+// Arranque robusto: compatibilidad con navegadores antiguos y aviso claro si algo no carga.
+(function () {
+  // rectángulos redondeados (Safari < 16, Android antiguos)
+  function rr(x, y, w, h, r) {
+    var a = Array.isArray(r) ? r : [r === undefined ? 0 : r];
+    var tl = +a[0] || 0, tr = +(a.length > 1 ? a[1] : a[0]) || 0, br = +(a.length > 2 ? a[2] : a[0]) || 0, bl = +(a.length > 3 ? a[3] : (a.length > 1 ? a[1] : a[0])) || 0;
+    var m = Math.min(Math.abs(w), Math.abs(h)) / 2; tl = Math.min(tl, m); tr = Math.min(tr, m); br = Math.min(br, m); bl = Math.min(bl, m);
+    this.moveTo(x + tl, y); this.lineTo(x + w - tr, y); this.arcTo(x + w, y, x + w, y + tr, tr); this.lineTo(x + w, y + h - br); this.arcTo(x + w, y + h, x + w - br, y + h, br);
+    this.lineTo(x + bl, y + h); this.arcTo(x, y + h, x, y + h - bl, bl); this.lineTo(x, y + tl); this.arcTo(x, y, x + tl, y, tl); this.closePath();
+  }
+  if (window.CanvasRenderingContext2D && !CanvasRenderingContext2D.prototype.roundRect) CanvasRenderingContext2D.prototype.roundRect = rr;
+  if (window.Path2D && !Path2D.prototype.roundRect) Path2D.prototype.roundRect = rr;
+  // si algo falla antes de que el juego arranque, se explica y se ofrece recargar
+  function fail(msg) {
+    if (window.__aapReady) return;
+    var l = document.getElementById('loading'); if (!l) return;
+    l.classList.remove('off');
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button>';
+    l.querySelector('.why').textContent = msg;
+  }
+  window.__aapFail = fail;
+  window.addEventListener('error', function (e) {
+    var t = e.target; if (t && (t.src || t.href)) fail('No se encuentra ' + String(t.src || t.href).split('/').slice(-2).join('/'));
+    else fail((e.message || 'Error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) { fail(String(e.reason && e.reason.message || e.reason)); });
+  setTimeout(function () { fail('Tarda demasiado en cargar. Comprueba la conexión.'); }, 20000);
+})();
+</script>
+<script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>

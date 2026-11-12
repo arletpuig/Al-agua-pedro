@@ -12,10 +12,10 @@ y abre http://localhost:8080
 
 ## Cómo se juega
 - Pulsa el botón grande **¡DALE!**: cada 200 pulsaciones dan un tomate (la barra del botón muestra el progreso).
-- **Racha**: si pulsas mucho seguido, cada toque vale ×2 y luego ×3 (el botón cambia de color). Tarda en aparecer y, si paras, baja poco a poco.
-- Elige **×1, ×3, ×5 o ×10**: sale **un solo tomate que vale por todos** y va de lado a lado, en horizontal, por delante de la diana.
+- **Racha**: si pulsas mucho seguido, cada toque vale ×2 (unos 70 toques) y luego ×3 (unos 220). Si paras, se va enseguida.
+- Elige cuántos lanzar (las opciones se adaptan a tus tomates: ×1… ×10, ×5… ×20, etc.): sale **un solo tomate que vale por todos** y va de lado a lado, en horizontal, por delante de la diana.
 - Mientras apuntas, el mismo botón grande se vuelve **¡LANZA!**: púlsalo (o toca la pantalla) cuando el tomate esté sobre el centro. Pedro cae a la pecera y ganas pesetas (por cada tomate del lanzamiento).
-- Los tomates se quedan pegados un momento en la diana. Si te quedas cerca, Pedro te provoca (peineta, burla, carcajada: «¡Le tienes que dar al centro, eh! ¡Jajajaja!»). Si fallas por la izquierda, Pedro atrapa el tomate y se lo pone de nariz.
+- Los tomates se quedan pegados un momento en la diana. Si fallas, Pedro te provoca (peineta, burla, carcajada) y dice «¡Le tienes que dar al centro, eh! ¡Jajajaja!». En el resto de momentos suelta sus frases típicas al azar. Si fallas por la izquierda, Pedro atrapa el tomate y se lo pone de nariz.
 - **Jugadores nuevos**: regalo de bienvenida (5 tomates y 10 pesetas) y los primeros lanzamientos van más despacio.
 
 ## Tecnología

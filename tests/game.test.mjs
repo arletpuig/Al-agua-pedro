@@ -6,7 +6,8 @@ const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFacto
 const page = await ctx.newPage(); const errors = watchErrors(page); await mockTime(page);
 const txt = s => page.locator(s).innerText();
 const disabled = n => page.locator(`#throws button[data-n="${n}"]`).isDisabled();
-const throwN = async n => { await page.click(`#throws button[data-n="${n}"]`); };
+// lanza ×n con su ficha; si con tantos tomates esa ficha ya no se ofrece, se lanza directamente
+const throwN = async n => { if (await page.locator(`#throws button[data-n="${n}"]`).count()) await page.click(`#throws button[data-n="${n}"]`); else await page.evaluate(n => { import('./js/play.js').then(m => m.throwTomatoes(n)); }, n); };
 const shot = n => page.screenshot({ path: `tests/out/${n}.png` });
 
 console.log('1. Carga y regalo de bienvenida'); await open(page);
@@ -23,7 +24,8 @@ check('50 clics sobrantes conservados, barra de 200', s.clicks === 50 && (await 
 check('HUD muestra tomates', (await txt('#tomato-num')) === '7');
 
 console.log('7. Límites de lanzamiento');
-check('con 7 tomates: ×1 ×3 ×5 activos, ×10 desactivado', !(await disabled(1)) && !(await disabled(3)) && !(await disabled(5)) && await disabled(10));
+check('con 7 tomates las opciones se adaptan: ×1 ×3 ×5 ×7', (await page.locator('#throws button').evaluateAll(b => b.map(x => x.dataset.n).join())) === '1,3,5,7');
+check('opciones inteligentes según los tomates', await page.evaluate(() => { const f = AAP.ui.throwOptions; return f(1).join() === '1' && f(12).join() === '1,3,5,10' && f(20).join() === '5,10,15,20' && f(0).length === 0 && Math.max(...f(80)) <= 80; }));
 check('no se pueden lanzar más de los disponibles (llamada directa)', await page.evaluate(async () => (await import('./js/play.js')).throwTomatoes(10)) === false && (await S(page)).tomatoes === 7);
 
 console.log('6, 9, 10, 11. Lanzamiento ×1: tutorial, el mismo botón lanza, perfecto');
@@ -74,19 +76,26 @@ check('estado coherente (Pedro en el tablón)', await page.evaluate(() => !AAP.s
 console.log('Racha de pulsaciones');
 await page.evaluate(() => import('./js/config.js').then(m => { m.CONFIG.COMBO.perTap = 1; }));
 before = await S(page);
-for (let i = 0; i < 3; i++) { await tap(page, 10); await page.waitForTimeout(120); }
-check('la racha tarda en aparecer (30 toques: todavía nada)', await page.evaluate(() => document.querySelector('#combo').classList.contains('hidden')));
-for (let i = 0; i < 12; i++) { await tap(page, 10); await page.waitForTimeout(120); }
+for (let i = 0; i < 5; i++) { await tap(page, 10); await page.waitForTimeout(120); }
+check('la racha tarda en aparecer (50 toques: todavía nada)', await page.evaluate(() => document.querySelector('#combo').classList.contains('hidden')));
+for (let i = 0; i < 6; i++) { await tap(page, 10); await page.waitForTimeout(120); }
+check('el ×3 tarda más (110 toques: solo ×2)', await page.evaluate(() => document.querySelector('#combo-x').textContent === '×2' && !document.querySelector('#combo').classList.contains('hidden')));
+for (let i = 0; i < 14; i++) { await tap(page, 10); await page.waitForTimeout(120); }
 s = await S(page); await page.waitForTimeout(150); await shot('04b-racha');
 check('pulsando mucho seguido sube el multiplicador (×3)', await page.evaluate(() => document.querySelector('#btn-click').classList.contains('c3') && !document.querySelector('#combo').classList.contains('hidden') && document.querySelector('#combo-x').textContent === '×3'));
-check('con racha cada toque vale más', s.totalClicks - before.totalClicks > 150 && s.totalClicks - before.totalClicks <= 450, `(+${s.totalClicks - before.totalClicks} con 150 toques)`);
+check('con racha cada toque vale más', s.totalClicks - before.totalClicks > 250 && s.totalClicks - before.totalClicks <= 750, `(+${s.totalClicks - before.totalClicks} con 250 toques)`);
 check('sin mensaje de racha', !(await page.locator('#toast').evaluate(e => e.classList.contains('on') && /RACHA/.test(e.textContent))));
-await page.waitForTimeout(4000);
-check('la racha tarda en irse (4 s sin pulsar: sigue)', await page.evaluate(() => !document.querySelector('#combo').classList.contains('hidden')));
-await page.evaluate(() => import('./js/config.js').then(m => { m.CONFIG.COMBO.decayPerSec = 80; }));
-await page.waitForTimeout(3500);
-check('si dejas de pulsar, el multiplicador baja', await page.evaluate(() => document.querySelector('#combo').classList.contains('hidden') && !document.querySelector('#btn-click').classList.contains('c2') && !document.querySelector('#btn-click').classList.contains('c3')));
-await page.evaluate(() => import('./js/config.js').then(m => { m.CONFIG.COMBO.decayPerSec = 3; })); await noCombo(page);
+await page.waitForTimeout(1600);
+check('si paras, el ×3 se va enseguida', await page.evaluate(() => !document.querySelector('#btn-click').classList.contains('c3')));
+await page.waitForTimeout(4500);
+check('y la racha desaparece del todo en pocos segundos', await page.evaluate(() => document.querySelector('#combo').classList.contains('hidden') && !document.querySelector('#btn-click').classList.contains('c2') && !document.querySelector('#btn-click').classList.contains('c3')));
+await noCombo(page);
+
+console.log('Frases de Pedro');
+check('al fallar solo dice que hay que darle al centro; el resto, sus frases típicas', await page.evaluate(() => import('./js/game/arena.js').then(m => {
+  const L = m.LINES, centro = '¡Le tienes que dar al centro, eh! ¡Jajajaja!';
+  return [L.near, L.miss, L.leftMiss].every(a => a.length === 1 && a[0] === centro) && L.idle.includes('¡No dimitiré!') && L.idle.includes('España va como una moto') && L.wetWater === L.idle;
+})));
 
 console.log('19. Ranking: tomates históricos');
 s = await S(page);

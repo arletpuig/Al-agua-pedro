@@ -24,7 +24,7 @@ export function init(handlers) {
   $('#btn-stats').addEventListener('click', () => { renderStats(); closePanel($('#panel-settings')); openPanel('#panel-stats'); });
   $('#btn-help').addEventListener('click', () => { closePanel($('#panel-settings')); showTutorial(null); });
   $('#pill-pesetas').addEventListener('click', () => openPanel('#panel-shop'));
-  $$('#throws button').forEach(b => b.addEventListener('click', () => { unlock(); H.onThrow(+b.dataset.n); }));
+  $('#throws').addEventListener('click', e => { const b = e.target.closest('button[data-n]'); if (b && !b.disabled) { unlock(); H.onThrow(+b.dataset.n); } });
   $('#btn-daily').addEventListener('click', () => { unlock(); backend.dailyAvailable() ? H.onClaimDaily() : openPanel('#panel-shop'); });
   $('#shop-body').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -37,6 +37,17 @@ export function init(handlers) {
   });
 }
 
+// ---------- cuántos tomates se pueden lanzar de golpe ----------
+// Se adapta a lo que tienes: con 1 solo ×1; con 10-19 ×1 ×3 ×5 ×10; con 20 ×5 ×10 ×15 ×20; con más, cifras redondas mayores.
+const LADDER = [[1000, [100, 250, 500, 1000]], [500, [100, 200, 300, 500]], [300, [50, 100, 200, 300]], [200, [50, 100, 150, 200]], [150, [25, 50, 100, 150]],
+  [100, [20, 50, 75, 100]], [75, [10, 25, 50, 75]], [50, [10, 20, 30, 50]], [40, [10, 20, 30, 40]], [30, [5, 10, 20, 30]], [25, [5, 10, 20, 25]], [20, [5, 10, 15, 20]], [10, [1, 3, 5, 10]]];
+export function throwOptions(t) {
+  if (t < 1) return [];
+  if (t <= 4) return Array.from({ length: t }, (_, i) => i + 1);
+  for (const [min, opts] of LADDER) if (t >= min) return opts;
+  return [...new Set([1, 3, 5, t])];
+}
+let throwKey = '';
 // ---------- marcador ----------
 export function hud(pop = false) {
   const cpt = E.clicksPerTap(state.cards, falconActive());
@@ -45,6 +56,8 @@ export function hud(pop = false) {
   setNum('#tomato-num', state.tomatoes, '#basket'); setNum('#pesetas-num', state.pesetas, '#pill-pesetas');
   $('#btn-click').classList.toggle('falcon', falconActive());
   const none = state.tomatoes < 1;
+  const opts = throwOptions(state.tomatoes), key = opts.join();
+  if (key !== throwKey) { throwKey = key; $('#throws').innerHTML = '<span class="tl">LANZAR</span>' + opts.map(n => `<button data-n="${n}"><svg><use href="#ic-tomato"/></svg><b>×${n}</b></button>`).join(''); }
   $$('#throws button').forEach(b => { b.disabled = busy || state.tomatoes < +b.dataset.n; });
   $('#throws').classList.toggle('hidden', aiming || none);
   $('#throw-empty').classList.toggle('hidden', aiming || !none || busy);

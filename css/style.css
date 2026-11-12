@@ -56,7 +56,7 @@ svg { display: block; }
 /* elegir lanzamiento */
 .throws { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 16px; background: #050a26e6; border: 2.5px solid var(--ink); box-shadow: inset 0 2px 0 #ffffff1a, 0 3px 0 #0008; }
 .throws .tl { font: 13px 'Titan One'; color: #ffe766; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); margin-right: 2px; }
-.throws button { position: relative; width: 62px; height: 40px; border-radius: 12px; border: 2.5px solid var(--ink); display: flex; align-items: center; justify-content: center; gap: 1px;
+.throws button { position: relative; min-width: 62px; padding: 0 6px; height: 40px; border-radius: 12px; border: 2.5px solid var(--ink); display: flex; align-items: center; justify-content: center; gap: 1px;
   background: linear-gradient(#fff3a0 0, var(--gold1) 18%, var(--gold2) 70%, #f08a00); box-shadow: inset 0 2px 0 #fffc, inset 0 -4px 0 #c26a0088, 0 4px 0 #7a4200; }
 .throws button svg { width: 24px; height: 24px; flex-shrink: 0; filter: drop-shadow(0 2px 0 #0006); }
 .throws button b { font: 15px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 4px #6b3300; }

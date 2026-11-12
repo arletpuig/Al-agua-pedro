@@ -9,7 +9,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 <div id="app">
@@ -30,13 +30,7 @@
   <!-- zona de acción -->
   <div class="action">
     <!-- elegir cuántos tomates: al tocar uno empiezas a apuntar -->
-    <div class="throws" id="throws">
-      <span class="tl">LANZAR</span>
-      <button data-n="1"><svg><use href="#ic-tomato"/></svg><b>×1</b></button>
-      <button data-n="3"><svg><use href="#ic-tomato"/></svg><b>×3</b></button>
-      <button data-n="5"><svg><use href="#ic-tomato"/></svg><b>×5</b></button>
-      <button data-n="10"><svg><use href="#ic-tomato"/></svg><b>×10</b></button>
-    </div>
+    <div class="throws" id="throws"></div>
     <p class="throw-empty hidden" id="throw-empty">Pulsa <b>¡DALE!</b> para conseguir tomates</p>
     <!-- botón grande: pulsar para conseguir tomates y, mientras apuntas, lanzar -->
     <button class="mega" id="btn-click" aria-label="Pulsa para conseguir tomates">
@@ -149,7 +143,7 @@
   <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 6</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 7</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -197,7 +191,7 @@
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 6</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 7</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -209,6 +203,6 @@
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=6"></script>
+<script type="module" src="js/main.js?v=7"></script>
 </body>
 </html>

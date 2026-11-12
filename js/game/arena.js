@@ -8,17 +8,13 @@ import { drawStageBack, drawStageFront, drawStatic, pedroShadow, softBlob, PLANK
 import { CONFIG } from '../config.js';
 import { SFX } from '../audio.js';
 
-export const LINES = {
-  near: ['¡Le tienes que dar al centro, eh! ¡Jajajaja!', '¡Uy, casi! Pero no.', '¡Al centro, campeón! ¡AL CENTRO!', 'Caliente, caliente... ¡pero no!', '¡Por los pelos! Y no los míos.', '¿Eso es todo? ¡Al centro, hombre!', 'Casi me das un susto. Casi.'],
-  miss: ['JAJAJA, ¿eso es todo?', '¡Ni me has rozado!', 'Con esa puntería no entras ni en el Congreso', '¿Eso era un tomate o una disculpa?', 'Lanzas peor que la oposición', '¡Sigue practicando, campeón!', 'La diana es la redonda, ¿eh?'],
-  leftMiss: ['¡Le tienes que dar al centro, eh! ¡Jajajaja!', '¡Que la diana está a la DERECHA!', 'Eso no es la diana, eso soy yo', '¡Al centro, campeón! ¡AL CENTRO!'],
-  catch: ['¡Gracias por el tomate!', 'Mira qué nariz más bonita', 'Esto, para la ensalada de Moncloa', '¡Atrapado! Como los presupuestos'],
-  wetWater: ['¡GLUB! ¡Esto es un ataque!', '¡Mi traje! ¡Era de Moncloa!', '¡Pido una comisión de investigación!', '¡Que venga el Falcon a por mí!', '¡Las pirañas votan a la oposición!'],
-  wetChair: ['Mojado, pero no derrotado', 'Vale, esa te la concedo', 'Esto lo vas a pagar', 'No dimito. Ni mojado.', 'Tengo frío. Me quejaré en rueda de prensa'],
-  tomato: ['¿Otro tomate? Qué miedo...', 'Eso es un huerto, no un arma', 'Ya puedes apuntar bien', 'Hmm... prefiero las croquetas'],
-  idle: ['¿Te vas a quedar ahí mirando?', 'Puedes seguir pulsando, no tengo prisa', 'Nadie me mueve de este tablón', 'La piscina está muy lejos, ¿no?', 'Aquí arriba se está de lujo'],
-};
-export const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+// Al fallar dice siempre lo mismo; en el resto de momentos, una de sus frases típicas al azar.
+const CENTRO = ['¡Le tienes que dar al centro, eh! ¡Jajajaja!'];
+const TIPICAS = ['No pactaré con Bildu', 'Son las cinco y no he comido', 'Yo estoy bien', 'No habrá amnistía', 'España va como una moto', '¡Son bulos de la ultraderecha!', '¡No dimitiré!', '¡Facha!'];
+export const LINES = { near: CENTRO, miss: CENTRO, leftMiss: CENTRO, catch: TIPICAS, wetWater: TIPICAS, wetChair: TIPICAS, tomato: TIPICAS, idle: TIPICAS };
+let lastLine = '';
+// elige al azar sin repetir la última frase
+export const pick = arr => { let x; do { x = arr[Math.floor(Math.random() * arr.length)]; } while (arr.length > 1 && x === lastLine); return (lastLine = x); };
 
 const PED = { s: 0.3, x: 430 };                         // escala de Pedro y posición en el tablón
 const ROI = { x0: 20, x1: 1080, y0: 215, y1: 1770 };   // parte del escenario que siempre se ve (con sitio para los bocadillos)

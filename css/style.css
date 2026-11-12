@@ -366,3 +366,11 @@ svg { display: block; }
   background: linear-gradient(var(--red1), var(--red2)); font: 12px/18px 'Titan One'; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); }
 .frag.unlock { color: #ffe766; }
 .reward small { display: block; font: 800 10px 'Baloo 2'; color: #fff; -webkit-text-stroke: 0; }
+
+/* pesetas que brillan, con destellos */
+#pill-pesetas .ri, .price svg, .wallet svg, .chest-card li svg[class=""], .reward svg { animation: coinglow 1.8s ease-in-out infinite; }
+@keyframes coinglow { 0%, 100% { filter: drop-shadow(0 3px 0 #0007) drop-shadow(0 0 4px #ffd23f88); } 50% { filter: drop-shadow(0 3px 0 #0007) drop-shadow(0 0 12px #ffe766); } }
+.res.coin::before, .res.coin::after { content: ''; position: absolute; z-index: 2; width: 14px; height: 14px; background: #fff; pointer-events: none;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%); filter: drop-shadow(0 0 4px #fff6a0); animation: twinkle 1.6s ease-in-out infinite; }
+.res.coin::before { left: 22px; top: -6px; }
+.res.coin::after { left: -4px; top: 18px; width: 10px; height: 10px; animation-delay: .8s; }

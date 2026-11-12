@@ -1,12 +1,12 @@
 // Estado del juego y guardado local. Las cantidades derivadas (tomates, pesetas) se calculan siempre a partir de los totales.
 import { CONFIG } from './config.js';
-import { emptyCards, CARD_IDS } from './economy.js';
+import { emptyCards, CARD_IDS, refund } from './economy.js';
 const KEY = 'alaguapedro.v2', OLD_KEY = 'alaguapedro.v1';
 const listeners = new Set();
 
 export const state = {
   clicks: 0, tomatoes: 0, pesetas: 0,
-  stats: { totalClicks: 0, legacyClicks: 0, legacyTomatoes: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0 },
+  stats: { totalClicks: 0, legacyClicks: 0, legacyTomatoes: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0, tomatoesRefunded: 0, paguitasPesetas: 0 },
   cards: emptyCards(), dailyClaimedOn: null, falconUntil: 0,
   tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null, welcome: false,
 };
@@ -15,8 +15,8 @@ export function derive() {
   const s = state.stats, fresh = Math.max(0, s.totalClicks - (s.legacyClicks || 0));
   s.tomatoesEarned = (s.legacyTomatoes || 0) + Math.floor(fresh / CONFIG.CLICKS_PER_TOMATO) + s.chestTomatoes;
   state.clicks = fresh % CONFIG.CLICKS_PER_TOMATO;
-  state.tomatoes = Math.max(0, s.tomatoesEarned - s.tomatoesThrown);
-  state.pesetas = Math.max(0, s.pesetasEarned + s.chestPesetas - s.pesetasSpent);
+  state.tomatoes = Math.max(0, s.tomatoesEarned + (s.tomatoesRefunded || 0) - s.tomatoesThrown);
+  state.pesetas = Math.max(0, s.pesetasEarned + s.chestPesetas + (s.paguitasPesetas || 0) - s.pesetasSpent);
 }
 export function load() {
   try {
@@ -62,13 +62,16 @@ export function registerThrow(kind, decision, n = 1) {
   if (decision.fall) { s.falls += n; s.pesetasEarned += decision.pesetas; }
   changed();
 }
+// Plus Ultra: tomates recuperados de un fallo. Paguitas: pesetas que llueven.
+export function recoverTomatoes(n) { state.stats.tomatoesRefunded = (state.stats.tomatoesRefunded || 0) + n; changed(); }
+export function addPaguita(p) { state.stats.paguitasPesetas = (state.stats.paguitasPesetas || 0) + p; changed(); }
 export function applyChestLocal(reward, price) {
   const s = state.stats; s.chestTomatoes += reward.tomatoes; s.chestPesetas += reward.pesetas; s.pesetasSpent += price; s.chestsOpened++;
   changed(false);
 }
 export function setTutorialSeen() { state.tutorialSeen = true; save(); }
 export function setSound(v, music = state.music) { state.sound = v; state.music = music; save(); }
-const COUNTERS = ['totalClicks', 'tomatoesThrown', 'hits', 'perfects', 'falls', 'pesetasEarned'];
+const COUNTERS = ['totalClicks', 'tomatoesThrown', 'hits', 'perfects', 'falls', 'pesetasEarned', 'tomatoesRefunded', 'paguitasPesetas'];
 export function snapshot() { return { ...state.stats }; }
 // Sustituye el estado por la fila del servidor. Si se pasa `sent` (copia de los contadores enviados),
 // se conserva lo que el jugador haya hecho mientras la petición estaba en curso.
@@ -77,7 +80,7 @@ export function applyServer(row, sent) {
   if (state.updatedAt && row.updated_at && Date.parse(row.updated_at) < Date.parse(state.updatedAt)) return; // fila antigua
   const s = state.stats, delta = {}; COUNTERS.forEach(k => delta[k] = sent ? Math.max(0, s[k] - sent[k]) : 0);
   s.totalClicks = +row.total_clicks; s.legacyClicks = +(row.legacy_clicks || 0); s.legacyTomatoes = +(row.legacy_tomatoes || 0); s.tomatoesThrown = row.tomatoes_thrown; s.hits = row.hits; s.perfects = row.perfects || 0; s.falls = row.falls;
-  s.pesetasEarned = row.pesetas_earned || 0; s.chestTomatoes = row.chest_tomatoes || 0; s.chestPesetas = row.chest_pesetas || 0; s.pesetasSpent = row.pesetas_spent || 0; s.chestsOpened = row.chests_opened || 0;
+  s.pesetasEarned = row.pesetas_earned || 0; s.tomatoesRefunded = row.tomatoes_refunded || 0; s.paguitasPesetas = row.paguitas_pesetas || 0; s.chestTomatoes = row.chest_tomatoes || 0; s.chestPesetas = row.chest_pesetas || 0; s.pesetasSpent = row.pesetas_spent || 0; s.chestsOpened = row.chests_opened || 0;
   let pending = false; COUNTERS.forEach(k => { if (delta[k]) { s[k] += delta[k]; pending = true; } });
   const c = emptyCards(); CARD_IDS.forEach(id => { if (row.cards?.[id]) c[id] = { level: row.cards[id].level | 0, frags: row.cards[id].frags | 0 }; }); state.cards = c;
   state.dailyClaimedOn = row.daily_claimed_on || null; state.falconUntil = row.falcon_until ? Date.parse(row.falcon_until) : 0;

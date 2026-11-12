@@ -23,6 +23,18 @@ export const CARDS = {
   apagon: { id: 'apagon', name: 'Apagón', rarity: 'rare', max: 25, icon: 'apagon',
     desc: 'Con la luz a medias la diana parece más grande: el centro que tira a Pedro al agua crece.',
     effect: L => `centro de la diana +${pct(CARDS.apagon.value(L))}`, value: dimin(0.45, 10) },
+  plusultra: { id: 'plusultra', name: 'Plus Ultra', rarity: 'common', max: 25, icon: 'plusultra',
+    desc: 'Más allá de la diana: si fallas, a veces recuperas los tomates que has lanzado.',
+    effect: L => `${pct(CARDS.plusultra.value(L))} de recuperar los tomates al fallar`, value: dimin(0.5, 10) },
+  hacienda: { id: 'hacienda', name: 'Hacienda Inversa', rarity: 'rare', max: 20, icon: 'hacienda',
+    desc: 'Cada vez que gastas pesetas (cofres o mejoras), Hacienda te devuelve una parte.',
+    effect: L => `te devuelve el ${pct(CARDS.hacienda.value(L))} de lo que gastas`, value: dimin(0.30, 8) },
+  puerta: { id: 'puerta', name: 'Puerta Giratoria', rarity: 'epic', max: 20, icon: 'puerta',
+    desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
+    effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },
+  paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'legendary', max: 15, icon: 'paguitas',
+    desc: 'Cada cierto tiempo llueven 3 pesetas mientras juegas. Cuanto más nivel, más a menudo.',
+    effect: L => `3 pesetas cada ${CARDS.paguitas.value(L)} s`, value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, L - 1)) : 0) },
   amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'legendary', max: 20, icon: 'amnistia',
     desc: 'Tus fallos quedan perdonados: a veces, aunque no aciertes en el centro, Pedro cae igual al agua.',
     effect: L => `${pct(CARDS.amnistia.value(L))} de fallos perdonados`, value: dimin(0.30, 8) },
@@ -65,6 +77,13 @@ export function rollFallPesetas(cards, rng = Math.random) {
   if (r < p / 3) return 3; if (r < p) return 2; return 1;
 }
 export function maxFallPesetas() { return 3; }
+// Hacienda Inversa: pesetas devueltas por un gasto. Puerta Giratoria: tomates por mejora.
+export function refund(cards, spent) { const L = level(cards, 'hacienda'); return L > 0 && spent > 0 ? Math.max(1, Math.round(spent * CARDS.hacienda.value(L))) : 0; }
+export function upgradeTomatoes(cards) { return CARDS.puerta.value(level(cards, 'puerta')); }
+// Plus Ultra: probabilidad de recuperar los tomates de un lanzamiento fallado. Paguitas: segundos entre lluvias (0 = sin carta).
+export function recoverChance(cards) { return CARDS.plusultra.value(level(cards, 'plusultra')); }
+export function paguitasEvery(cards) { return CARDS.paguitas.value(level(cards, 'paguitas')); }
+export const PAGUITA = 3;
 // Apagón: el centro de la diana (zona que tira a Pedro) es mayor.
 export function perfectRadius(cards, base) { return base * (1 + CARDS.apagon.value(level(cards, 'apagon'))); }
 // Amnistía: probabilidad de que un fallo (o un casi) se perdone y Pedro caiga igual.

@@ -3,9 +3,12 @@
 ## Primera vez
 1. Entra en https://supabase.com/dashboard y abre tu proyecto.
 2. Menú izquierdo → **SQL Editor** → **New query**. Pega TODO el contenido de `schema.sql` y pulsa **Run**.
-3. Repite con `schema_v2.sql` (pesetas, cofres, cartas, ranking por tomates) después con `schema_v3.sql` (cofres más baratos, racha de pulsaciones, regalo de bienvenida) `schema_v4.sql` (200 clics por tomate conservando lo ya ganado, cartas con desbloqueo por fragmentos) y por último `schema_v5.sql` (muchos más niveles de cartas, rendimiento decreciente, cartas al máximo fuera de los cofres).
+3. Repite con `schema_v2.sql` (pesetas, cofres, cartas, ranking por tomates) después con `schema_v3.sql` (cofres más baratos, racha de pulsaciones, regalo de bienvenida) `schema_v4.sql` (200 clics por tomate conservando lo ya ganado, cartas con desbloqueo por fragmentos) `schema_v5.sql` (muchos más niveles de cartas, rendimiento decreciente, cartas al máximo fuera de los cofres) y por último `schema_v6.sql` (cartas Plus Ultra, Hacienda Inversa, Puerta Giratoria y Paguitas).
 4. **Authentication → URL Configuration**: pon la dirección del juego en **Site URL** y en **Redirect URLs** (por ejemplo `https://arletpuig.github.io/Al-agua-pedro/`).
 5. (Opcional) **Authentication → Providers → Email**: desactiva "Confirm email" para entrar sin confirmar el correo.
+
+## Si ya tenías la versión 5
+Solo ejecuta `schema_v6.sql`.
 
 ## Si ya tenías la versión 4
 Solo ejecuta `schema_v5.sql`.

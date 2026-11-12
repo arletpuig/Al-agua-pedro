@@ -51,21 +51,6 @@ function backgroundStatic(c) {
     c.fillStyle = pg; c.fillRect(x, 0, 130, FLOOR);
   }
   c.restore();
-  // telones laterales
-  for (const side of [0, 1]) {
-    c.save();
-    if (side) { c.translate(W, 0); c.scale(-1, 1); }
-    const cg = c.createLinearGradient(0, 0, 120, 0);
-    cg.addColorStop(0, '#2a0712'); cg.addColorStop(1, 'rgba(42,7,18,0)');
-    c.fillStyle = cg; c.fillRect(0, 0, 140, FLOOR);
-    for (let k = 0; k < 4; k++) {
-      const x = 8 + k * 26, fg = c.createLinearGradient(x, 0, x + 26, 0);
-      fg.addColorStop(0, 'rgba(0,0,0,0.35)'); fg.addColorStop(0.5, 'rgba(190,40,70,0.22)'); fg.addColorStop(1, 'rgba(0,0,0,0.35)');
-      c.fillStyle = fg; c.globalAlpha = 1 - k * 0.22;
-      c.beginPath(); c.moveTo(x, 0); c.bezierCurveTo(x + 10, 600, x - 6, 1200, x + 4, FLOOR); c.lineTo(x + 26, FLOOR); c.bezierCurveTo(x + 22, 1200, x + 36, 600, x + 26, 0); c.fill();
-    }
-    c.restore();
-  }
 }
 
 function lights(c, t, spotX) {

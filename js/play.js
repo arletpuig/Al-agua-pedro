@@ -2,12 +2,12 @@
 // El botón grande sirve para las dos cosas: pulsar para conseguir tomates y, mientras apuntas, lanzar.
 // Lanzar ×N es UN solo tiro que vale por N tomates: si cae Pedro cuenta N caídas y N pagas de pesetas.
 import { CONFIG } from './config.js';
-import { state, addClicks, useTomatoes, registerThrow, falconActive } from './state.js';
+import { state, addClicks, useTomatoes, registerThrow, falconActive, recoverTomatoes, addPaguita } from './state.js';
 import * as E from './economy.js';
 import { SFX, unlock } from './audio.js';
 import { LINES, pick } from './game/arena.js';
 
-let scene, ui, hooks, busy = false, taps = 0, idleTimer = null;
+let scene, ui, hooks, busy = false, taps = 0, idleTimer = null, chatAt = 40, chatTime = 0, paguitaAt = 0;
 const combo = { heat: 0, last: 0, mult: 1 };
 export function isBusy() { return busy; }
 export function comboMult() { return combo.mult; }
@@ -18,6 +18,9 @@ export function initPlay(sceneRef, uiRef, hooksRef = {}) {
   btn.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); onPress(e); } });
   // el multiplicador se enfría si dejas de pulsar
   setInterval(tickCombo, 100);
+  // Paguitas: cada cierto tiempo llueven pesetas (solo con el juego a la vista)
+  paguitaAt = performance.now();
+  setInterval(tickPaguitas, 500);
   scheduleIdle();
 }
 function scheduleIdle() {
@@ -50,8 +53,15 @@ function onTap(e) {
   const b = e.currentTarget; b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 90);
   ui.floater('+' + n, e.clientX || null, e.clientY || null); ui.hud(true); ui.combo(combo.mult, combo.heat, nextHeat());
   if (taps % 10 === 0) scene.peek();
+  // mientras pulsas, Pedro suelta de vez en cuando una de sus frases
+  if (taps >= chatAt && performance.now() - chatTime > 7000 && !busy) { chatAt = taps + 35 + Math.floor(Math.random() * 30); chatTime = performance.now(); scene.chatter(pick(LINES.idle)); }
   if (earned) { SFX.tomato(); ui.flyTomato(earned); scene.tomatoEarned(); }
   scheduleIdle();
+}
+function tickPaguitas() {
+  const every = E.paguitasEvery(state.cards);
+  if (!every || document.visibilityState !== 'visible') { paguitaAt = performance.now(); return; }
+  if (performance.now() - paguitaAt >= every * 1000) { paguitaAt = performance.now(); addPaguita(E.PAGUITA); SFX.coin(); scene.rainCoins?.(E.PAGUITA); ui.hud(); }
 }
 // ---------- decisión de un lanzamiento ----------
 export const testRng = { fn: null };   // solo para pruebas automáticas (modo ?debug)
@@ -80,7 +90,10 @@ export async function throwTomatoes(n) {
     const res = await scene.startAim(speedMult(), n, E.perfectRadius(state.cards, CONFIG.PERFECT_RADIUS));
     ui.showStop(false);
     const d = decide(res, n);
-    registerThrow(res.kind, d, n); ui.hud();
+    registerThrow(res.kind, d, n);
+    // Plus Ultra: si fallas, a veces recuperas los tomates
+    if (!d.fall && (testRng.fn || Math.random)() < E.recoverChance(state.cards)) { d.recovered = n; recoverTomatoes(n); }
+    ui.hud();
     await scene.resolveThrow(res, d, true, n);
     result = { ...res, ...d, n };
   } finally { busy = false; ui.showStop(false); ui.setBusy(false); }

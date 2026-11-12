@@ -94,7 +94,7 @@ export class Arena {
   }
   say(text, secs = 2.4, where = 'head') { this.bubble = { text, t0: this.now, until: this.now + secs, where }; }
   hush() { this.bubble = null; }
-  bigText(text, color, y = 300) { this.fx.push({ text, color, t0: this.now, y }); }
+  bigText(text, color, y = 300, size = 96) { this.fx.push({ text, color, t0: this.now, y, size }); }
   doShake(amp, dur) { this.shake = { amp, until: this.now + dur, dur }; }
 
   // ------------------------------------------------ partículas
@@ -108,6 +108,13 @@ export class Arena {
   // ------------------------------------------------ reacciones a los clics
   peek() { if (!this.busy && !this.aim && this.clipName === 'idle') this.lookOverride = { lookX: -0.3, lookY: 1, until: this.now + 0.9 }; }
   tomatoEarned() { if (this.busy || this.aim) return; if (this.clipName === 'idle') this.play('shock'); }
+  // frases mientras el jugador pulsa: solo si Pedro está tranquilo
+  chatter(line) { if (this.busy || this.aim || this.bubble) return; if (this.clipName === 'idle') this.play('smug'); this.say(line, 2.4); }
+  // Paguitas: llueven pesetas desde arriba
+  rainCoins(n = 3) {
+    for (let i = 0; i < n; i++) this.tw.push({ obj: {}, props: {}, from: {}, t0: this.now, dur: i * 0.18, ease: 'l', res: () => this.burst(rand(300, 900), 220, 1, 'coin', { angle: Math.PI / 2, spread: 0.25, min: 150, max: 350, g: 900, r: [26, 32], life: [1.6, 2.0] }) });
+    this.bigText(`+${n} PAGUITA`, '#ffd23f', 1290, 64);
+  }
   tauntIdle(line) { if (this.busy || this.aim || this.clipName !== 'idle') return; this.play('smug'); this.say(line, 2.6); }
 
   // ------------------------------------------------ puntería: el tomate va de lado a lado, solo en horizontal
@@ -133,7 +140,7 @@ export class Arena {
     try {
       // a veces, en un fallo, Pedro atrapa el tomate al vuelo y se lo pone de nariz
       // si fallas por la izquierda el tomate va hacia Pedro: lo atrapa y se lo pone de nariz
-      if (res.kind === 'miss' && res.x < TARGET.x && !decision.fall) return await this.catchIt(res);
+      if (res.kind === 'miss' && res.x < TARGET.x && !decision.fall) { const r = await this.catchIt(res); if (decision.recovered) { this.bigText(`¡PLUS ULTRA! +${decision.recovered}`, '#7fdfff', 420, 64); SFX.tomato(); } return r; }
       SFX.whoosh();
       const big = 0.9 + Math.min(0.3, (n - 1) * 0.04);
       const fly = { x: res.x, y: AIM.y, s: big, rot: 0, n }; this.flying = fly;
@@ -150,6 +157,7 @@ export class Arena {
       if (decision.fall) await this.fallSequence(res, decision, last, n);
       else if (res.kind === 'near') await this.nearMiss(last);
       else await this.miss(last);
+      if (decision.recovered) { this.bigText(`¡PLUS ULTRA! +${decision.recovered}`, '#7fdfff', 420, 64); SFX.tomato(); }
     } finally { this.busy = false; }
   }
   async nearMiss(last) {
@@ -370,7 +378,15 @@ export class Arena {
       c.save(); c.globalAlpha = a; c.translate(p.x, p.y);
       if (p.kind === 'drop') { c.rotate(Math.atan2(p.vy, p.vx) - Math.PI / 2); c.fillStyle = '#bff0ff'; c.strokeStyle = '#2a8fc4'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, -p.r * 1.6); c.quadraticCurveTo(p.r, 0, 0, p.r); c.quadraticCurveTo(-p.r, 0, 0, -p.r * 1.6); c.fill(); c.stroke(); c.fillStyle = '#fff'; ell(c, -p.r * 0.3, -p.r * 0.2, p.r * 0.25, p.r * 0.35); c.fill(); }
       else if (p.kind === 'juice') { c.fillStyle = p.r > 8 ? '#e3312a' : '#ff6b55'; ell(c, 0, 0, p.r, p.r * 0.8, p.rot); c.fill(); }
-      else if (p.kind === 'coin') { c.rotate(p.rot * 0.3); c.scale(Math.cos(p.rot), 1); c.fillStyle = '#0a0b18'; ell(c, 0, 0, p.r + 3, p.r + 3); c.fill(); const g = c.createRadialGradient(-4, -4, 1, 0, 0, p.r); g.addColorStop(0, '#fff3b0'); g.addColorStop(1, '#e09a12'); c.fillStyle = g; ell(c, 0, 0, p.r, p.r); c.fill(); c.fillStyle = '#8a5200'; c.font = `${p.r * 1.3}px "Titan One"`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('P', 0, 1); }
+      else if (p.kind === 'coin') {
+        // halo dorado
+        c.save(); c.globalCompositeOperation = 'lighter'; const halo = c.createRadialGradient(0, 0, 0, 0, 0, p.r * 2.6); halo.addColorStop(0, 'rgba(255,220,90,0.55)'); halo.addColorStop(1, 'rgba(255,200,60,0)'); c.fillStyle = halo; ell(c, 0, 0, p.r * 2.6, p.r * 2.6); c.fill(); c.restore();
+        c.save(); c.rotate(p.rot * 0.3); c.scale(Math.cos(p.rot), 1); c.fillStyle = '#0a0b18'; ell(c, 0, 0, p.r + 3, p.r + 3); c.fill();
+        const g = c.createRadialGradient(-4, -4, 1, 0, 0, p.r); g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, '#fff3b0'); g.addColorStop(1, '#e09a12'); c.fillStyle = g; ell(c, 0, 0, p.r, p.r); c.fill();
+        c.fillStyle = '#8a5200'; c.font = `${p.r * 1.3}px "Titan One"`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('P', 0, 1); c.restore();
+        // destello en cruz que parpadea
+        const tw = Math.max(0, Math.sin(this.now * 14 + p.rot * 3)); if (tw > 0.4) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,255,255,${tw})`; const k = p.r * 1.4 * tw; c.translate(p.r * 0.45, -p.r * 0.45); c.beginPath(); c.moveTo(0, -k); c.lineTo(k * 0.18, -k * 0.18); c.lineTo(k, 0); c.lineTo(k * 0.18, k * 0.18); c.lineTo(0, k); c.lineTo(-k * 0.18, k * 0.18); c.lineTo(-k, 0); c.lineTo(-k * 0.18, -k * 0.18); c.closePath(); c.fill(); c.restore(); }
+      }
       else if (p.kind === 'star') { c.rotate(p.rot); c.fillStyle = '#ffd23f'; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? p.r * 0.45 : p.r, an = i * Math.PI / 5; c.lineTo(Math.cos(an) * r, Math.sin(an) * r); } c.fill(); }
       c.restore();
     }
@@ -380,8 +396,8 @@ export class Arena {
       const age = this.now - f.t0; if (age > 1.5) continue;
       const pop = age < 0.25 ? EASE.b(age / 0.25) : 1, a = age > 1.0 ? 1 - (age - 1.0) / 0.5 : 1;
       c.save(); c.globalAlpha = Math.max(0, a); c.translate(560, f.y - age * 40); c.scale(pop, pop); c.rotate(-0.05);
-      c.font = '96px "Titan One", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
-      c.strokeStyle = '#0a0b18'; c.lineWidth = 22; c.strokeText(f.text, 0, 0);
+      c.font = `${f.size || 96}px "Titan One", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+      c.strokeStyle = '#0a0b18'; c.lineWidth = 22 * (f.size || 96) / 96; c.strokeText(f.text, 0, 0);
       const g = c.createLinearGradient(0, -40, 0, 40); g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, f.color); g.addColorStop(1, f.color);
       c.fillStyle = g; c.fillText(f.text, 0, 0);
       c.restore();

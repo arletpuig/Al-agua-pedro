@@ -35,7 +35,7 @@ if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, 
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
 async function buyChest(kind) {
   if (opening || isBusy()) return; opening = true;
-  try { const reward = await backend.openChest(kind); ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-shop'); } catch (e) { fail(e); ui.renderShop(); }
+  try { const reward = await backend.openChest(kind); ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-shop'); if (reward.refund) ui.showToast(`Hacienda Inversa te devuelve ${reward.refund} peseta${reward.refund > 1 ? 's' : ''}`); } catch (e) { fail(e); ui.renderShop(); }
   opening = false;
 }
 async function claimDaily() {
@@ -45,7 +45,11 @@ async function claimDaily() {
 }
 async function upgrade(id) {
   if (opening) return; opening = true;
-  try { await backend.upgradeCard(id); SFX.upgrade(); ui.renderCards(id); ui.showToast(`⬆️ ${E.CARDS[id].name} sube a nivel ${E.level(state.cards, id)}`); } catch (e) { fail(e); ui.renderCards(); }
+  try {
+    const b = await backend.upgradeCard(id); SFX.upgrade(); ui.renderCards(id);
+    const extra = [b.refund ? `+${b.refund} peseta${b.refund > 1 ? 's' : ''} de Hacienda` : '', b.tomatoes ? `+${b.tomatoes} tomates de la Puerta Giratoria` : ''].filter(Boolean).join(' · ');
+    ui.showToast(`⬆️ ${E.CARDS[id].name} sube a nivel ${E.level(state.cards, id)}` + (extra ? ` · ${extra}` : ''), extra ? 3200 : 2400);
+  } catch (e) { fail(e); ui.renderCards(); }
   opening = false;
 }
 async function watchAd(placement) { try { await backend.watchAd(placement); ui.renderShop(); } catch (e) { fail(e); } }
@@ -77,7 +81,7 @@ async function afterLogin(user) {
     state.updatedAt = null;
     if (serverEmpty && hasProgress()) {       // primera vez: se sube el progreso de invitado (una sola vez, validado y con topes)
       const s = state.stats;
-      row = await sb.importGuest({ totalClicks: s.totalClicks, legacyClicks: s.legacyClicks, legacyTomatoes: s.legacyTomatoes, tomatoesThrown: s.tomatoesThrown, hits: s.hits, perfects: s.perfects, falls: s.falls, pesetasEarned: s.pesetasEarned, chestTomatoes: s.chestTomatoes, chestPesetas: s.chestPesetas, pesetasSpent: s.pesetasSpent, chestsOpened: s.chestsOpened, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn });
+      row = await sb.importGuest({ totalClicks: s.totalClicks, legacyClicks: s.legacyClicks, legacyTomatoes: s.legacyTomatoes, tomatoesThrown: s.tomatoesThrown, hits: s.hits, perfects: s.perfects, falls: s.falls, pesetasEarned: s.pesetasEarned, tomatoesRefunded: s.tomatoesRefunded || 0, paguitasPesetas: s.paguitasPesetas || 0, chestTomatoes: s.chestTomatoes, chestPesetas: s.chestPesetas, pesetasSpent: s.pesetasSpent, chestsOpened: s.chestsOpened, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn });
       applyServer(row); ui.showToast('☁️ Tu progreso se ha guardado en tu cuenta');
     } else if (row) { applyServer(row); ui.showToast('☁️ Progreso cargado de tu cuenta'); }
     ui.hud();

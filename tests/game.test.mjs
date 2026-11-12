@@ -153,7 +153,7 @@ check('sin desbloquear da 1 fragmento; al llegar se desbloquea; luego da varios'
 console.log('16, 17. Cartas y potenciadores');
 await give(page, { cards: { inflacion: { level: 1, frags: 6 }, mariscada: { level: 1, frags: 3 }, joyas: { level: 1, frags: 0 }, apagon: { level: 1, frags: 0 }, amnistia: { level: 1, frags: 0 } } });
 await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(300); await shot('10-cartas');
-check('la colección muestra las 5 cartas', await page.locator('#cards-grid .card').count() === 5);
+check('la colección muestra las 9 cartas', await page.locator('#cards-grid .card').count() === 9 && /Plus Ultra/.test(await txt('#cards-grid')) && /Paguitas/.test(await txt('#cards-grid')));
 before = await S(page);
 const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 1, AAP.state.cards));
 await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(300); s = await S(page);
@@ -168,7 +168,7 @@ await page.click('#panel-cards [data-close]');
 before = await S(page); await tap(page, 10); s = await S(page);
 check('Inflación nivel 2: 3 clics por pulsación', s.totalClicks === before.totalClicks + 30 && (await txt('#cpt-badge')).includes('+3'));
 check('Joyas de Zapatero: 2 o 3 pesetas, y cada nivel da menos', await page.evaluate(() => { const E = AAP.E, c = { joyas: { level: 10 } }, p = E.CARDS.joyas.value(10), v = E.CARDS.joyas.value; return E.rollFallPesetas(c, () => p / 6) === 3 && E.rollFallPesetas(c, () => p / 2) === 2 && E.rollFallPesetas(c, () => 0.99) === 1 && E.rollFallPesetas({ joyas: { level: 0 } }, () => 0) === 1 && v(2) - v(1) > v(25) - v(24) && v(25) < 0.45; }));
-check('muchos más niveles de mejora', await page.evaluate(() => { const C = AAP.E.CARDS; return C.inflacion.max === 30 && C.joyas.max === 25 && C.mariscada.max === 25 && C.apagon.max === 25 && C.amnistia.max === 20; }));
+check('muchos más niveles de mejora', await page.evaluate(() => { const C = AAP.E.CARDS; return C.inflacion.max === 30 && C.joyas.max === 25 && C.mariscada.max === 25 && C.apagon.max === 25 && C.amnistia.max === 20 && C.plusultra.max === 25 && C.hacienda.max === 20 && C.puerta.max === 20 && C.paguitas.max === 15; }));
 check('Apagón: el centro de la diana crece', await page.evaluate(() => AAP.E.perfectRadius({ apagon: { level: 10 } }, 46) > 46 * 1.2 && AAP.E.perfectRadius({}, 46) === 46));
 check('las cartas al máximo ya no salen en los cofres', await page.evaluate(() => { const E = AAP.E, c = E.emptyCards(); c.inflacion = { level: 30, frags: 0 }; for (let i = 0; i < 300; i++) if (E.rollChest('wood', c).cards.some(x => x.id === 'inflacion')) return false; return true; }));
 check('con toda la colección al máximo el cofre da pesetas', await page.evaluate(() => { const E = AAP.E, c = {}; E.CARD_IDS.forEach(id => c[id] = { level: E.CARDS[id].max, frags: 0 }); const r = E.rollChest('diamond', c); return r.cards.length === 0 && r.pesetas >= 9; }));
@@ -183,6 +183,30 @@ await page.evaluate(() => { AAP.testRng.fn = () => 0.99; });
 before = s; await throwN(1); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
 check('sin suerte, el fallo sigue siendo fallo', s.falls === before.falls);
 await page.evaluate(() => { AAP.testRng.fn = null; });
+
+console.log('18. Cartas nuevas: Plus Ultra, Hacienda Inversa, Puerta Giratoria y Paguitas');
+await give(page, { tomatoes: 2, cards: { amnistia: { level: 0, frags: 0 }, plusultra: { level: 10, frags: 0 } } });
+await page.evaluate(() => { AAP.testRng.fn = () => 0.01; });
+before = await S(page); await throwN(1); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
+check('Plus Ultra: al fallar recuperas el tomate', s.falls === before.falls && s.tomatoes === before.tomatoes && s.tomatoesRefunded === (before.tomatoesRefunded || 0) + 1);
+await page.evaluate(() => { AAP.testRng.fn = () => 0.99; });
+before = s; await throwN(1); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
+check('Plus Ultra: sin suerte, el tomate se pierde', s.tomatoes === before.tomatoes - 1 && s.tomatoesRefunded === before.tomatoesRefunded);
+await page.evaluate(() => { AAP.testRng.fn = null; });
+await give(page, { pesetas: 200, cards: { hacienda: { level: 10, frags: 0 }, puerta: { level: 5, frags: 0 }, inflacion: { level: 3, frags: 40 } } });
+const hac = await page.evaluate(async () => { const b = { ...AAP.state.stats }, p0 = AAP.state.pesetas, r = await AAP.backend.openChest('diamond'); return { r, d: AAP.state.pesetas - p0, exp: AAP.E.refund(AAP.state.cards, 40) }; });
+check('Hacienda Inversa: el cofre te devuelve pesetas', hac.r.refund > 0 && hac.r.refund === hac.exp && hac.d === -40 + hac.r.refund + hac.r.pesetas, JSON.stringify({ refund: hac.r.refund, d: hac.d }));
+const pg = await page.evaluate(async () => { const t0 = AAP.state.tomatoes, p0 = AAP.state.pesetas, cost = AAP.E.upgradeCost('inflacion', AAP.state.cards.inflacion.level, AAP.state.cards), b = await AAP.backend.upgradeCard('inflacion'); return { b, dt: AAP.state.tomatoes - t0, dp: AAP.state.pesetas - p0, cost }; });
+check('Puerta Giratoria: 2 tomates por nivel en cada mejora; Hacienda devuelve parte', pg.b.tomatoes === 10 && pg.dt === 10 && pg.b.refund >= 1 && pg.dp === -pg.cost + pg.b.refund, JSON.stringify(pg));
+check('Paguitas: cada nivel llueve más a menudo', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value; return v(0) === 0 && v(1) === 120 && v(15) < v(10) && v(10) < v(1) && v(15) >= 15; }));
+await give(page, { cards: { paguitas: { level: 15, frags: 0 }, hacienda: { level: 0, frags: 0 }, puerta: { level: 0, frags: 0 }, plusultra: { level: 0, frags: 0 } } });
+before = await S(page); await page.waitForFunction(p => AAP.state.stats.paguitasPesetas > p, before.paguitasPesetas || 0, { timeout: 30000 }); s = await S(page);
+check('Paguitas: llueven 3 pesetas', s.paguitasPesetas === (before.paguitasPesetas || 0) + 3 && s.pesetas === before.pesetas + 3);
+await give(page, { cards: { paguitas: { level: 0, frags: 0 } } });
+console.log('19. Pedro habla mientras pulsas');
+await page.waitForFunction(() => !AAP.scene.bubble, null, { timeout: 8000 });
+let said = false; for (let i = 0; i < 12 && !said; i++) { await tap(page, 10); await page.waitForTimeout(80); said = await page.evaluate(() => !!AAP.scene.bubble); }
+check('al ir pulsando, Pedro suelta alguna frase', said, said ? await page.evaluate(() => AAP.scene.bubble.text) : '');
 
 console.log('20. Persistencia'); before = await S(page);
 await page.reload(); await page.waitForFunction(() => window.AAP?.scene?.ready); await page.waitForTimeout(500); s = await S(page);

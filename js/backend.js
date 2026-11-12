@@ -32,18 +32,23 @@ export const backend = {
     const def = E.CHESTS[kind];
     if (this.cloud) { const { r, sent } = await cloudOp(() => sb.openChest(kind)); applyServer(r.profile, sent); return r.reward; }
     if (state.pesetas < def.price) throw new Error('No tienes pesetas suficientes');
-    const reward = E.rollChest(kind, state.cards); E.applyChestCards(state.cards, reward.cards); applyChestLocal(reward, def.price); return reward;
+    const back = E.refund(state.cards, def.price);                       // Hacienda Inversa, con las cartas de antes de abrir
+    const reward = E.rollChest(kind, state.cards); E.applyChestCards(state.cards, reward.cards);
+    reward.refund = back; state.stats.chestPesetas += back; applyChestLocal(reward, def.price); return reward;
   },
   async claimDaily() {
     if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimDaily()); applyServer(r.profile, sent); return r.reward; }
     if (!this.dailyAvailable()) throw new Error('Ya has reclamado el cofre de hoy');
     const reward = E.rollChest('wood', state.cards); E.applyChestCards(state.cards, reward.cards); state.dailyClaimedOn = this.todayKey(); applyChestLocal(reward, 0); return reward;
   },
+  // Devuelve lo que dan Hacienda Inversa y Puerta Giratoria (calculado con las cartas de antes de mejorar, igual que el servidor).
   async upgradeCard(id) {
-    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.upgradeCard(id)); applyServer(r, sent); return; }
+    const L0 = E.level(state.cards, id), bonus = { refund: E.refund(state.cards, E.upgradeCost(id, L0, state.cards)), tomatoes: E.upgradeTomatoes(state.cards) };
+    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.upgradeCard(id)); applyServer(r, sent); return bonus; }
     if (!E.canUpgrade(state.cards, id, state.pesetas)) throw new Error('No puedes mejorar esta carta todavía');
     const L = E.level(state.cards, id), cost = E.upgradeCost(id, L, state.cards);
-    state.cards[id].frags -= E.fragsNeeded(id, L); state.cards[id].level++; state.stats.pesetasSpent += cost; changed(false);
+    state.cards[id].frags -= E.fragsNeeded(id, L); state.cards[id].level++; state.stats.pesetasSpent += cost;
+    state.stats.chestPesetas += bonus.refund; state.stats.chestTomatoes += bonus.tomatoes; changed(false); return bonus;
   },
   // Anuncio recompensado: solo da recompensa con verificación real del proveedor y del servidor.
   async watchAd(placement) {

@@ -149,7 +149,7 @@ svg { display: block; }
 .sheet.short .sheet-body { height: auto; }
 .sheet-body::-webkit-scrollbar { display: none; }
 .note { margin: 0; font: 600 12px/1.35 'Baloo 2'; color: #b9c6ff; text-align: center; }
-.note.top { margin-top: 6px; }
+.note.top { margin-top: 12px; }
 .lead { margin: 0; font: 600 15px/1.4 'Baloo 2'; color: #e6ebff; text-align: center; }
 
 /* botones genéricos */
@@ -212,8 +212,9 @@ svg { display: block; }
 .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .card { position: relative; border-radius: 18px; border: 3px solid var(--ink); padding: 8px; display: flex; flex-direction: column; gap: 6px;
   background: linear-gradient(color-mix(in srgb, var(--rc) 70%, #fff), var(--rc) 35%, color-mix(in srgb, var(--rc) 55%, #000)); box-shadow: inset 0 3px 0 #ffffff66, inset 0 -5px 0 #0006, 0 5px 0 #0009; }
-.card.locked { filter: grayscale(.9) brightness(.6); }
-.card.locked::after { content: 'BLOQUEADA'; position: absolute; left: 50%; top: 46px; transform: translateX(-50%) rotate(-8deg); padding: 2px 10px; border-radius: 8px; border: 2.5px solid var(--ink); background: #0a1442; font: 13px 'Titan One'; color: #fff; white-space: nowrap; }
+.card.locked .card-art, .card.locked h3, .card.locked p, .card.locked .lvl { filter: grayscale(.9) brightness(.6); }
+.card.locked { background: linear-gradient(#4a557a, #2a3150 40%, #1a1f36); }
+.card.locked::after { content: 'BLOQUEADA'; z-index: 2; position: absolute; left: 50%; top: 46px; transform: translateX(-50%) rotate(-8deg); padding: 2px 10px; border-radius: 8px; border: 2.5px solid var(--ink); background: #0a1442; font: 13px 'Titan One'; color: #fff; white-space: nowrap; }
 .card.upgraded { animation: upg .8s ease-out; }
 @keyframes upg { 30% { transform: scale(1.06); box-shadow: 0 0 30px #fff; } }
 .card-art { height: 92px; border-radius: 12px; background: #0005; border: 2px solid var(--ink); display: grid; place-items: center; }
@@ -328,3 +329,40 @@ svg { display: block; }
   .rotate svg { width: 72px; height: 72px; animation: rot 1.6s ease-in-out infinite; }
 }
 @keyframes rot { 50% { transform: rotate(-90deg); } }
+
+/* ---------------------------------------------------------------- tienda */
+.sec { margin: 4px 0 -2px; display: flex; align-items: center; gap: 10px; font: 16px 'Titan One'; color: #ffe766; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); }
+.sec::before, .sec::after { content: ''; flex: 1; height: 3px; border-radius: 2px; background: linear-gradient(90deg, #ffe76600, #ffe766aa); }
+.sec::after { background: linear-gradient(90deg, #ffe766aa, #ffe76600); }
+.ribbon { position: absolute; left: 50%; top: -12px; transform: translateX(-50%); z-index: 2; padding: 1px 8px; border-radius: 8px; border: 2.5px solid var(--ink); white-space: nowrap; font-style: normal;
+  background: linear-gradient(var(--blue1), var(--blue2)); font: 11px/18px 'Titan One'; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); box-shadow: 0 3px 0 #0008; }
+.chest-card { overflow: visible; padding-top: 18px; }
+.grid2 { margin-top: 8px; }
+.chest-card.diamond { animation: glowd 1.6s ease-in-out infinite alternate; }
+@keyframes glowd { to { box-shadow: inset 0 3px 0 #ffffff55, inset 0 -5px 0 #0006, 0 5px 0 #0009, 0 0 22px #d79bff; } }
+.chest-card.diamond .ribbon { background: linear-gradient(var(--red1), var(--red2)); animation: ribpulse 1.6s ease-in-out infinite; }
+@keyframes ribpulse { 50% { transform: translateX(-50%) scale(1.1); } }
+.chest-card .gems { display: flex; gap: 4px; margin: 2px 0 2px; }
+.gem { display: inline-block; width: 11px; height: 11px; border-radius: 3px; border: 2px solid var(--ink); transform: rotate(45deg); }
+.probs .gem { width: 9px; height: 9px; margin-right: 5px; vertical-align: -1px; }
+.chest-card li b { font: 13px 'Titan One'; color: #ffe766; margin-right: 2px; }
+.sparkle { position: absolute; width: 14px; height: 14px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: twinkle 1.8s ease-in-out infinite; pointer-events: none; z-index: 1; }
+.sparkle.s1 { left: 18%; top: 60px; } .sparkle.s2 { right: 16%; top: 44px; animation-delay: .6s; width: 10px; height: 10px; } .sparkle.s3 { right: 30%; top: 110px; animation-delay: 1.2s; }
+@keyframes twinkle { 0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; } 50% { transform: scale(1) rotate(90deg); opacity: 1; } }
+.offer { position: relative; overflow: visible; }
+.offer .ribbon { left: auto; right: 14px; transform: none; background: linear-gradient(var(--green1), var(--green2)); }
+.wallet { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 12px; border-radius: 16px; background: #0a1442; border: 2px solid var(--ink); }
+.wallet svg { width: 40px; height: 40px; flex-shrink: 0; filter: drop-shadow(0 2px 0 #0008); }
+.wallet div { font: 800 13px 'Baloo 2'; color: #c9d4ff; line-height: 1.2; }
+.wallet b { font: 22px 'Titan One'; color: #ffe766; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); margin-right: 4px; }
+.wallet small { display: block; font-weight: 600; font-size: 11px; color: #8f9fd8; }
+
+/* ---------------------------------------------------------------- cartas nuevas */
+.tab .dot { position: absolute; top: 4px; right: 18px; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid var(--ink); background: linear-gradient(var(--red1), var(--red2)); box-shadow: 0 0 10px #ff6b55; animation: badge 1.2s ease-in-out infinite; }
+.card { cursor: pointer; }
+.card.fresh { box-shadow: inset 0 3px 0 #ffffff66, inset 0 -5px 0 #0006, 0 5px 0 #0009, 0 0 0 3px #ffe766, 0 0 18px #ffe766; }
+.card .dot { position: absolute; top: -7px; right: -7px; z-index: 3; width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--ink); background: linear-gradient(var(--red1), var(--red2)); box-shadow: 0 0 10px #ff6b55; animation: badge 1.2s ease-in-out infinite; }
+.card .new-tag { position: absolute; left: 50%; top: -11px; transform: translateX(-50%) rotate(-4deg); z-index: 3; padding: 0 8px; border-radius: 8px; border: 2.5px solid var(--ink); font-style: normal;
+  background: linear-gradient(var(--red1), var(--red2)); font: 12px/18px 'Titan One'; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); }
+.frag.unlock { color: #ffe766; }
+.reward small { display: block; font: 800 10px 'Baloo 2'; color: #fff; -webkit-text-stroke: 0; }

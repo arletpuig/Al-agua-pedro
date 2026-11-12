@@ -1,10 +1,11 @@
 // Economía del juego: cartas, cofres, pesetas. Funciones puras (sin DOM) para poder simularlas.
-// Las mismas reglas están replicadas en supabase/schema_v2.sql para los usuarios con cuenta.
+// Las mismas reglas están replicadas en supabase/schema_v2.sql y schema_v4.sql para los usuarios con cuenta.
 export const RARITIES = {
-  common:    { name: 'Común',      color: '#8fa3b5', weightWood: 55, weightDiamond: 30, baseCost: 8,  growth: 1.42 },
-  rare:      { name: 'Rara',       color: '#3fa9f5', weightWood: 15, weightDiamond: 19, baseCost: 12, growth: 1.45 },
-  epic:      { name: 'Épica',      color: '#b163ff', weightWood: 11, weightDiamond: 22, baseCost: 18, growth: 1.5 },
-  legendary: { name: 'Legendaria', color: '#ffb400', weightWood: 4,  weightDiamond: 10, baseCost: 30, growth: 1.55 },
+  // unlock: fragmentos para desbloquear (antes de tenerla cada aparición da 1); drop: fragmentos por aparición ya desbloqueada
+  common:    { name: 'Común',      color: '#8fa3b5', weightWood: 55, weightDiamond: 30, baseCost: 8,  growth: 1.42, unlock: 2, drop: 3 },
+  rare:      { name: 'Rara',       color: '#3fa9f5', weightWood: 15, weightDiamond: 19, baseCost: 12, growth: 1.45, unlock: 3, drop: 3 },
+  epic:      { name: 'Épica',      color: '#b163ff', weightWood: 11, weightDiamond: 22, baseCost: 18, growth: 1.5,  unlock: 5, drop: 2 },
+  legendary: { name: 'Legendaria', color: '#ffb400', weightWood: 4,  weightDiamond: 10, baseCost: 30, growth: 1.55, unlock: 6, drop: 2 },
 };
 export const CARDS = {
   inflacion: { id: 'inflacion', name: 'Inflación', rarity: 'common', max: 10, icon: 'inflacion',
@@ -36,13 +37,15 @@ export const frags = (cards, id) => cards?.[id]?.frags || 0;
 export function emptyCards() { const c = {}; CARD_IDS.forEach(id => c[id] = { level: 0, frags: 0 }); return c; }
 
 export function clicksPerTap(cards, falconActive) { return CARDS.inflacion.value(level(cards, 'inflacion')) * (falconActive ? FALCON.mult : 1); }
-// Fragmentos necesarios para subir del nivel L al L+1 (L >= 1)
+// Fragmentos para desbloquear una carta (cuanto más rara, más cuesta)
+export const unlockNeed = id => RARITIES[CARDS[id].rarity].unlock;
+// Fragmentos necesarios para subir del nivel L al L+1 (L >= 1). Una vez desbloqueada cada aparición da varios.
 export function fragsNeeded(id, L) {
   const r = CARDS[id].rarity;
-  if (r === 'common') return 1 + Math.ceil(L / 2);
-  if (r === 'rare') return 1 + Math.ceil(L / 3);
-  if (r === 'epic') return 1 + Math.floor(L / 3);
-  return 1;
+  if (r === 'common') return 2 + L;
+  if (r === 'rare') return 2 + Math.ceil(L * 0.7);
+  if (r === 'epic') return 2 + Math.ceil(L / 2);
+  return 2 + Math.floor(L / 2);
 }
 export function upgradeCost(id, L, cards) {
   const r = RARITIES[CARDS[id].rarity], disc = CARDS.mariscada.value(level(cards, 'mariscada'));
@@ -84,8 +87,17 @@ export function rollChest(kind, cards, rng = Math.random) {
   if (rng() < def.pesetaChance) out.pesetas = def.pesetas[0] + Math.floor(rng() * (def.pesetas[1] - def.pesetas[0] + 1));
   return out;
 }
-// Aplica un cofre al estado de cartas; marca cada carta como nueva o fragmento.
+// Aplica un cofre al estado de cartas. Sin desbloquear: +1 fragmento y, al llegar a lo necesario, se desbloquea (isNew).
+// Desbloqueada: +drop fragmentos según rareza. Cada carta del premio indica frags ganados, si sigue bloqueada y su progreso.
 export function applyChestCards(cards, rolled) {
-  rolled.forEach(c => { const s = cards[c.id]; if (s.level === 0) { s.level = 1; c.isNew = true; } else { s.frags++; c.isNew = false; } });
+  rolled.forEach(c => {
+    const s = cards[c.id], R = RARITIES[CARDS[c.id].rarity];
+    c.isNew = false;
+    if (s.level === 0) {
+      s.frags += 1; c.frags = 1;
+      if (s.frags >= R.unlock) { s.level = 1; s.frags -= R.unlock; c.isNew = true; }
+      c.locked = s.level === 0; c.have = s.frags; c.need = R.unlock;
+    } else { s.frags += R.drop; c.frags = R.drop; c.locked = false; }
+  });
 }
 export const MAX_IMPORT = { total_clicks: 500000, falls: 20000 };

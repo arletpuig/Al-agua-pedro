@@ -15,11 +15,11 @@ let s = await S(page);
 check('jugador nuevo: regalo de 5 tomates y 10 pesetas', s.tomatoes === 5 && s.pesetas === 10 && s.chestTomatoes === 5, `(${s.tomatoes} tomates, ${s.pesetas} pesetas)`);
 await shot('01-inicio'); await noCombo(page);
 
-console.log('2-5. Clics y tomates'); await tap(page, 250); await page.waitForTimeout(900);
+console.log('2-5. Clics y tomates (200 por tomate)'); await tap(page, 450); await page.waitForTimeout(900);
 s = await S(page);
-check('250 clics contabilizados', s.totalClicks === 250, `(${s.totalClicks})`);
-check('2 tomates por 250 clics (+5 del regalo)', s.tomatoes === 7 && s.tomatoesEarned === 7);
-check('50 clics sobrantes conservados', s.clicks === 50 && (await txt('#bar-text')) === '50');
+check('450 clics contabilizados', s.totalClicks === 450, `(${s.totalClicks})`);
+check('2 tomates por 450 clics (+5 del regalo)', s.tomatoes === 7 && s.tomatoesEarned === 7);
+check('50 clics sobrantes conservados, barra de 200', s.clicks === 50 && (await txt('#bar-text')) === '50' && (await txt('#bar-max')) === '200');
 check('HUD muestra tomates', (await txt('#tomato-num')) === '7');
 
 console.log('7. Límites de lanzamiento');
@@ -41,7 +41,7 @@ check('Pedro vuelve al tablón', await page.evaluate(() => !AAP.scene.pose && !A
 
 console.log('9. Fallos y cercano con ×1');
 await throwN(1); await page.waitForFunction(() => AAP.scene.aim); await page.click('#btn-click');   // el botón grande lanza
-check('pulsar el botón grande mientras apuntas lanza (no suma clics)', await page.evaluate(() => !AAP.scene.aim) && (await S(page)).totalClicks === 250);
+check('pulsar el botón grande mientras apuntas lanza (no suma clics)', await page.evaluate(() => !AAP.scene.aim) && (await S(page)).totalClicks === 450);
 await idle(page);
 await throwN(1); await stopAt(page, 160, 195, 'R'); await page.waitForTimeout(900); await shot('03-fallo-derecha'); await idle(page); s = await S(page);
 check('fallo a la derecha: no cae, sin pesetas, tomate gastado', s.falls === 1 && s.pesetas === 11 && s.tomatoesThrown === 3);
@@ -54,7 +54,7 @@ check('cercano sin Apagón: cuenta como impacto pero no cae', s.hits === 2 && s.
 check('la mancha se queda en la diana', await page.evaluate(() => AAP.scene.splats.length > 0));
 
 console.log('6, 8, 12. Lanzamientos múltiples: un solo tomate que vale por varios');
-await tap(page, 100); await page.waitForTimeout(500);
+await tap(page, 200); await page.waitForTimeout(500);
 let before = await S(page);
 await throwN(3); await page.waitForTimeout(200);
 check('×3 descuenta exactamente 3', (await S(page)).tomatoes === before.tomatoes - 3);
@@ -62,7 +62,7 @@ check('×3 es un solo tiro', await page.evaluate(() => AAP.scene.aim?.n === 3));
 await stopAt(page, 0, 10); await idle(page); s = await S(page);
 check('×3 perfecto: cuenta 3 caídas y 3 pesetas', s.falls === before.falls + 3 && s.perfects === before.perfects + 3 && s.pesetas === before.pesetas + 3 && s.tomatoesThrown === before.tomatoesThrown + 3);
 check('después no hay más tiros pendientes', await page.evaluate(() => !AAP.scene.aim && !AAP.scene.busy));
-await tap(page, 1900); await page.waitForTimeout(900); s = await S(page);
+await tap(page, 3800); await page.waitForTimeout(900); s = await S(page);
 check('19 tomates (sin límite artificial)', s.tomatoes === 19, `(${s.tomatoes})`);
 before = await S(page); await throwN(5); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
 check('×5 descuenta 5 y no premia un fallo', s.tomatoes === before.tomatoes - 5 && s.pesetas === before.pesetas && s.falls === before.falls);
@@ -74,17 +74,23 @@ check('estado coherente (Pedro en el tablón)', await page.evaluate(() => !AAP.s
 console.log('Racha de pulsaciones');
 await page.evaluate(() => import('./js/config.js').then(m => { m.CONFIG.COMBO.perTap = 1; }));
 before = await S(page);
-for (let i = 0; i < 6; i++) { await tap(page, 10); await page.waitForTimeout(120); }
+for (let i = 0; i < 3; i++) { await tap(page, 10); await page.waitForTimeout(120); }
+check('la racha tarda en aparecer (30 toques: todavía nada)', await page.evaluate(() => document.querySelector('#combo').classList.contains('hidden')));
+for (let i = 0; i < 12; i++) { await tap(page, 10); await page.waitForTimeout(120); }
 s = await S(page); await page.waitForTimeout(150); await shot('04b-racha');
-check('pulsando seguido sube el multiplicador (×3)', await page.evaluate(() => document.querySelector('#btn-click').classList.contains('c3') && !document.querySelector('#combo').classList.contains('hidden') && document.querySelector('#combo-x').textContent === '×3'));
-check('con racha cada toque vale más', s.totalClicks - before.totalClicks > 60 && s.totalClicks - before.totalClicks <= 180, `(+${s.totalClicks - before.totalClicks} con 60 toques)`);
-await page.waitForTimeout(8000);
+check('pulsando mucho seguido sube el multiplicador (×3)', await page.evaluate(() => document.querySelector('#btn-click').classList.contains('c3') && !document.querySelector('#combo').classList.contains('hidden') && document.querySelector('#combo-x').textContent === '×3'));
+check('con racha cada toque vale más', s.totalClicks - before.totalClicks > 150 && s.totalClicks - before.totalClicks <= 450, `(+${s.totalClicks - before.totalClicks} con 150 toques)`);
+check('sin mensaje de racha', !(await page.locator('#toast').evaluate(e => e.classList.contains('on') && /RACHA/.test(e.textContent))));
+await page.waitForTimeout(4000);
+check('la racha tarda en irse (4 s sin pulsar: sigue)', await page.evaluate(() => !document.querySelector('#combo').classList.contains('hidden')));
+await page.evaluate(() => import('./js/config.js').then(m => { m.CONFIG.COMBO.decayPerSec = 80; }));
+await page.waitForTimeout(3500);
 check('si dejas de pulsar, el multiplicador baja', await page.evaluate(() => document.querySelector('#combo').classList.contains('hidden') && !document.querySelector('#btn-click').classList.contains('c2') && !document.querySelector('#btn-click').classList.contains('c3')));
-await noCombo(page);
+await page.evaluate(() => import('./js/config.js').then(m => { m.CONFIG.COMBO.decayPerSec = 3; })); await noCombo(page);
 
 console.log('19. Ranking: tomates históricos');
 s = await S(page);
-check('los tomates históricos no bajan al lanzar', s.tomatoesEarned === Math.floor(s.totalClicks / 100) + s.chestTomatoes && s.tomatoes === s.tomatoesEarned - s.tomatoesThrown, `(históricos ${s.tomatoesEarned}, disponibles ${s.tomatoes})`);
+check('los tomates históricos no bajan al lanzar', s.tomatoesEarned === Math.floor(s.totalClicks / 200) + s.chestTomatoes && s.tomatoes === s.tomatoesEarned - s.tomatoesThrown, `(históricos ${s.tomatoesEarned}, disponibles ${s.tomatoes})`);
 check('las estadísticas lo muestran', await page.evaluate(n => { AAP.ui.renderStats(); return document.querySelector('#stats-list').innerText.includes(n.toLocaleString('es-ES')); }, s.tomatoesEarned));
 
 console.log('18. Anuncios no integrados');
@@ -105,14 +111,14 @@ check('al terminar vuelve a la producción normal', (await S(page)).totalClicks 
 await page.evaluate(() => { AAP.state.falconUntil = 0; });
 
 console.log('13, 14, 15. Cofres');
-await page.click('#tabs [data-panel="chests"]'); await page.waitForTimeout(300); await shot('07-cofres');
+await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(300); await shot('07-cofres');
 check('sin pesetas suficientes: comprar diamante desactivado', await page.locator('[data-buy="diamond"]').isDisabled());
 check('probabilidades visibles', await page.evaluate(() => { document.querySelector('[data-probs]').click(); return document.querySelector('.probs.open')?.innerText.includes('%'); }));
 before = await S(page);
 await page.click('[data-daily]'); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await shot('08-cofre-abierto');
 const nRew = await page.locator('#chest-rewards .reward').count(); await page.click('#chest-btn'); await page.waitForTimeout(400); s = await S(page);
 check('cofre diario gratis: da carta y tomates, no cuesta', nRew >= 2 && s.pesetasSpent === before.pesetasSpent && s.chestTomatoes >= 2 && s.chestsOpened === 1);
-check('carta guardada (nueva o fragmento)', Object.values(s.cards).some(c => c.level > 0));
+check('carta guardada (fragmento o desbloqueada)', Object.values(s.cards).some(c => c.level > 0 || c.frags > 0));
 check('cofre diario marcado con la fecha del servidor', s.daily === madrid(new Date()));
 check('cofre diario no se puede reclamar dos veces (botón)', await page.locator('[data-daily]').isDisabled());
 check('cofre diario no se puede reclamar dos veces (llamada directa)', await page.evaluate(() => AAP.backend.claimDaily().then(() => false, e => e.message.includes('Ya has reclamado'))));
@@ -122,11 +128,19 @@ await page.click('[data-buy="wood"]'); await page.waitForSelector('#chest-overla
 check('cofre de madera: cuesta 8 pesetas (más asequible)', s.pesetasSpent === before.pesetasSpent + 8 && s.chestsOpened === before.chestsOpened + 1);
 before = s;
 await page.click('[data-buy="diamond"]'); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await shot('09-cofre-diamante');
-const nCards = await page.locator('#chest-rewards .reward .tag').evaluateAll(els => els.filter(e => /nueva|fragmento/i.test(e.textContent)).length); await page.click('#chest-btn'); await page.waitForTimeout(400); s = await S(page);
+const nCards = await page.locator('#chest-rewards .reward .tag').evaluateAll(els => els.filter(e => !/tomates|pesetas/i.test(e.textContent)).length); await page.click('#chest-btn'); await page.waitForTimeout(400); s = await S(page);
 check('cofre de diamante: cuesta 40 pesetas y da 3+ cartas y 10+ tomates', s.pesetasSpent === before.pesetasSpent + 40 && nCards >= 3 && s.chestTomatoes - before.chestTomatoes >= 10, `(${nCards} cartas, +${s.chestTomatoes - before.chestTomatoes} tomates)`);
-check('los tomates de cofre cuentan como históricos', s.tomatoesEarned === Math.floor(s.totalClicks / 100) + s.chestTomatoes);
-await page.click('#panel-chests [data-close]');
+check('los tomates de cofre cuentan como históricos', s.tomatoesEarned === Math.floor(s.totalClicks / 200) + s.chestTomatoes);
+await page.click('#panel-shop [data-close]');
 
+console.log('Cartas: desbloqueo por fragmentos');
+check('desbloquear cuesta más cuanto más rara', await page.evaluate(() => { const E = AAP.E; return E.unlockNeed('inflacion') < E.unlockNeed('joyas') && E.unlockNeed('joyas') < E.unlockNeed('mariscada') && E.unlockNeed('mariscada') < E.unlockNeed('amnistia'); }));
+check('sin desbloquear da 1 fragmento; al llegar se desbloquea; luego da varios', await page.evaluate(() => {
+  const E = AAP.E, c = E.emptyCards(), need = E.unlockNeed('mariscada'); let unlocked = 0;
+  for (let i = 0; i < need; i++) { const r = [{ id: 'mariscada' }]; E.applyChestCards(c, r); if (r[0].isNew) unlocked++; if (i < need - 1 && (r[0].frags !== 1 || !r[0].locked)) return false; }
+  const r = [{ id: 'mariscada' }]; E.applyChestCards(c, r);
+  return unlocked === 1 && c.mariscada.level === 1 && r[0].frags === E.RARITIES.epic.drop && r[0].frags > 1;
+}));
 console.log('16, 17. Cartas y potenciadores');
 await give(page, { cards: { inflacion: { level: 1, frags: 6 }, mariscada: { level: 1, frags: 3 }, joyas: { level: 1, frags: 0 }, apagon: { level: 1, frags: 0 }, amnistia: { level: 1, frags: 0 } } });
 await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(300); await shot('10-cartas');
@@ -134,7 +148,7 @@ check('la colección muestra las 5 cartas', await page.locator('#cards-grid .car
 before = await S(page);
 const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 1, AAP.state.cards));
 await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(300); s = await S(page);
-check('mejorar Inflación descuenta el precio exacto y los fragmentos', s.pesetas === before.pesetas - cost && s.cards.inflacion.level === 2 && s.cards.inflacion.frags === 6 - 2, `(coste ${cost})`);
+check('mejorar Inflación descuenta el precio exacto y los fragmentos', s.pesetas === before.pesetas - cost && s.cards.inflacion.level === 2 && s.cards.inflacion.frags === 6 - 3, `(coste ${cost})`);
 check('no se puede mejorar sin fragmentos', await page.locator('[data-upgrade="joyas"]').isDisabled());
 const base = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 2, { mariscada: { level: 0 } }));
 await page.click('[data-upgrade="mariscada"]'); await page.waitForTimeout(300); s = await S(page);

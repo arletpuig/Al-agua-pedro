@@ -9,7 +9,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 <div id="app">
@@ -42,43 +42,28 @@
     <button class="mega" id="btn-click" aria-label="Pulsa para conseguir tomates">
       <span class="mega-lbl" id="mega-lbl">¡DALE!</span>
       <span class="mega-sub" id="mega-sub"><i id="cpt-badge">+1</i> por toque</span>
-      <span class="prog"><i id="prog-fill"></i><em><b id="bar-text">0</b>/100</em></span>
+      <span class="prog"><i id="prog-fill"></i><em><b id="bar-text">0</b>/<span id="bar-max">200</span></em></span>
     </button>
     <div class="combo hidden" id="combo"><b id="combo-x">×2</b><span>RACHA</span><i class="heat"><i id="heat-fill"></i></i></div>
   </div>
 
   <!-- navegación -->
   <nav class="tabs" id="tabs">
-    <button class="tab" data-panel="shop"><svg><use href="#ic-shop"/></svg><em>Tienda</em></button>
-    <button class="tab" data-panel="chests"><svg><use href="#ic-chest"/></svg><em>Cofres</em><i id="chest-dot" class="badge hidden">1</i></button>
+    <button class="tab" data-panel="shop"><svg><use href="#ic-shop"/></svg><em>Tienda</em><i id="chest-dot" class="badge hidden">1</i></button>
     <button class="tab play on" data-panel="play"><svg><use href="#ic-target"/></svg><em>JUGAR</em></button>
-    <button class="tab" data-panel="cards"><svg><use href="#ic-cards"/></svg><em>Cartas</em></button>
+    <button class="tab" data-panel="cards"><svg><use href="#ic-cards"/></svg><em>Cartas</em><i id="cards-dot" class="dot hidden"></i></button>
     <button class="tab" data-panel="rank"><svg><use href="#ic-trophy"/></svg><em>Ranking</em></button>
   </nav>
 
   <!-- PANELES -->
   <div id="panel-shop" class="panel"><div class="sheet">
     <div class="title">TIENDA</div><button class="close" data-close aria-label="Cerrar">✕</button>
-    <div class="sheet-body">
-      <div class="offer falcon"><div class="offer-art"><svg><use href="#ic-plane"/></svg></div>
-        <div class="offer-info"><h3>El Falcón</h3><p>Multiplica <b>×5</b> lo que sumas en cada pulsación durante <b>10 minutos</b>.</p><div id="falcon-state" class="offer-state"></div></div>
-        <button id="btn-falcon" class="btn-g sm">VER VÍDEO</button></div>
-      <div class="offer sobre"><div class="offer-art"><svg><use href="#ic-envelope"/></svg></div>
-        <div class="offer-info"><h3>Sobre de la Moncloa</h3><p>Recibe <b>5 pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen.</p><div class="offer-state">Recompensa: 5 pesetas</div></div>
-        <button id="btn-sobre" class="btn-g sm">VER VÍDEO</button></div>
-      <p class="note">Los vídeos recompensados se activarán próximamente.</p>
-      <button class="btn-b" data-goto="chests"><svg><use href="#ic-chest"/></svg>IR A LOS COFRES</button>
-    </div>
-  </div></div>
-
-  <div id="panel-chests" class="panel"><div class="sheet">
-    <div class="title">COFRES</div><button class="close" data-close aria-label="Cerrar">✕</button>
-    <div class="sheet-body" id="chests-body"></div>
+    <div class="sheet-body" id="shop-body"></div>
   </div></div>
 
   <div id="panel-cards" class="panel"><div class="sheet">
     <div class="title">CARTAS</div><button class="close" data-close aria-label="Cerrar">✕</button>
-    <div class="sheet-body"><p class="note top">Potenciadores permanentes. Consíguelos en los cofres y mejóralos con fragmentos y pesetas.</p><div id="cards-grid" class="cards-grid"></div></div>
+    <div class="sheet-body"><div id="cards-grid" class="cards-grid"></div></div>
   </div></div>
 
   <div id="panel-rank" class="panel"><div class="sheet">
@@ -164,7 +149,7 @@
   <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 5</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 6</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -212,7 +197,7 @@
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 5</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 6</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -224,6 +209,6 @@
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=5"></script>
+<script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>

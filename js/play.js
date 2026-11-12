@@ -50,7 +50,7 @@ function onTap(e) {
   const b = e.currentTarget; b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 90);
   ui.floater('+' + n, e.clientX || null, e.clientY || null); ui.hud(true); ui.combo(combo.mult, combo.heat, nextHeat());
   if (taps % 10 === 0) scene.peek();
-  if (earned) { SFX.tomato(); ui.flyTomato(earned); scene.tomatoEarned(pick(LINES.tomato)); }
+  if (earned) { SFX.tomato(); ui.flyTomato(earned); scene.tomatoEarned(); }
   scheduleIdle();
 }
 // ---------- decisión de un lanzamiento ----------

@@ -111,7 +111,7 @@ export class Arena {
 
   // ------------------------------------------------ reacciones a los clics
   peek() { if (!this.busy && !this.aim && this.clipName === 'idle') this.lookOverride = { lookX: -0.3, lookY: 1, until: this.now + 0.9 }; }
-  tomatoEarned(line) { if (this.busy || this.aim) return; if (this.clipName === 'idle') this.play('shock'); this.say(line, 1.8); }
+  tomatoEarned() { if (this.busy || this.aim) return; if (this.clipName === 'idle') this.play('shock'); }
   tauntIdle(line) { if (this.busy || this.aim || this.clipName !== 'idle') return; this.play('smug'); this.say(line, 2.6); }
 
   // ------------------------------------------------ puntería: el tomate va de lado a lado, solo en horizontal
@@ -139,14 +139,14 @@ export class Arena {
       // si fallas por la izquierda el tomate va hacia Pedro: lo atrapa y se lo pone de nariz
       if (res.kind === 'miss' && res.x < TARGET.x) return await this.catchIt(res);
       SFX.whoosh();
-      const big = 1.35 + Math.min(0.5, (n - 1) * 0.06);
+      const big = 0.9 + Math.min(0.3, (n - 1) * 0.04);
       const fly = { x: res.x, y: AIM.y, s: big, rot: 0, n }; this.flying = fly;
-      await this.tween(fly, { s: 0.78, y: AIM.y - 16, rot: 4 }, 0.28, 'o');
+      await this.tween(fly, { s: 0.55, y: AIM.y - 16, rot: 4 }, 0.28, 'o');
       this.flying = null;
       SFX.splat(); this.burst(res.x, AIM.y, 18, 'juice', { min: 150, max: 520, g: 1400, r: [5, 11] });
       if (res.kind === 'miss') { this.wall.push({ x: res.x, y: AIM.y, rot: rand(0, 6), t0: this.now }); if (this.wall.length > 6) this.wall.shift(); }
       else {
-        this.splats.push({ x: res.x - TARGET.x, y: rand(-8, 8), rot: rand(0, 6), s: (res.kind === 'perfect' ? 1.1 : 0.9) * (1 + Math.min(0.4, (n - 1) * 0.05)), t0: this.now, tr: rand(-0.4, 0.4) }); if (this.splats.length > 8) this.splats.shift();
+        this.splats.push({ x: res.x - TARGET.x, y: rand(-8, 8), rot: rand(0, 6), s: (res.kind === 'perfect' ? 0.85 : 0.7) * (1 + Math.min(0.3, (n - 1) * 0.04)), t0: this.now, tr: rand(-0.4, 0.4) }); if (this.splats.length > 8) this.splats.shift();
         this.S.targetBump = 0.09; this.S.targetRot = res.kind === 'perfect' ? -0.16 : -0.09;
         this.tween(this.S, { targetBump: 0, targetRot: 0 }, 0.6, 'b');
       }
@@ -351,7 +351,7 @@ export class Arena {
       const pulse = 0.5 + 0.5 * Math.sin(this.now * 8);
       c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,220,90,${0.18 + pulse * 0.12})`; ell(c, TARGET.x, TARGET.y, CONFIG.PERFECT_RADIUS, CONFIG.PERFECT_RADIUS); c.fill(); c.restore();
       const x = this.aim.x; softBlob(c, x + 10, AIM.y + 60, 50, 14, '#000000', 0.35, 6);
-      const big = 1.35 + Math.min(0.5, (this.aim.n - 1) * 0.06);
+      const big = 0.9 + Math.min(0.3, (this.aim.n - 1) * 0.04);
       this.rig.tomato(c, [x, AIM.y], 50 * big, 1, 1, Math.sin(this.now * 6) * 0.15);
       if (this.aim.n > 1) this.label(c, '×' + this.aim.n, x + 46 * big, AIM.y - 46 * big);
     }

@@ -1,6 +1,6 @@
 // Configuración del juego. Cambia aquí los valores sin tocar el resto del código.
 export const CONFIG = {
-  CLICKS_PER_TOMATO: 100,      // clics necesarios para conseguir un tomate (también en supabase/schema_v2.sql)
+  CLICKS_PER_TOMATO: 200,      // clics necesarios para conseguir un tomate (también en supabase/schema_v4.sql; antes eran 100)
   // Lanzamiento: el tomate va de lado a lado en horizontal por delante de la diana (coordenadas del escenario, 1080 de ancho)
   AIM_SPEED: 340,              // velocidad del tomate al apuntar (píxeles del escenario por segundo)
   BEGINNER_THROWS: 6,          // los primeros lanzamientos de un jugador nuevo van más despacio...
@@ -8,10 +8,11 @@ export const CONFIG = {
   SPEED_PER_FALL: 0.01,        // aumento de velocidad por cada caída provocada (dificultad progresiva, suave)
   MAX_SPEED_MULT: 1.3,
   AIM_MIN: 600, AIM_MAX: 1075, // recorrido horizontal del tomate (la diana está en x = 880; a la izquierda queda Pedro)
-  PERFECT_RADIUS: 64,          // distancia al centro para "acierto perfecto" (los tres anillos centrales): Pedro cae
+  PERFECT_RADIUS: 58,          // distancia al centro para "acierto perfecto" (el centro de la diana): Pedro cae
   NEAR_RADIUS: 153,            // radio de la diana: impacto válido ("¡casi!")
   // Multiplicador de pulsaciones: aparece si pulsas seguido y baja si paras
-  COMBO: { perTap: 1, decayPerSec: 9, graceSec: 0.5, levels: [{ heat: 0, mult: 1 }, { heat: 18, mult: 2 }, { heat: 45, mult: 3 }], max: 70 },
+  // tarda en aparecer (40 toques seguidos para ×2, 100 para ×3) y sobre todo en irse (2,5 s de gracia y baja despacio)
+  COMBO: { perTap: 1, decayPerSec: 3, graceSec: 2.5, levels: [{ heat: 0, mult: 1 }, { heat: 40, mult: 2 }, { heat: 100, mult: 3 }], max: 130 },
   // Regalo de bienvenida para jugadores nuevos (también en supabase/schema_v3.sql)
   WELCOME: { tomatoes: 5, pesetas: 10 },
   THROW_OPTIONS: [1, 3, 5, 10],

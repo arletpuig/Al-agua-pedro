@@ -6,14 +6,15 @@ const listeners = new Set();
 
 export const state = {
   clicks: 0, tomatoes: 0, pesetas: 0,
-  stats: { totalClicks: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0 },
+  stats: { totalClicks: 0, legacyClicks: 0, legacyTomatoes: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0 },
   cards: emptyCards(), dailyClaimedOn: null, falconUntil: 0,
   tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null, welcome: false,
 };
+// Los tomates conseguidos cuando costaban 100 clics se conservan (legacy); desde entonces cuestan CLICKS_PER_TOMATO.
 export function derive() {
-  const s = state.stats;
-  s.tomatoesEarned = Math.floor(s.totalClicks / CONFIG.CLICKS_PER_TOMATO) + s.chestTomatoes;
-  state.clicks = s.totalClicks % CONFIG.CLICKS_PER_TOMATO;
+  const s = state.stats, fresh = Math.max(0, s.totalClicks - (s.legacyClicks || 0));
+  s.tomatoesEarned = (s.legacyTomatoes || 0) + Math.floor(fresh / CONFIG.CLICKS_PER_TOMATO) + s.chestTomatoes;
+  state.clicks = fresh % CONFIG.CLICKS_PER_TOMATO;
   state.tomatoes = Math.max(0, s.tomatoesEarned - s.tomatoesThrown);
   state.pesetas = Math.max(0, s.pesetasEarned + s.chestPesetas - s.pesetasSpent);
 }
@@ -24,6 +25,10 @@ export function load() {
     if (d) {
       Object.assign(state, { tutorialSeen: !!d.tutorialSeen, sound: d.sound !== false, music: !!d.music, dailyClaimedOn: d.dailyClaimedOn || null, falconUntil: d.falconUntil || 0 });
       Object.assign(state.stats, d.stats || {});
+      // partida guardada cuando un tomate costaba 100 clics: se conserva lo ya ganado
+      if (d.cpt !== CONFIG.CLICKS_PER_TOMATO && !state.stats.legacyClicks && state.stats.totalClicks > 0) {
+        const t = state.stats.totalClicks; state.stats.legacyClicks = t - (t % 100); state.stats.legacyTomatoes = Math.floor(t / 100);
+      }
       const c = emptyCards(); CARD_IDS.forEach(id => { if (d.cards?.[id]) c[id] = { level: d.cards[id].level | 0, frags: d.cards[id].frags | 0 }; }); state.cards = c;
     } else {
       // jugador nuevo: regalo de bienvenida para empezar con tomates y algo de pesetas
@@ -34,7 +39,7 @@ export function load() {
   derive(); return state;
 }
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ cpt: CONFIG.CLICKS_PER_TOMATO, stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
 }
 export function onChange(fn) { listeners.add(fn); }
 export function changed(sync = true) { derive(); if (sync) state.dirty = true; save(); listeners.forEach(f => f(state)); }
@@ -42,10 +47,9 @@ export function changed(sync = true) { derive(); if (sync) state.dirty = true; s
 export function falconActive() { return state.falconUntil > Date.now(); }
 // Suma clics (ya multiplicados). Devuelve cuántos tomates se han conseguido con esta pulsación.
 export function addClicks(n) {
-  const before = Math.floor(state.stats.totalClicks / CONFIG.CLICKS_PER_TOMATO);
+  const before = state.stats.tomatoesEarned;
   state.stats.totalClicks += n;
-  const earned = Math.floor(state.stats.totalClicks / CONFIG.CLICKS_PER_TOMATO) - before;
-  changed(); return earned;
+  changed(); return state.stats.tomatoesEarned - before;
 }
 export function useTomatoes(n) {
   if (n < 1 || state.tomatoes < n) return false;
@@ -72,7 +76,7 @@ export function applyServer(row, sent) {
   if (!row) return;
   if (state.updatedAt && row.updated_at && Date.parse(row.updated_at) < Date.parse(state.updatedAt)) return; // fila antigua
   const s = state.stats, delta = {}; COUNTERS.forEach(k => delta[k] = sent ? Math.max(0, s[k] - sent[k]) : 0);
-  s.totalClicks = +row.total_clicks; s.tomatoesThrown = row.tomatoes_thrown; s.hits = row.hits; s.perfects = row.perfects || 0; s.falls = row.falls;
+  s.totalClicks = +row.total_clicks; s.legacyClicks = +(row.legacy_clicks || 0); s.legacyTomatoes = +(row.legacy_tomatoes || 0); s.tomatoesThrown = row.tomatoes_thrown; s.hits = row.hits; s.perfects = row.perfects || 0; s.falls = row.falls;
   s.pesetasEarned = row.pesetas_earned || 0; s.chestTomatoes = row.chest_tomatoes || 0; s.chestPesetas = row.chest_pesetas || 0; s.pesetasSpent = row.pesetas_spent || 0; s.chestsOpened = row.chests_opened || 0;
   let pending = false; COUNTERS.forEach(k => { if (delta[k]) { s[k] += delta[k]; pending = true; } });
   const c = emptyCards(); CARD_IDS.forEach(id => { if (row.cards?.[id]) c[id] = { level: row.cards[id].level | 0, frags: row.cards[id].frags | 0 }; }); state.cards = c;

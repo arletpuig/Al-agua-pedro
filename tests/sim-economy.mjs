@@ -11,8 +11,8 @@ function sim(label, policy) {
     let t = 0;
     while (t < SESSION_MIN * 60) {
       // tocar hasta conseguir 1 tomate
-      const cpt = E.clicksPerTap(cards, false); const need = Math.ceil((100 - clicks) / cpt); t += need / TAPS_PER_SEC; clicks += need * cpt;
-      while (clicks >= 100) { clicks -= 100; tomatoes++; hist++; }
+      const cpt = E.clicksPerTap(cards, false); const need = Math.ceil((200 - clicks) / cpt); t += need / TAPS_PER_SEC; clicks += need * cpt;
+      while (clicks >= 200) { clicks -= 200; tomatoes++; hist++; }
       // lanzar todos
       while (tomatoes > 0) {
         tomatoes--; throws++; t += THROW_SEC; const r = rng();

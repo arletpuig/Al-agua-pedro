@@ -35,12 +35,12 @@ if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, 
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
 async function buyChest(kind) {
   if (opening || isBusy()) return; opening = true;
-  try { const reward = await backend.openChest(kind); ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-chests'); } catch (e) { fail(e); ui.renderChests(); }
+  try { const reward = await backend.openChest(kind); ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-shop'); } catch (e) { fail(e); ui.renderShop(); }
   opening = false;
 }
 async function claimDaily() {
   if (opening || isBusy()) return; opening = true;
-  try { await backend.syncTime(); const reward = await backend.claimDaily(); ui.closeAll(); await ui.chestOpening('wood', reward); ui.openPanel('#panel-chests'); } catch (e) { fail(e); ui.renderChests(); }
+  try { await backend.syncTime(); const reward = await backend.claimDaily(); ui.closeAll(); await ui.chestOpening('wood', reward); ui.openPanel('#panel-shop'); } catch (e) { fail(e); ui.renderShop(); }
   opening = false;
 }
 async function upgrade(id) {
@@ -77,7 +77,7 @@ async function afterLogin(user) {
     state.updatedAt = null;
     if (serverEmpty && hasProgress()) {       // primera vez: se sube el progreso de invitado (una sola vez, validado y con topes)
       const s = state.stats;
-      row = await sb.importGuest({ totalClicks: s.totalClicks, tomatoesThrown: s.tomatoesThrown, hits: s.hits, perfects: s.perfects, falls: s.falls, pesetasEarned: s.pesetasEarned, chestTomatoes: s.chestTomatoes, chestPesetas: s.chestPesetas, pesetasSpent: s.pesetasSpent, chestsOpened: s.chestsOpened, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn });
+      row = await sb.importGuest({ totalClicks: s.totalClicks, legacyClicks: s.legacyClicks, legacyTomatoes: s.legacyTomatoes, tomatoesThrown: s.tomatoesThrown, hits: s.hits, perfects: s.perfects, falls: s.falls, pesetasEarned: s.pesetasEarned, chestTomatoes: s.chestTomatoes, chestPesetas: s.chestPesetas, pesetasSpent: s.pesetasSpent, chestsOpened: s.chestsOpened, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn });
       applyServer(row); ui.showToast('☁️ Tu progreso se ha guardado en tu cuenta');
     } else if (row) { applyServer(row); ui.showToast('☁️ Progreso cargado de tu cuenta'); }
     ui.hud();

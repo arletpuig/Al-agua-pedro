@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pedro: pruebas de animación</title>
+<title>Al agua Pedro: escena</title>
 <style>
-  html, body { margin: 0; background: #070b1f; color: #fff; font: 14px system-ui, sans-serif; }
+  @font-face { font-family: 'Titan One'; src: url('../assets/fonts/titan-one-latin-400-normal.woff2') format('woff2'); }
+  html, body { margin: 0; background: #050817; color: #fff; font: 14px system-ui, sans-serif; }
   #ui { position: fixed; left: 8px; top: 8px; display: flex; gap: 6px; z-index: 2; }
   #ui button { font: inherit; padding: 6px 10px; border-radius: 8px; border: 0; background: #ffd23f; cursor: pointer; }
   canvas { display: block; margin: 0 auto; max-width: 100vw; max-height: 100vh; }
@@ -13,96 +14,33 @@
 </head>
 <body>
 <div id="ui"></div>
-<canvas id="c" width="1080" height="1350"></canvas>
+<canvas id="c" width="1080" height="1920"></canvas>
 <script type="module">
 import { loadPedro, ROOT } from '../js/game/pedro-rig.js';
 import { CLIPS, sample } from '../js/game/pedro-anims.js';
+import { drawStageBack, drawStageFront, pedroShadow, PLANK } from '../js/game/stage-art.js';
 
+await document.fonts.load('26px "Titan One"');
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-const W = cv.width, H = cv.height;
 const rig = await loadPedro('../assets/pedro/');
-const CAM = { s: 0.53, x: 470, y: 1000 };            // dónde cae el punto de asiento en pantalla
+const PED = { s: 0.3, x: 430 };                        // escala de Pedro y su posición en el tablón
 
-// ------------------------------------------------ escenario (provisional, para ver a Pedro en contexto)
-const PLANK_Y = CAM.y - 10;
-function stage(t) {
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#0b1340'); g.addColorStop(0.6, '#1a2d78'); g.addColorStop(1, '#0d1538');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // foco
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  const sx = CAM.x + 10;
-  const cone = ctx.createLinearGradient(0, 0, 0, H);
-  cone.addColorStop(0, 'rgba(160,190,255,0.32)'); cone.addColorStop(1, 'rgba(160,190,255,0.02)');
-  ctx.fillStyle = cone; ctx.beginPath(); ctx.moveTo(sx - 90, -20); ctx.lineTo(sx + 90, -20); ctx.lineTo(sx + 360, H); ctx.lineTo(sx - 360, H); ctx.fill();
-  const pool = ctx.createRadialGradient(sx, PLANK_Y + 120, 10, sx, PLANK_Y + 120, 420);
-  pool.addColorStop(0, 'rgba(150,180,255,0.22)'); pool.addColorStop(1, 'rgba(150,180,255,0)');
-  ctx.fillStyle = pool; ctx.fillRect(0, 0, W, H);
-  // bokeh
-  for (let i = 0; i < 22; i++) {
-    const x = (i * 397) % W, y = (i * 211) % (H * 0.7) + 40, r = 8 + (i * 13) % 26;
-    const a = 0.05 + 0.05 * Math.sin(t * 0.8 + i);
-    ctx.fillStyle = `rgba(170,200,255,${a})`; ctx.beginPath(); ctx.arc(x + Math.sin(t * 0.2 + i) * 10, y, r, 0, 7); ctx.fill();
-  }
-  ctx.restore();
-  // torre (lado derecho)
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const steel = (x1, y1, x2, y2, w) => {
-    ctx.strokeStyle = '#0a0a12'; ctx.lineWidth = w + 8; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    const gg = ctx.createLinearGradient(x1 - w, 0, x1 + w, 0); gg.addColorStop(0, '#5d6680'); gg.addColorStop(0.45, '#b9c2d8'); gg.addColorStop(1, '#4a5168');
-    ctx.strokeStyle = gg; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-  };
-  steel(990, 260, 990, H + 20, 24);
-  // diana
-  const tx = 1000, ty = 330;
-  ctx.save(); ctx.translate(tx, ty);
-  ctx.fillStyle = '#0a0a12'; ctx.beginPath(); ctx.arc(0, 0, 150, 0, 7); ctx.fill();
-  const rim = ctx.createLinearGradient(0, -150, 0, 150); rim.addColorStop(0, '#dfe5f3'); rim.addColorStop(1, '#7c86a3');
-  ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(0, 0, 142, 0, 7); ctx.fill();
-  [['#e2262c', 118], ['#fff6ea', 92], ['#e2262c', 66], ['#fff6ea', 42], ['#e2262c', 22]].forEach(([c, r]) => { ctx.fillStyle = c; ctx.strokeStyle = '#0a0a12'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.stroke(); });
-  for (let i = 0; i < 12; i++) {
-    const a = i / 12 * Math.PI * 2, on = (Math.floor(t * 4) + i) % 3 !== 0;
-    ctx.fillStyle = on ? '#fff3c4' : '#8a7d55';
-    if (on) { ctx.shadowColor = '#ffe27a'; ctx.shadowBlur = 18; }
-    ctx.beginPath(); ctx.arc(Math.cos(a) * 131, Math.sin(a) * 131, 8, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
-  }
-  ctx.restore();
-  // tablón
-  const px0 = 60, px1 = 1010, py = PLANK_Y, ph = 46;
-  ctx.fillStyle = '#0a0a12'; ctx.beginPath(); ctx.roundRect(px0 - 5, py - 5, px1 - px0 + 10, ph + 10, 12); ctx.fill();
-  const wood = ctx.createLinearGradient(0, py, 0, py + ph); wood.addColorStop(0, '#e2b06b'); wood.addColorStop(0.5, '#c48a45'); wood.addColorStop(1, '#8a5a28');
-  ctx.fillStyle = wood; ctx.beginPath(); ctx.roundRect(px0, py, px1 - px0, ph, 8); ctx.fill();
-  ctx.strokeStyle = 'rgba(90,50,20,0.55)'; ctx.lineWidth = 3;
-  for (const x of [300, 640, 860]) { ctx.beginPath(); ctx.moveTo(x, py + 4); ctx.lineTo(x, py + ph - 4); ctx.stroke(); }
-  ctx.beginPath(); ctx.moveTo(px0 + 20, py + 14); ctx.bezierCurveTo(400, py + 10, 600, py + 20, px1 - 30, py + 13); ctx.stroke();
-  // franjas de peligro en la punta
-  ctx.save(); ctx.beginPath(); ctx.roundRect(px0, py, 70, ph, 8); ctx.clip();
-  ctx.fillStyle = '#ffd23f'; ctx.fillRect(px0, py, 70, ph); ctx.fillStyle = '#1a1a1a';
-  for (let i = -2; i < 6; i++) { ctx.beginPath(); ctx.moveTo(px0 + i * 22, py + ph); ctx.lineTo(px0 + i * 22 + 11, py + ph); ctx.lineTo(px0 + i * 22 + 11 + ph, py); ctx.lineTo(px0 + i * 22 + ph, py); ctx.fill(); }
-  ctx.restore();
-  // brida de la torre
-  ctx.fillStyle = '#0a0a12'; ctx.beginPath(); ctx.roundRect(930, py - 14, 110, ph + 28, 10); ctx.fill();
-  ctx.fillStyle = '#a9b2c8'; ctx.beginPath(); ctx.roundRect(935, py - 9, 100, ph + 18, 8); ctx.fill();
-  ctx.fillStyle = '#2b3042'; for (const [x, y] of [[950, py + 4], [1020, py + 4], [950, py + ph - 4], [1020, py + ph - 4]]) { ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); }
-}
-function pedroShadow() {
-  ctx.save(); ctx.globalAlpha = 0.35; ctx.filter = 'blur(10px)'; ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.ellipse(CAM.x, PLANK_Y + 4, 190, 14, 0, 0, 7); ctx.fill(); ctx.restore();
-}
-
-let current = 'idle', t0 = performance.now(), manual = false;
 window.frame = (name, t) => {
-  const clip = CLIPS[name];
+  const P = sample(CLIPS[name], t);
+  const x = PED.x + P.px * PED.s;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = 'none'; ctx.globalAlpha = 1;
-  stage(t);
-  pedroShadow();
+  drawStageBack(ctx, t, x);
+  pedroShadow(ctx, x + (P.bx || 0) * PED.s, 1 - P.walkAmt * 0.15);
   ctx.save();
-  ctx.translate(CAM.x, CAM.y); ctx.scale(CAM.s, CAM.s); ctx.translate(-ROOT[0], -ROOT[1]);
-  rig.draw(ctx, sample(clip, t), t);
+  ctx.translate(PED.x, PLANK.y + 4); ctx.scale(PED.s, PED.s); ctx.translate(-ROOT[0], -ROOT[1]);
+  rig.draw(ctx, P, t);
   ctx.restore();
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.filter = 'none'; ctx.globalAlpha = 1;
+  drawStageFront(ctx, t, x);
 };
 window.clipDur = name => CLIPS[name].dur;
 window.ready = true;
+let current = 'idle', t0 = performance.now();
 const ui = document.getElementById('ui');
 for (const n of Object.keys(CLIPS)) { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { current = n; t0 = performance.now(); }; ui.append(b); }
 if (!new URLSearchParams(location.search).has('manual')) {

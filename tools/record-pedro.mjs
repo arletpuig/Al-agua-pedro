@@ -11,7 +11,7 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const OUT = path.join(ROOT, '.build/pedro'); fs.mkdirSync(OUT, { recursive: true });
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json', '.jpg': 'image/jpeg' };
+const TYPES = { '.woff2': 'font/woff2', '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json', '.jpg': 'image/jpeg' };
 const server = http.createServer((req, res) => {
   const f = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
   if (!f.startsWith(ROOT) || !fs.existsSync(f)) { res.writeHead(404); return res.end(); }
@@ -19,12 +19,12 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const port = server.address().port;
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1080, height: 1350 } });
+const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
 page.on('pageerror', e => console.error('page error:', e.message));
 page.on('console', m => m.type() === 'error' && console.error('console:', m.text()));
 await page.goto(`http://localhost:${port}/tools/pedro-demo.html?manual`);
 await page.waitForFunction(() => window.ready === true);
-const grab = async (clip, t) => Buffer.from((await page.evaluate(([c, tt]) => { window.frame(c, tt); return document.getElementById('c').toDataURL('image/png'); }, [clip, t])).split(',')[1], 'base64');
+const grab = async (clip, t, type = 'image/png') => Buffer.from((await page.evaluate(([c, tt, ty]) => { window.frame(c, tt); return document.getElementById('c').toDataURL(ty, 0.94); }, [clip, t, type])).split(',')[1], 'base64');
 
 const args = process.argv.slice(2);
 if (args[0] === '--stills') {
@@ -39,7 +39,7 @@ if (args[0] === '--stills') {
     const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-i', '-',
       '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-preset', 'slow', '-movflags', '+faststart', file], { stdio: ['pipe', 'inherit', 'inherit'] });
     const n = Math.round(dur * FPS);
-    for (let i = 0; i < n; i++) { const buf = await grab(clip, i / FPS); if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r)); }
+    for (let i = 0; i < n; i++) { const buf = await grab(clip, i / FPS, 'image/jpeg'); if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r)); }
     ff.stdin.end(); await new Promise(r => ff.on('close', r));
     console.log(file, n, 'fotogramas');
   }

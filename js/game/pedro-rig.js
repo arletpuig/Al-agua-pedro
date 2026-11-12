@@ -1,22 +1,27 @@
-// Pedro animable (Canvas 2D, sin dependencias).
-// Cabeza y busto salen de la ilustración (assets/pedro/*.png, tools/pedro-parts.py); ojos, boca, brazos,
-// manos, piernas y tomate se dibujan con el mismo estilo (contorno negro grueso + sombreado suave).
-// Unidades: píxeles de la ilustración original (1312x1199). ROOT = punto de asiento sobre el tablón.
+// Pedro animable (Canvas 2D, sin dependencias), de pie y de cuerpo entero.
+// La cabeza sale de la ilustración (assets/pedro/head.png, cejas aparte; tools/pedro-parts.py).
+// Todo lo demás (ojos, boca, cuello, traje, brazos, manos, piernas, zapatos, tomate) se dibuja aquí
+// con el mismo estilo: contorno negro grueso, sombreado suave y luz del foco desde arriba a la izquierda.
+// Unidades: píxeles de la ilustración original. ROOT = punto del suelo entre los pies.
 
-export const ROOT = [642, 1310];
-const DROP = 150;                                       // cintura: separa el busto de las piernas
+export const ROOT = [690, 2262];                        // suelo, entre los pies
+const HIP = [690, 1480];                                // pivote del tronco
 const NECK = [690, 790];
-const SH_L = [300, 985], SH_R = [985, 985];            // hombros (espacio del torso)
-const UPPER = 225, FORE = 215;                          // longitud de brazo y antebrazo
-const SLEEVE = 132;                                     // grosor de la manga
+const SH_L = [418, 960], SH_R = [962, 960];            // hombros (espacio del torso)
+const UPPER = 290, FORE = 270;                          // longitud de brazo y antebrazo
+const SLEEVE = 148;                                     // grosor de la manga
+const HIP_L = [594, 1470], HIP_R = [786, 1470];         // caderas
+const THIGH = 360, SHIN = 345;                          // muslo y espinilla
+const FOOT_L = [584, 2166], FOOT_R = [796, 2166];       // tobillos en reposo
+export const STRIDE = 150;                              // lo que avanza el cuerpo por paso
 export const NOSE = [748, 540];                         // punta de la nariz (espacio de la cabeza)
 const OL = 9;                                           // grosor del contorno
-const HS = 1.22;                                        // tamaño de las manos
+const HS = 1.3;                                         // tamaño de las manos
 const GRIP = 92;                                        // del puño de la camisa al centro de la mano
 
 export const C = {
   ink: '#120b0a', skin: '#fbaa77', skinSh: '#df7f52', skinHi: '#ffd2ad',
-  navy: '#26325e', navySh: '#161d3a', navyHi: '#41538f',
+  navy: '#26325e', navySh: '#141a35', navyHi: '#41538f', navyRim: '#7d93e0', lapel: '#2c3a6e',
   shirt: '#fbfbfd', shirtSh: '#c3c8e4',
   shoe: '#18171c', shoeHi: '#7b8098',
   tom: '#e3312a', tomSh: '#9e1218', tomHi: '#ff9d88', leaf: '#46a63a', leafSh: '#256b26',
@@ -26,7 +31,8 @@ export const C = {
 
 // ---------------------------------------------------------------- pose por defecto (sentado, chulesco)
 export const HAND = {
-  rest: { c: [0.25, 0.04, 0.06, 0.1, 0.16], sp: 0.25 },
+  rest: { c: [0.2, 0.06, 0.1, 0.14, 0.2], sp: 0.2 },
+  hip: { c: [0.9, 0.85, 0.9, 0.95, 1], sp: 0 },
   open: { c: [0, 0, 0, 0, 0], sp: 1 },
   catch: { c: [0.15, 0.25, 0.3, 0.35, 0.4], sp: 0.7 },
   hold: { c: [0.45, 0.55, 0.6, 0.65, 0.7], sp: 0.3 },
@@ -50,10 +56,10 @@ export const DEFAULT = {
   bLy: 0, bLr: 0, bRy: 0, bRr: 0,
   mOpen: 0, mSmile: 1, mWide: 1, mSmirk: 0, mTongue: 0, mTeeth: 1, mRound: 0,
   blush: 0,
-  aLx: 415, aLy: 1300, aLh: 0, aLhx: 380, aLhy: 520, aLb: 1, aLg: 0, aLk: 0.85, hLr: 0.75, hLs: 1, hLf: 0, hLw: 0,
-  aRx: 870, aRy: 1300, aRh: 0, aRhx: 950, aRhy: 500, aRb: 1, aRg: 0, aRk: 0.85, hRr: -0.75, hRs: 1, hRf: 0, hRw: 0,
+  aLx: 370, aLy: 1495, aLh: 0, aLhx: 380, aLhy: 520, aLb: 1, aLg: 0, aLk: 1, hLr: 0.12, hLs: 1, hLf: 0, hLw: 0,
+  aRx: 1010, aRy: 1495, aRh: 0, aRhx: 950, aRhy: 500, aRb: 1, aRg: 0, aRk: 1, hRr: -0.12, hRs: 1, hRf: 0, hRw: 0,
   ...handParams('L', 'rest'), ...handParams('R', 'rest'),
-  legAmp: 1, legSpeed: 1, legOut: 0,
+  px: 0, walkPh: 0, walkAmt: 0, walkDir: 1, stance: 0,
   tom: 0, tomX: 0, tomY: 0, tomS: 1, tomSqx: 1, tomSqy: 1, tomR: 0, tomHx: 0, tomHy: -10,
   breath: 1,
 };
@@ -119,23 +125,30 @@ export class PedroRig {
   constructor(imgs, parts) { this.img = imgs; this.parts = parts; }
 
   draw(ctx, P, t) {
-    // capas procedimentales: respiración, parpadeo y piernas
+    // capas procedimentales: respiración, parpadeo y paso
     const br = Math.sin(t * Math.PI * 2 / 3.4) * P.breath;
-    const sq = P.sq * (1 + br * 0.012);
+    const sq = P.sq * (1 + br * 0.01);
     const blink = P.blink ?? (P.blinkOff ? 0 : blinkAt(t));
     const lid = v => Math.max(0, v * (1 - blink));
-    P = { ...P, lidL: lid(P.lidL), lidR: lid(P.lidR), hy: P.hy + br * 3 };
+    const ph = P.walkPh, wa = P.walkAmt;
+    const bob = -Math.abs(Math.sin(ph * Math.PI)) * 22 * wa;                // sube en cada paso
+    P = { ...P, lidL: lid(P.lidL), lidR: lid(P.lidR), hy: P.hy + br * 3,
+      by: P.by + bob, lean: P.lean + Math.sin(ph * Math.PI) * 0.035 * wa + P.walkDir * 0.03 * wa,
+      hr: P.hr - Math.sin(ph * Math.PI) * 0.03 * wa };
+    // los brazos se balancean al andar
+    const sw = Math.sin(ph * Math.PI) * wa;
+    P.aLx += sw * 40; P.aRx += sw * 40; P.aLy -= Math.max(0, sw) * 25; P.aRy -= Math.max(0, -sw) * 25;
 
     ctx.save();
+    ctx.translate(P.px, 0);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.save(); ctx.translate(0, DROP); this.legs(ctx, P, t); ctx.restore();
+    this.legs(ctx, P);
 
-    // ---- torso (busto de la ilustración), inclinado sobre el punto de asiento
+    // ---- tronco, inclinado sobre la cadera
     ctx.save();
-    ctx.translate(ROOT[0] + P.bx, ROOT[1] + P.by); ctx.rotate(P.lean); ctx.scale(1, sq); ctx.translate(-ROOT[0], -ROOT[1]);
+    ctx.translate(HIP[0] + P.bx, HIP[1] + P.by); ctx.rotate(P.lean); ctx.scale(1, sq); ctx.translate(-HIP[0], -HIP[1]);
     const torsoM = ctx.getTransform();
-    this.waist(ctx);
-    const b = this.parts.bust; ctx.drawImage(this.img.bust, b.x, b.y, b.w, b.h);
+    this.torso(ctx, P);
 
     // ---- cabeza
     ctx.save();
@@ -146,20 +159,18 @@ export class PedroRig {
     ctx.restore();
     ctx.restore();
 
-    ctx.save(); ctx.translate(0, DROP); this.lap(ctx); ctx.restore();
     // ---- brazos: hombros en espacio del torso, objetivos en torso o en cabeza
     const inv = ctx.getTransform().inverse();
-    const toLocal = m => p => xf(inv, xf(m, p));                     // de torso/cabeza a espacio actual
+    const toLocal = m => p => xf(inv, xf(m, p));
     const torsoP = toLocal(torsoM), headP = toLocal(headM);
     let grip = null;
     for (const s of ['L', 'R']) {
       const Tt = torsoP([P[`a${s}x`], P[`a${s}y`]]);
       const Th = headP([P[`a${s}hx`], P[`a${s}hy`]]);
       const T = lerp2(Tt, Th, P[`a${s}h`]);
-      // el hombro sube un poco cuando la mano va por encima de él
       const sh = s === 'L' ? SH_L : SH_R;
       const S0 = torsoP(sh);
-      const lift = Math.min(1, Math.max(0, (S0[1] - T[1] - 250) / 200)) * 40;
+      const lift = Math.min(1, Math.max(0, (S0[1] - T[1] - 200) / 200)) * 35;
       const S = torsoP([sh[0], sh[1] - lift]);
       const gp = this.arm(ctx, s, S, T, P, t, s === 'R' && P.tom === 2);
       if (gp) grip = gp;
@@ -222,7 +233,7 @@ export class PedroRig {
     const pts = [S, E, sleeveEnd];
     const W1 = SLEEVE, W2 = SLEEVE * 0.84;
     ctx.save();
-    // contorno sin el casquete del hombro (queda dentro del busto)
+    // contorno sin el casquete del hombro (queda dentro de la chaqueta)
     const clip = new Path2D(); clip.rect(-5000, -5000, 10000, 10000); clip.arc(S[0], S[1], SLEEVE * 0.42, 0, Math.PI * 2, true);
     ctx.clip(clip, 'nonzero');
     ctx.strokeStyle = C.ink; ctx.lineCap = 'round';
@@ -254,111 +265,166 @@ export class PedroRig {
     return holding ? [W[0] - Math.sin(handAng) * GRIP * HS * hs, W[1] + Math.cos(handAng) * GRIP * HS * hs] : null;
   }
 
-  // ------------------------------------------------ cintura: chaqueta abrochada bajo el busto (detrás del busto)
-  waist(ctx) {
-    const T = 1095, X = 724;                       // X: centro de la chaqueta (la cara mira a 3/4)
+  // ------------------------------------------------ tronco: cuello, chaqueta, camisa, corbata
+  torso(ctx, P) {
+    const X = 690;
+    const sym = pts => pts.concat(pts.slice().reverse().map(([x, y]) => [2 * X - x, y]));
+    // cuello (por detrás de la mandíbula)
+    const neck = new Path2D();
+    neck.moveTo(530, 700); neck.lineTo(825, 680); neck.lineTo(798, 880); neck.lineTo(560, 880); neck.closePath();
+    ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = OL * 2; ctx.stroke(neck);
+    const ng = ctx.createLinearGradient(0, 690, 0, 880); ng.addColorStop(0, '#9c4a2e'); ng.addColorStop(0.45, '#d9784c'); ng.addColorStop(1, '#f0955f');
+    ctx.fillStyle = ng; ctx.fill(neck); ctx.restore();
+
+    // chaqueta
     const body = new Path2D();
-    body.moveTo(352, T); body.lineTo(1012, T);
-    body.bezierCurveTo(1016, 1170, 990, 1215, 996, 1290);
-    body.bezierCurveTo(1000, 1350, 900, 1372, X, 1372);
-    body.bezierCurveTo(520, 1372, 330, 1352, 334, 1290);
-    body.bezierCurveTo(338, 1215, 350, 1170, 352, T); body.closePath();
+    body.moveTo(598, 836);
+    body.bezierCurveTo(540, 846, 452, 866, 398, 900);
+    body.bezierCurveTo(350, 930, 336, 985, 342, 1045);
+    body.lineTo(368, 1125);
+    body.bezierCurveTo(392, 1250, 400, 1335, 388, 1488);
+    body.bezierCurveTo(500, 1522, 880, 1522, 992, 1488);
+    body.bezierCurveTo(980, 1335, 988, 1250, 1012, 1125);
+    body.lineTo(1038, 1045);
+    body.bezierCurveTo(1044, 985, 1030, 930, 982, 900);
+    body.bezierCurveTo(928, 866, 840, 846, 782, 836);
+    body.closePath();
     blob(ctx, body, C.navy);
     ctx.save(); ctx.clip(body);
-    // volumen: costados oscuros, centro algo más claro
-    ctx.filter = 'blur(16px)';
-    ctx.fillStyle = C.navySh; ctx.globalAlpha = 0.85; ctx.fill(ellipse(345, 1240, 70, 170)); ctx.fill(ellipse(1005, 1240, 60, 170));
-    ctx.globalAlpha = 0.5; ctx.fill(ellipse(X, 1380, 330, 40));
-    ctx.fillStyle = C.navyHi; ctx.globalAlpha = 0.35; ctx.fill(ellipse(560, 1200, 70, 110));
+    // volumen: luz del foco arriba a la izquierda, sombra abajo a la derecha, borde de luz fría
+    ctx.filter = 'blur(26px)';
+    ctx.fillStyle = C.navyHi; ctx.globalAlpha = 0.55; ctx.fill(ellipse(520, 1000, 120, 230, -0.2));
+    ctx.fillStyle = C.navySh; ctx.globalAlpha = 0.9; ctx.fill(ellipse(1000, 1250, 90, 330)); ctx.fill(ellipse(X, 1530, 380, 60));
+    ctx.globalAlpha = 0.5; ctx.fill(ellipse(360, 1300, 50, 220));
+    ctx.filter = 'blur(6px)'; ctx.strokeStyle = C.navyRim; ctx.globalAlpha = 0.45; ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.moveTo(1030, 1000); ctx.bezierCurveTo(1010, 1150, 985, 1300, 990, 1470); ctx.stroke();
     ctx.filter = 'none'; ctx.globalAlpha = 1;
-    // camisa y corbata en la abertura de la chaqueta
-    const vee = new Path2D(); vee.moveTo(633, T - 2); vee.lineTo(809, T - 2); vee.lineTo(X, 1240); vee.closePath();
+    // abertura bajo el botón: se ve el pantalón
+    const open = new Path2D(); open.moveTo(X - 6, 1290); open.quadraticCurveTo(X - 30, 1420, X - 70, 1530); open.lineTo(X + 70, 1530); open.quadraticCurveTo(X + 30, 1420, X + 6, 1290); open.closePath();
+    ctx.fillStyle = C.navySh; ctx.fill(open);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 9; ctx.stroke(open);
+    // camisa en la V
+    const vee = new Path2D(); vee.moveTo(596, 850); vee.lineTo(784, 850); vee.lineTo(X, 1262); vee.closePath();
     ctx.fillStyle = C.shirt; ctx.fill(vee);
-    ctx.save(); ctx.clip(vee);
-    ctx.filter = 'blur(5px)'; ctx.fillStyle = C.shirtSh; ctx.globalAlpha = 0.8;
-    ctx.fill(ellipse(640, 1120, 16, 80, -0.4)); ctx.fill(ellipse(805, 1120, 16, 80, 0.4)); ctx.filter = 'none'; ctx.globalAlpha = 1;
-    const tie = new Path2D(); tie.moveTo(664, T - 4); tie.lineTo(788, T - 4); tie.lineTo(758, 1196); tie.lineTo(X + 2, 1232); tie.lineTo(694, 1196); tie.closePath();
-    ctx.lineWidth = 8; ctx.strokeStyle = C.ink; ctx.stroke(tie);
-    const tg = ctx.createLinearGradient(664, 0, 788, 0); tg.addColorStop(0, '#f02a2c'); tg.addColorStop(0.6, '#e01b22'); tg.addColorStop(1, '#a8121a');
+    ctx.save(); ctx.clip(vee); ctx.filter = 'blur(6px)'; ctx.fillStyle = C.shirtSh; ctx.globalAlpha = 0.85;
+    ctx.fill(ellipse(610, 980, 22, 150, -0.25)); ctx.fill(ellipse(770, 980, 22, 150, 0.25)); ctx.restore();
+    // corbata
+    const tie = new Path2D();
+    tie.moveTo(664, 952); tie.lineTo(716, 952); tie.lineTo(742, 1150); tie.lineTo(X, 1228); tie.lineTo(638, 1150); tie.closePath();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.stroke(tie);
+    const tg = ctx.createLinearGradient(638, 0, 742, 0); tg.addColorStop(0, '#ff3a3a'); tg.addColorStop(0.45, '#e01b22'); tg.addColorStop(1, '#9a0f17');
     ctx.fillStyle = tg; ctx.fill(tie);
-    ctx.restore();
-    // solapas que bajan hasta el botón
-    ctx.strokeStyle = C.ink; ctx.lineCap = 'round'; ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.moveTo(634, T - 4); ctx.lineTo(X, 1242); ctx.lineTo(809, T - 4); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(509, T - 4); ctx.quadraticCurveTo(560, 1200, X - 2, 1250); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(894, T - 4); ctx.quadraticCurveTo(858, 1196, X + 4, 1250); ctx.stroke();
-    // borde delantero bajo el botón
-    ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(X, 1270); ctx.quadraticCurveTo(X - 8, 1330, X - 34, 1372); ctx.stroke();
-    // bolsillos y pinzas
-    ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(418, 1282); ctx.quadraticCurveTo(490, 1274, 566, 1280); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(850, 1278); ctx.quadraticCurveTo(912, 1272, 972, 1278); ctx.stroke();
-    ctx.strokeStyle = C.navySh; ctx.lineWidth = 6; ctx.globalAlpha = 0.9;
-    ctx.beginPath(); ctx.moveTo(472, 1150); ctx.quadraticCurveTo(478, 1210, 476, 1270); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(918, 1150); ctx.quadraticCurveTo(914, 1210, 916, 1268); ctx.stroke();
+    ctx.strokeStyle = '#ff8a80'; ctx.globalAlpha = 0.6; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(668, 975); ctx.lineTo(655, 1140); ctx.stroke(); ctx.globalAlpha = 1;
+    const knot = new Path2D(); knot.moveTo(650, 892); knot.lineTo(730, 892); knot.lineTo(716, 956); knot.lineTo(664, 956); knot.closePath();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.stroke(knot); ctx.fillStyle = '#d61b22'; ctx.fill(knot);
+    ctx.fillStyle = '#ff5a52'; ctx.globalAlpha = 0.6; ctx.fill(ellipse(675, 912, 12, 16)); ctx.globalAlpha = 1;
+    // cuello de la camisa
+    for (const side of [-1, 1]) {
+      const c = new Path2D(), x = v => X + side * v;
+      c.moveTo(x(150), 830); c.lineTo(x(8), 900); c.lineTo(x(70), 990); c.lineTo(x(165), 905); c.closePath();
+      blob(ctx, c, C.shirt);
+      ctx.save(); ctx.clip(c); ctx.filter = 'blur(5px)'; ctx.fillStyle = C.shirtSh; ctx.globalAlpha = 0.9; ctx.fill(ellipse(x(40), 930, 30, 50)); ctx.restore();
+    }
+    // solapas (con muesca), de la clavícula al botón
+    for (const side of [-1, 1]) {
+      const x = v => X + side * v;
+      const lp = new Path2D();
+      lp.moveTo(x(150), 838); lp.lineTo(x(208), 990); lp.lineTo(x(178), 1004); lp.lineTo(x(215), 1040);
+      lp.quadraticCurveTo(x(150), 1180, x(6), 1272); lp.lineTo(x(92), 980); lp.lineTo(x(95), 905); lp.closePath();
+      blob(ctx, lp, C.lapel);
+      ctx.save(); ctx.clip(lp); ctx.filter = 'blur(8px)';
+      ctx.fillStyle = side < 0 ? C.navyHi : C.navySh; ctx.globalAlpha = 0.6; ctx.fill(ellipse(x(150), 1000, 40, 120, side * 0.4)); ctx.restore();
+    }
+    // bolsillos, pañuelo de pecho y botones
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 8;
+    for (const side of [-1, 1]) {
+      const x = v => X + side * v;
+      const pk = new Path2D(); pk.moveTo(x(330), 1340); pk.lineTo(x(160), 1336); pk.lineTo(x(160), 1362); pk.lineTo(x(330), 1366); pk.closePath();
+      ctx.fillStyle = C.navy; ctx.fill(pk); ctx.stroke(pk);
+      ctx.strokeStyle = C.navySh; ctx.lineWidth = 6; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.moveTo(x(255), 1080); ctx.quadraticCurveTo(x(262), 1200, x(250), 1320); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.strokeStyle = C.ink; ctx.lineWidth = 8;
+    }
+    ctx.beginPath(); ctx.moveTo(X + 175, 1085); ctx.lineTo(X + 290, 1080); ctx.stroke();
+    const sq = new Path2D(); sq.moveTo(X + 195, 1085); sq.lineTo(X + 215, 1058); sq.lineTo(X + 238, 1074); sq.lineTo(X + 258, 1056); sq.lineTo(X + 270, 1084); sq.closePath();
+    ctx.lineWidth = 5; ctx.fillStyle = '#f4f6ff'; ctx.fill(sq); ctx.stroke(sq);
+    for (const y of [1290, 1420]) {
+      ctx.fillStyle = '#121729'; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(X + (y > 1300 ? -16 : 0), y, 15, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#6b78a6'; ctx.beginPath(); ctx.arc(X + (y > 1300 ? -20 : -4), y - 5, 4.5, 0, 7); ctx.fill();
+    }
     // arrugas de tensión desde el botón
-    ctx.lineWidth = 5; ctx.globalAlpha = 0.7;
-    ctx.beginPath(); ctx.moveTo(X - 18, 1262); ctx.quadraticCurveTo(X - 70, 1250, X - 120, 1258); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(X + 18, 1262); ctx.quadraticCurveTo(X + 60, 1252, X + 105, 1260); ctx.stroke();
+    ctx.strokeStyle = C.navySh; ctx.lineWidth = 6; ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.moveTo(X - 22, 1294); ctx.quadraticCurveTo(X - 90, 1272, X - 150, 1284); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X + 22, 1294); ctx.quadraticCurveTo(X + 90, 1274, X + 150, 1286); ctx.stroke();
     ctx.globalAlpha = 1;
-    // botón
-    ctx.fillStyle = '#121729'; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.arc(X, 1258, 14, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#5d6890'; ctx.beginPath(); ctx.arc(X - 4, 1253, 4, 0, 7); ctx.fill();
     ctx.restore();
+    void sym;
   }
 
-  // ------------------------------------------------ regazo y rodillas (tapan el borde inferior del busto)
-  lap(ctx) {
-    // muslos vistos de frente (escorzo): dos rodillas grandes unidas por la entrepierna
-    const knees = [ellipse(526, 1196, 132, 84, 0.04), ellipse(760, 1196, 132, 84, -0.04)];
-    const crotch = new Path2D(); crotch.roundRect(560, 1120, 170, 120, 30);
-    ctx.lineJoin = 'round'; ctx.strokeStyle = C.ink; ctx.lineWidth = OL * 2;
-    for (const k of knees) ctx.stroke(k);
-    ctx.fillStyle = C.navy; ctx.fill(crotch); for (const k of knees) ctx.fill(k);
-    ctx.save();
-    for (const [i, k] of knees.entries()) {
-      ctx.save(); ctx.clip(k); ctx.filter = 'blur(9px)';
-      ctx.fillStyle = C.navySh; ctx.globalAlpha = 0.9; ctx.fill(ellipse(i ? 790 : 496, 1262, 150, 40));
-      ctx.fillStyle = C.navyHi; ctx.globalAlpha = 0.55; ctx.fill(ellipse(i ? 742 : 510, 1170, 70, 30));
-      ctx.restore();
+  // ------------------------------------------------ piernas: pantalón y zapatos, con paso
+  legs(ctx, P) {
+    const hipY = P.by * 0.6;
+    const ph = P.walkPh, wa = P.walkAmt;
+    const feet = [];
+    for (const [s, hip, foot, off] of [['L', HIP_L, FOOT_L, 0], ['R', HIP_R, FOOT_R, 0.5]]) {
+      // cada pie se mueve en su medio ciclo y se queda plantado en el otro
+      const u = ph - off, fr = u - Math.floor(u), sw = Math.min(1, fr * 2);
+      const e = sw * sw * (3 - 2 * sw);
+      const dev = (Math.floor(u) + e - u - 0.25) * STRIDE * wa;
+      const lift = fr < 0.5 ? Math.sin(Math.PI * sw) * 95 * wa : 0;
+      const st = (s === 'L' ? -1 : 1) * P.stance * 40;
+      feet.push({ s, H: [hip[0] + P.bx * 0.5, hip[1] + hipY], A: [foot[0] + dev + st, foot[1] - lift], lift });
     }
-    ctx.restore();
-    // pliegue entre las rodillas
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
-    ctx.beginPath(); ctx.moveTo(640, 1140); ctx.quadraticCurveTo(646, 1215, 642, 1262); ctx.stroke();
-    ctx.strokeStyle = C.navySh; ctx.lineWidth = 5; ctx.globalAlpha = 0.8;
-    ctx.beginPath(); ctx.moveTo(440, 1150); ctx.quadraticCurveTo(500, 1135, 560, 1150); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(724, 1150); ctx.quadraticCurveTo(784, 1135, 844, 1150); ctx.stroke();
-    ctx.globalAlpha = 1;
+    // pelvis (tapada casi entera por la chaqueta)
+    const pel = new Path2D();
+    pel.moveTo(452, 1400 + hipY); pel.lineTo(928, 1400 + hipY);
+    pel.bezierCurveTo(950, 1500, 910, 1580, 830, 1610); pel.lineTo(690, 1650); pel.lineTo(550, 1610);
+    pel.bezierCurveTo(470, 1580, 430, 1500, 452, 1400 + hipY); pel.closePath();
+    blob(ctx, pel, C.navy);
+    for (const f of feet) {
+      const out = f.s === 'L' ? -1 : 1;
+      // vista de frente: al acortarse la pierna la rodilla va hacia la cámara, apenas se desplaza de lado
+      const A = f.A, dl = Math.max(0, THIGH + SHIN - len(sub(A, f.H)));
+      const K = add(lerp2(f.H, A, THIGH / (THIGH + SHIN)), [out * Math.min(30, dl * 0.35), -dl * 0.25]);
+      const w1 = 210, w2 = 172, w3 = 158;
+      ctx.strokeStyle = C.ink; ctx.lineCap = 'round';
+      ctx.lineWidth = w1 + OL * 2; ctx.beginPath(); ctx.moveTo(...f.H); ctx.lineTo(...K); ctx.stroke();
+      ctx.lineCap = 'butt'; ctx.lineWidth = w2 + OL * 2; ctx.beginPath(); ctx.moveTo(...K); ctx.lineTo(...A); ctx.stroke();
+      ctx.fillStyle = C.navy; ctx.beginPath(); ctx.arc(...K, w2 / 2 + 8, 0, 7); ctx.fill();
+      ctx.strokeStyle = C.navy; ctx.lineCap = 'round'; ctx.lineWidth = w1; ctx.beginPath(); ctx.moveTo(...f.H); ctx.lineTo(...K); ctx.stroke();
+      ctx.lineCap = 'butt'; ctx.lineWidth = w2; ctx.beginPath(); ctx.moveTo(...K); ctx.lineTo(...A); ctx.stroke();
+      tubeShade(ctx, [f.H, K, A], w3, C.navySh, -out, w3 * 0.42, 0.9, 6);
+      tubeShade(ctx, [f.H, K, A], w3, C.navyHi, out, w3 * 0.16, 0.5, 4);
+      // raya del pantalón
+      ctx.strokeStyle = '#3a4a85'; ctx.lineWidth = 4; ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.moveTo(...lerp2(f.H, K, 0.35)); ctx.lineTo(...K); ctx.lineTo(...lerp2(K, A, 0.85)); ctx.stroke(); ctx.globalAlpha = 1;
+      // arruga de la rodilla
+      ctx.strokeStyle = C.navySh; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(K[0] - 40, K[1] + 10); ctx.quadraticCurveTo(K[0], K[1] + 24, K[0] + 40, K[1] + 8); ctx.stroke();
+      // bajo del pantalón y zapato
+      this.shoe(ctx, A, out, f.lift);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = OL;
+      ctx.beginPath(); ctx.moveTo(A[0] - w2 / 2 - 4, A[1] - 6); ctx.quadraticCurveTo(A[0], A[1] + 12, A[0] + w2 / 2 + 4, A[1] - 6); ctx.stroke();
+      f.K = K;
+    }
+    // sombra en el suelo (se encoge al levantar el pie)
+    return feet;
   }
 
-  // ------------------------------------------------ espinillas y zapatos, balanceándose
-  legs(ctx, P, t) {
-    const ph = t * Math.PI * 2 * 0.8 * P.legSpeed;
-    for (const [s, kx, off] of [['L', 520, 0], ['R', 765, Math.PI * 0.85]]) {
-      const phi = Math.sin(ph + off) * 0.55 * P.legAmp;          // ángulo de balanceo (adelante/atrás)
-      const knee = [kx, 1225];
-      const L = 205 * Math.cos(phi * 0.9) ;
-      const out = (s === 'L' ? -1 : 1) * (P.legOut * 40 + 8);
-      const ank = [kx + out + Math.sin(ph * 0.5 + off) * 6 * P.legAmp, knee[1] + L];
-      const sc = 1 + Math.sin(phi) * 0.16;                          // hacia delante = más cerca = más grande
-      const w = 118 * (1 + Math.sin(phi) * 0.05);
-      tube(ctx, [knee, ank], w, C.navy, 'butt');
-      tubeShade(ctx, [knee, ank], w, C.navySh, s === 'L' ? -1 : 1, w * 0.4, 0.85, 4);
-      // zapato visto de frente
-      ctx.save(); ctx.translate(ank[0], ank[1] + 18 * sc); ctx.scale(sc, sc); ctx.rotate((s === 'L' ? -1 : 1) * 0.08);
-      const shoe = new Path2D();
-      shoe.moveTo(-62, -10); shoe.bezierCurveTo(-70, 30, -52, 58, 0, 60); shoe.bezierCurveTo(52, 58, 70, 30, 62, -10);
-      shoe.bezierCurveTo(40, -24, -40, -24, -62, -10); shoe.closePath();
-      blob(ctx, shoe, C.shoe);
-      ctx.save(); ctx.clip(shoe); ctx.filter = 'blur(3px)'; ctx.fillStyle = C.shoeHi; ctx.globalAlpha = 0.75;
-      ctx.fill(ellipse(-18, 20, 24, 12, -0.3)); ctx.globalAlpha = 0.4; ctx.fill(ellipse(20, 8, 12, 6)); ctx.restore();
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-58, 40); ctx.quadraticCurveTo(0, 66, 58, 40); ctx.stroke();
-      ctx.restore();
-      // bajo del pantalón sobre el zapato
-      ctx.strokeStyle = C.ink; ctx.lineWidth = OL; ctx.beginPath();
-      ctx.moveTo(ank[0] - w / 2 - 2, ank[1] - 4); ctx.quadraticCurveTo(ank[0], ank[1] + 10, ank[0] + w / 2 + 2, ank[1] - 4); ctx.stroke();
-    }
+  shoe(ctx, A, out, lift) {
+    ctx.save(); ctx.translate(A[0] + out * 14, A[1] + 4); ctx.rotate(out * 0.12 - out * lift * 0.002);
+    const sh = new Path2D();
+    sh.moveTo(-92, -8); sh.bezierCurveTo(-112, 50, -78, 92, 0, 92); sh.bezierCurveTo(78, 92, 112, 50, 92, -8);
+    sh.bezierCurveTo(60, -34, -60, -34, -92, -8); sh.closePath();
+    blob(ctx, sh, C.shoe);
+    ctx.save(); ctx.clip(sh);
+    const g = ctx.createRadialGradient(-30, 20, 5, -10, 30, 110); g.addColorStop(0, 'rgba(140,150,190,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(-120, -40, 240, 140);
+    ctx.filter = 'blur(2px)'; ctx.fillStyle = '#c9d0ea'; ctx.globalAlpha = 0.8; ctx.fill(ellipse(-34, 26, 26, 11, -0.4));
+    ctx.restore();
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-90, 62); ctx.quadraticCurveTo(0, 100, 90, 62); ctx.stroke();
+    ctx.restore();
   }
 
   // ------------------------------------------------ tomate
@@ -575,7 +641,7 @@ function drawHand(ctx, c, spread, mir, palm, wig, t) {
 // ---------------------------------------------------------------- carga de imágenes
 export async function loadPedro(base = 'assets/pedro/') {
   const parts = await (await fetch(base + 'parts.json')).json();
-  const names = ['head', 'browL', 'browR', 'bust'];
+  const names = ['head', 'browL', 'browR'];
   const imgs = {};
   await Promise.all(names.map(n => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(imgs[n] = i); i.onerror = rej; i.src = base + n + '.png'; })));
   return new PedroRig(imgs, parts);

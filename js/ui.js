@@ -1,7 +1,7 @@
 // Interfaz HTML: HUD, paneles (tienda, cofres, cartas, ranking, estadísticas, cuenta) y animaciones de recompensa.
 import { CONFIG } from './config.js';
 import { state, setTutorialSeen, setSound, falconActive } from './state.js';
-import { SFX, setEnabled } from './audio.js';
+import { SFX, setEnabled, setMusic, unlock } from './audio.js';
 import * as E from './economy.js';
 import { CARD_ART, chestSvg } from './cards-art.js';
 import { backend } from './backend.js';
@@ -18,7 +18,7 @@ export function init(handlers) {
   $$('.nav button').forEach(b => b.addEventListener('click', () => openPanel('#panel-' + b.dataset.panel)));
   $$('[data-goto]').forEach(b => b.addEventListener('click', () => { closePanel(b.closest('.panel')); openPanel('#panel-' + b.dataset.goto); }));
   $('#btn-stats').addEventListener('click', () => { renderStats(); openPanel('#panel-stats'); });
-  $('#btn-sound').addEventListener('click', () => setSoundUI(!state.sound));
+  $('#btn-sound').addEventListener('click', () => { unlock(); const m = !state.sound ? [true, false] : !state.music ? [true, true] : [false, false]; setSoundUI(m[0], m[1]); showToast(m[1] ? '🎵 Efectos y música' : m[0] ? '🔊 Solo efectos' : '🔇 Sin sonido', 1200); });
   $('#pill-pesetas').addEventListener('click', () => openPanel('#panel-chests'));
   $('#btn-falcon').addEventListener('click', () => H.onAd(PLACEMENTS.FALCON));
   $('#btn-sobre').addEventListener('click', () => H.onAd(PLACEMENTS.SOBRE));
@@ -49,7 +49,7 @@ export function hud(pop = false) {
 function setNum(sel, v, popSel) { const el = $(sel); if (el.textContent !== fmt(v)) { el.textContent = fmt(v); popEl(popSel ? $(popSel) : el); } }
 function popEl(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 export function setBusy(b) { busy = b; hud(); }
-export function showStop(v) { $('#btn-stop').classList.toggle('hidden', !v); $('#throw-row').classList.toggle('hidden', v); }
+export function showStop(v) { $('#btn-stop').classList.toggle('hidden', !v); $('#throw-row').classList.toggle('hidden', v); if (!v) $('#volley-badge').classList.add('hidden'); }
 export function volleyProgress(i, n) { $('#volley-badge').classList.toggle('hidden', !n); if (n) { $('#volley-i').textContent = i; $('#volley-n').textContent = n; } }
 export function floater(text, x, y) {
   const r = $('#btn-click').getBoundingClientRect(), el = document.createElement('div'); el.className = 'floater'; el.textContent = text;
@@ -157,7 +157,7 @@ export function volleySummary(results, pesetas) {
   const el = $('#summary'); el.innerHTML = `<h3>Lanzamiento ×${n}</h3><div class="row"><span>🎯 Perfectos</span><b>${c('perfect')}</b></div><div class="row"><span>😅 Cercanos</span><b>${c('near')}</b></div><div class="row"><span>❌ Fallos</span><b>${c('miss')}</b></div><div class="row"><span>💦 Caídas</span><b>${falls}</b></div><div class="pes">+${pesetas} ₧</div>`;
   el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 2600);
 }
-export function setSoundUI(on) { $('#btn-sound').textContent = on ? '🔊' : '🔇'; setEnabled(on); setSound(on); }
+export function setSoundUI(on, music = state.music) { music = on && music; $('#btn-sound').textContent = !on ? '🔇' : music ? '🎵' : '🔊'; setEnabled(on); setMusic(music); setSound(on, music); }
 export function setAccountUI(user, username) {
   const logged = !!user; $('#acc-logged').classList.toggle('hidden', !logged); $('#acc-forms').classList.toggle('hidden', logged); $('#btn-account').classList.toggle('logged', logged);
   if (logged) $('#acc-name').textContent = username || user.email;

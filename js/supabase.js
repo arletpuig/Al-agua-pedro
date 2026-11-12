@@ -11,9 +11,16 @@ function headers(extra = {}) {
   if (session?.access_token) h.Authorization = `Bearer ${session.access_token}`;
   return h;
 }
-async function req(path, { method = 'GET', body, auth: useAuth = true, keepalive = false, extra = {} } = {}) {
+async function refresh() {
+  const s = await req('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: session.refresh_token }, auth: false, retry: false });
+  setSession(s);
+}
+async function req(path, { method = 'GET', body, auth: useAuth = true, keepalive = false, extra = {}, retry = true } = {}) {
+  // la sesión dura una hora: se renueva sola antes de caducar o si el servidor responde 401
+  if (useAuth && retry && session?.refresh_token && session.expires_at * 1000 < Date.now() + 30000) { try { await refresh(); } catch (e) {} }
   const h = headers(extra); if (!useAuth) delete h.Authorization;
   const r = await fetch(URL + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive });
+  if (r.status === 401 && useAuth && retry && session?.refresh_token) { try { await refresh(); return req(path, { method, body, auth: useAuth, keepalive, extra, retry: false }); } catch (e) {} }
   const text = await r.text(); let data = null;
   try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
   if (!r.ok) {
@@ -29,8 +36,7 @@ export async function restoreSession() {
   try { session = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { session = null; }
   if (!session) return null;
   if (session.expires_at * 1000 < Date.now() + 60000) {
-    try { setSession(await req('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: session.refresh_token }, auth: false })); }
-    catch (e) { setSession(null); }
+    try { await refresh(); } catch (e) { setSession(null); }
   }
   return auth.user;
 }

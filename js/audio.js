@@ -1,17 +1,41 @@
 // Efectos de sonido sintetizados con Web Audio API (sin archivos externos).
-let ctx = null, master = null, enabled = true;
+let ctx = null, master = null, musicGain = null, enabled = true, musicOn = false, musicTimer = null, nextNote = 0, step = 0;
 
 function ac() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
-    master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = enabled ? 0.5 : 0; master.connect(ctx.destination);
+    musicGain = ctx.createGain(); musicGain.gain.value = 0.5; musicGain.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
 export function setEnabled(v) { enabled = v; if (master) master.gain.value = v ? 0.5 : 0; }
 export function isEnabled() { return enabled; }
-export function unlock() { try { ac(); } catch (e) {} }
+export function unlock() { try { ac(); if (musicOn && !musicTimer) startMusic(); } catch (e) {} }
+// ---------- música de feria (organillo sintetizado, vals en bucle) ----------
+const N = { C3: 130.8, G2: 98, F2: 87.3, A2: 110, C4: 261.6, D4: 293.7, E4: 329.6, F4: 349.2, G4: 392, A4: 440, B4: 493.9, C5: 523.3, D5: 587.3, E5: 659.3, F5: 698.5, G5: 784 };
+// cada compás: [bajo, acorde, melodía de 3 tiempos]
+const BARS = [['C3', ['E4', 'G4'], ['E5', 'G5', 'E5']], ['C3', ['E4', 'G4'], ['C5', 'E5', 'C5']], ['G2', ['D4', 'G4'], ['D5', 'F5', 'D5']], ['G2', ['D4', 'G4'], ['B4', 'D5', 'B4']],
+  ['F2', ['F4', 'A4'], ['A4', 'C5', 'F5']], ['F2', ['F4', 'A4'], ['E5', 'D5', 'C5']], ['G2', ['D4', 'G4'], ['B4', 'D5', 'G5']], ['C3', ['E4', 'G4'], ['E5', 'C5', 'C5']]];
+function mnote(f, t0, dur, vol, type = 'triangle') {
+  const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  o.connect(g); g.connect(musicGain); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function schedule() {
+  const beat = 0.34;
+  while (nextNote < ctx.currentTime + 0.5) {
+    const bar = BARS[Math.floor(step / 3) % BARS.length], b = step % 3;
+    if (b === 0) mnote(N[bar[0]], nextNote, beat * 1.4, 0.10, 'sine'); else bar[1].forEach(n => mnote(N[n], nextNote, beat * 0.5, 0.035));
+    mnote(N[bar[2][b]], nextNote, beat * 0.9, 0.06, 'square'); mnote(N[bar[2][b]] * 2, nextNote, beat * 0.5, 0.015);
+    nextNote += beat; step++;
+  }
+}
+function startMusic() { ac(); nextNote = ctx.currentTime + 0.1; clearInterval(musicTimer); musicTimer = setInterval(schedule, 150); }
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+export function setMusic(v) { musicOn = v; if (v) { if (ctx) startMusic(); } else stopMusic(); }
+export function isMusicOn() { return musicOn; }
 
 function tone({ f = 440, f2 = null, type = 'sine', t = 0.15, vol = 0.4, delay = 0, attack = 0.005 }) {
   const c = ac(), o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime + delay;

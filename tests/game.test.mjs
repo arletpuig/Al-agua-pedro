@@ -83,6 +83,14 @@ s = await S(page);
 check('los anuncios no conceden recompensas', adErr.every(m => m.includes('no están disponibles')) && s.pesetas === before.pesetas && s.falcon === 0, adErr[0]);
 await page.click('#panel-shop [data-close]');
 
+console.log('El Falcón: indicador y multiplicador (estado simulado, sin anuncio)');
+before = await S(page); await page.evaluate(() => { AAP.state.falconUntil = Date.now() + 61000; }); await page.waitForTimeout(1300); await tap(page, 2); s = await S(page);
+check('con El Falcón activo cada pulsación vale ×5', s.totalClicks === before.totalClicks + 10);
+check('indicador y cuenta atrás visibles', await page.locator('#falcon-badge').isVisible() && /^0:5\d$/.test(await txt('#falcon-time')) && (await txt('#cpt-badge')).includes('+5'));
+await shot('06b-falcon'); await page.evaluate(() => { AAP.state.falconUntil = Date.now() - 1; }); await page.waitForTimeout(1200); before = await S(page); await tap(page, 2);
+check('al terminar vuelve a la producción normal', (await S(page)).totalClicks === before.totalClicks + 2 && !(await page.locator('#falcon-badge').isVisible()));
+await page.evaluate(() => { AAP.state.falconUntil = 0; });
+
 console.log('13, 14, 15. Cofres');
 await page.click('.nav [data-panel="chests"]'); await page.waitForTimeout(300); await shot('07-cofres');
 check('sin pesetas suficientes: comprar diamante desactivado', await page.locator('[data-buy="diamond"]').isDisabled());
@@ -140,7 +148,8 @@ check('clics, tomates, pesetas, estadísticas y cartas persisten', JSON.stringif
 await page.click('#btn-stats'); await page.waitForTimeout(200); await shot('11-estadisticas');
 check('panel de estadísticas completo', /histórico/.test(await txt('#stats-list')) && /Derribos/.test(await txt('#stats-list')) && /Inflación/.test(await txt('#stats-list')));
 await page.click('#panel-stats [data-close]');
-await page.click('#btn-sound'); check('sonido desactivable', (await txt('#btn-sound')) === '🔇'); await page.click('#btn-sound');
+await page.click('#btn-sound'); const m1 = await txt('#btn-sound'); await page.click('#btn-sound'); const m2 = await txt('#btn-sound'); await page.click('#btn-sound');
+check('sonido: música opcional y silencio', m1 === '🎵' && m2 === '🔇' && (await txt('#btn-sound')) === '🔊');
 
 console.log('14. Cofre diario y reloj del dispositivo');
 const ctx2 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1, storageState: await ctx.storageState() });

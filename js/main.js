@@ -16,7 +16,7 @@ load();
 setEnabled(state.sound);
 const { scene } = createGame('game');
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank });
-ui.setSoundUI(state.sound); ui.hud();
+ui.setSoundUI(state.sound, state.music); ui.hud();
 const start = () => { ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: () => pushNow() }); };
 scene.ready ? start() : scene.bus.once('ready', start);
 onChange(() => ui.hud());
@@ -100,9 +100,10 @@ $('#btn-logout').addEventListener('click', async () => {
   await sb.signOut(); username = null; resetProgress(); ui.setAccountUI(null); ui.showTab('login'); ui.hud(); ui.showToast('Sesión cerrada. Tu progreso queda guardado en tu cuenta.');
 });
 function traducir(m = '') {
-  const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.' };
+  const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
-  return m;
+  // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
+  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {

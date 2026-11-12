@@ -184,8 +184,9 @@ button{font-family:inherit;cursor:pointer;touch-action:manipulation}
 .chest-art svg{width:100%;height:100%;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
 .chest-art.shake svg{animation:chestShake .6s}
 @keyframes chestShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg) scale(1.05)}40%{transform:rotate(6deg)}60%{transform:rotate(-4deg) scale(1.08)}80%{transform:rotate(3deg)}}
-.chest-art .lid{transform-origin:100px 60px;transition:transform .5s cubic-bezier(.2,1.4,.5,1)}
-.chest-art.opened .lid{transform:rotate(-70deg) translateY(-10px)}
+.chest-art .lid{transform-box:view-box;transform-origin:30px 74px;transition:transform .5s cubic-bezier(.2,1.4,.5,1)}
+.chest-art.opened .lid{transform:rotate(-38deg)}
+.chest-head .glow{opacity:.5}
 .chest-art .glow{opacity:0;transition:opacity .4s}
 .chest-art.opened .glow{opacity:1;animation:glowPulse 1s infinite alternate}
 @keyframes glowPulse{from{opacity:.6}to{opacity:1}}
@@ -208,3 +209,13 @@ button{font-family:inherit;cursor:pointer;touch-action:manipulation}
 .toast.on{transform:translate(-50%,0);opacity:1}
 .toast.err{background:var(--red2)}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
+/* tabletas en vertical: controles más grandes */
+@media (min-width:700px) and (max-aspect-ratio:1.15/1){
+  #game-wrap{width:min(100%,calc((100dvh - 520px) * 4 / 3))}
+  .hud{gap:12px;max-width:760px;width:100%;margin:0 auto}
+  .stat .num{font-size:34px}.stat label{font-size:13px}.stat small{font-size:13px}
+  .btn-click{min-height:112px;font-size:32px}.btn-click small{font-size:14px}
+  .btn-throw{min-height:66px;font-size:24px}.throw-label{font-size:13px}
+  .nav button{padding:12px 4px;font-size:17px}.nav button span{font-size:28px}
+  .brand b{font-size:34px}.brand span{font-size:15px}.icon-btn{width:48px;height:48px;font-size:22px}.pill{font-size:22px}
+}

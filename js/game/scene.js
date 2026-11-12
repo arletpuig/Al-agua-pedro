@@ -106,12 +106,12 @@ export class MainScene extends Phaser.Scene {
   }
   async fall(res, decision, last) {
     const P = this.pedro; P.stopIdle(); SFX.clank(); SFX.win();
-    this.fxText(res.kind === 'perfect' ? '¡PERFECTO!' : '¡AL AGUA!', L.TARGET_X - 80, 160);
+    this.fxText(res.kind === 'perfect' ? '¡PERFECTO!' : '¡AL AGUA!', 400, 62);
     P.setMood('shock'); this.say(['¡¿QUÉ?! ¡NOOO!', '¡Esto es un golpe de Estado!', '¡Aaaaah!'][Phaser.Math.Between(0, 2)], 1200);
     this.tweens.add({ targets: this.chair, angle: -75, x: this.chair.x - 18, y: this.chair.y + 8, duration: 650, ease: 'Quad.easeIn' });
     await this.wait(300); this.hush(); SFX.fall();
     await this.tween({ targets: P, x: L.SEAT_X - 95, y: L.WATER_Y + 60, angle: -130, duration: 900, ease: 'Quad.easeIn' });
-    SFX.splash(); this.splash.explode(60, P.x, L.WATER_Y + 10); this.cameras.main.shake(300, .012); this.ripple(P.x, L.WATER_Y + 12); this.sc.cheer(true); this.sc.balloons();
+    SFX.splash(); this.splash.explode(60, P.x, L.WATER_Y + 10); this.cameras.main.shake(300, .012); this.ripple(P.x, L.WATER_Y + 12); this.sc.cheer(true); this.sc.balloons(); SFX.cheer();
     if (decision.pesetas) { this.coins.explode(decision.pesetas * 4, P.x, L.WATER_Y); this.fxText(`+${decision.pesetas} ₧`, P.x, L.WATER_Y - 40, '#ffb400', 40); SFX.coin(); }
     await this.tween({ targets: P, y: P.y + 60, alpha: 0, duration: 300, ease: 'Quad.easeIn' });
     P.setMood('angry'); P.setWet(true); P.setAngle(0);
@@ -129,7 +129,7 @@ export class MainScene extends Phaser.Scene {
   }
   ripple(x, y) { for (let i = 0; i < 3; i++) { const r = this.add.ellipse(x, y, 40, 12).setStrokeStyle(3, 0xffffff, .9).setDepth(5).setScale(.2); this.tweens.add({ targets: r, scaleX: 3.2, scaleY: 3.2, alpha: 0, duration: 1300, delay: i * 220, ease: 'Quad.easeOut', onComplete: () => r.destroy() }); } }
   async near(last) {
-    SFX.near(); this.fxText('¡CASI!', L.TARGET_X - 80, 160, '#ff8a00');
+    SFX.near(); this.fxText('¡CASI!', 400, 62, '#ff8a00');
     this.tweens.add({ targets: this.chair, angle: { from: -6, to: 5 }, duration: 120, yoyo: true, repeat: 2 });
     await this.pedro.wobble(last ? 900 : 500);
     this.pedro.setMood('smug');
@@ -137,13 +137,13 @@ export class MainScene extends Phaser.Scene {
     this.time.delayedCall(1200, () => { if (!this.busy) this.pedro.setMood('smile'); });
   }
   async miss(last) {
-    SFX.miss(); this.fxText('FALLO', L.TARGET_X - 80, 160, '#1f2d55');
+    SFX.miss(); this.fxText('FALLO', 400, 62, '#1f2d55');
     const g = ['armUp', 'armNose', 'armPoint'][Phaser.Math.Between(0, 2)];
     SFX.laugh(); if (last) this.say(LINES.miss[Phaser.Math.Between(0, LINES.miss.length - 1)], 2400);
     await this.pedro.laugh(g, last ? 1800 : 700);
   }
   async hitPedro(last) {
-    SFX.angry(); this.fxText('¡EN LA CARA!', L.TARGET_X - 80, 160, '#1f2d55', 36);
+    SFX.angry(); this.fxText('¡EN LA CARA!', 400, 62, '#1f2d55', 36);
     if (last) this.say(LINES.face[Phaser.Math.Between(0, LINES.face.length - 1)], 2200);
     await this.pedro.angryShake(last ? 1600 : 600); this.pedro.setMood('smile');
   }

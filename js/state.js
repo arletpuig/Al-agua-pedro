@@ -8,7 +8,7 @@ export const state = {
   clicks: 0, tomatoes: 0, pesetas: 0,
   stats: { totalClicks: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0 },
   cards: emptyCards(), dailyClaimedOn: null, falconUntil: 0,
-  tutorialSeen: false, sound: true, dirty: false, updatedAt: null,
+  tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null,
 };
 export function derive() {
   const s = state.stats;
@@ -22,7 +22,7 @@ export function load() {
     let raw = localStorage.getItem(KEY), d = raw ? JSON.parse(raw) : null;
     if (!d) { const old = localStorage.getItem(OLD_KEY); if (old) { const o = JSON.parse(old); d = { stats: { totalClicks: o.stats?.totalClicks || 0, tomatoesThrown: o.stats?.tomatoesThrown || 0, hits: o.stats?.hits || 0, falls: o.stats?.falls || 0 }, tutorialSeen: o.tutorialSeen, sound: o.sound }; } }
     if (d) {
-      Object.assign(state, { tutorialSeen: !!d.tutorialSeen, sound: d.sound !== false, dailyClaimedOn: d.dailyClaimedOn || null, falconUntil: d.falconUntil || 0 });
+      Object.assign(state, { tutorialSeen: !!d.tutorialSeen, sound: d.sound !== false, music: !!d.music, dailyClaimedOn: d.dailyClaimedOn || null, falconUntil: d.falconUntil || 0 });
       Object.assign(state.stats, d.stats || {});
       const c = emptyCards(); CARD_IDS.forEach(id => { if (d.cards?.[id]) c[id] = { level: d.cards[id].level | 0, frags: d.cards[id].frags | 0 }; }); state.cards = c;
     }
@@ -30,7 +30,7 @@ export function load() {
   derive(); return state;
 }
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, tutorialSeen: state.tutorialSeen, sound: state.sound })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
 }
 export function onChange(fn) { listeners.add(fn); }
 export function changed(sync = true) { derive(); if (sync) state.dirty = true; save(); listeners.forEach(f => f(state)); }
@@ -58,7 +58,7 @@ export function applyChestLocal(reward, price) {
   changed(false);
 }
 export function setTutorialSeen() { state.tutorialSeen = true; save(); }
-export function setSound(v) { state.sound = v; save(); }
+export function setSound(v, music = state.music) { state.sound = v; state.music = music; save(); }
 const COUNTERS = ['totalClicks', 'tomatoesThrown', 'hits', 'perfects', 'falls', 'pesetasEarned'];
 export function snapshot() { return { ...state.stats }; }
 // Sustituye el estado por la fila del servidor. Si se pasa `sent` (copia de los contadores enviados),

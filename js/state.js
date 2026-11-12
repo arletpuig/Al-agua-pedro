@@ -58,7 +58,7 @@ export function useTomatoes(n) {
 // Un lanzamiento de n tomates es un solo tiro que vale por n: cuenta n impactos/caídas.
 export function registerThrow(kind, decision, n = 1) {
   const s = state.stats;
-  if (kind === 'perfect') { s.perfects += n; s.hits += n; } else if (kind === 'near') s.hits += n;
+  if (kind === 'perfect') { s.perfects += n; s.hits += n; } else if (kind === 'near' || decision.fall) s.hits += n;   // un fallo perdonado cuenta como impacto
   if (decision.fall) { s.falls += n; s.pesetasEarned += decision.pesetas; }
   changed();
 }

@@ -163,19 +163,25 @@ const base = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 2, { maris
 await page.click('[data-upgrade="mariscada"]'); await page.waitForTimeout(300); s = await S(page);
 const disc = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 2, AAP.state.cards));
 check('Mariscada Sindical abarata las mejoras', s.cards.mariscada.level === 2 && disc < base && disc >= 1, `(${base} → ${disc})`);
-check('Mariscada tiene tope de descuento (32%)', await page.evaluate(() => AAP.E.CARDS.mariscada.value(8) === 0.32 && AAP.E.CARDS.mariscada.value(50) === 0.32 && AAP.E.upgradeCost('inflacion', 1, { mariscada: { level: 8 } }) >= 1));
+check('Mariscada: cada nivel descuenta menos y nunca pasa del 40%', await page.evaluate(() => { const v = AAP.E.CARDS.mariscada.value; return v(2) - v(1) > v(25) - v(24) && v(25) < 0.40 && v(100) <= 0.40 && AAP.E.upgradeCost('inflacion', 1, { mariscada: { level: 25 } }) >= 1; }));
 await page.click('#panel-cards [data-close]');
 before = await S(page); await tap(page, 10); s = await S(page);
 check('Inflación nivel 2: 3 clics por pulsación', s.totalClicks === before.totalClicks + 30 && (await txt('#cpt-badge')).includes('+3'));
-check('Joyas de Zapatero: probabilidad de 2 o 3 pesetas', await page.evaluate(() => { const c = { joyas: { level: 10 } }, E = AAP.E; return E.rollFallPesetas(c, () => 0.1) === 3 && E.rollFallPesetas(c, () => 0.5) === 2 && E.rollFallPesetas(c, () => 0.95) === 1 && E.rollFallPesetas({ joyas: { level: 0 } }, () => 0) === 1; }));
-check('Amnistía mejora rarezas sin garantizar legendaria', await page.evaluate(() => { const E = AAP.E, a = E.rarityPercents('wood', { amnistia: { level: 0 } }), b = E.rarityPercents('wood', { amnistia: { level: 5 } }), d = E.rarityPercents('diamond', { amnistia: { level: 5 } }); return b.legendary > a.legendary && b.common < a.common && b.legendary < 20 && d.legendary < 30 && d.legendary > b.legendary; }));
-// Apagón en juego real: con nivel 10 y azar forzado, un impacto cercano derriba; un fallo nunca.
-await give(page, { tomatoes: 3, cards: { apagon: { level: 10, frags: 0 } } });
+check('Joyas de Zapatero: 2 o 3 pesetas, y cada nivel da menos', await page.evaluate(() => { const E = AAP.E, c = { joyas: { level: 10 } }, p = E.CARDS.joyas.value(10), v = E.CARDS.joyas.value; return E.rollFallPesetas(c, () => p / 6) === 3 && E.rollFallPesetas(c, () => p / 2) === 2 && E.rollFallPesetas(c, () => 0.99) === 1 && E.rollFallPesetas({ joyas: { level: 0 } }, () => 0) === 1 && v(2) - v(1) > v(25) - v(24) && v(25) < 0.45; }));
+check('muchos más niveles de mejora', await page.evaluate(() => { const C = AAP.E.CARDS; return C.inflacion.max === 30 && C.joyas.max === 25 && C.mariscada.max === 25 && C.apagon.max === 25 && C.amnistia.max === 20; }));
+check('Apagón: el centro de la diana crece', await page.evaluate(() => AAP.E.perfectRadius({ apagon: { level: 10 } }, 46) > 46 * 1.2 && AAP.E.perfectRadius({}, 46) === 46));
+check('las cartas al máximo ya no salen en los cofres', await page.evaluate(() => { const E = AAP.E, c = E.emptyCards(); c.inflacion = { level: 30, frags: 0 }; for (let i = 0; i < 300; i++) if (E.rollChest('wood', c).cards.some(x => x.id === 'inflacion')) return false; return true; }));
+check('con toda la colección al máximo el cofre da pesetas', await page.evaluate(() => { const E = AAP.E, c = {}; E.CARD_IDS.forEach(id => c[id] = { level: E.CARDS[id].max, frags: 0 }); const r = E.rollChest('diamond', c); return r.cards.length === 0 && r.pesetas >= 9; }));
+// Amnistía en juego real: con azar forzado perdona un casi y también un fallo (cuenta como impacto); sin suerte, nada.
+await give(page, { tomatoes: 3, cards: { amnistia: { level: 10, frags: 0 } } });
 await page.evaluate(() => { AAP.testRng.fn = () => 0.01; });
 before = await S(page); await throwN(1); await stopAt(page, 80, 120); await idle(page); s = await S(page);
-check('Apagón: un impacto cercano puede derribar', s.falls === before.falls + 1 && s.perfects === before.perfects && s.pesetas > before.pesetas);
+check('Amnistía: un casi puede derribar', s.falls === before.falls + 1 && s.perfects === before.perfects && s.pesetas > before.pesetas);
 before = s; await throwN(1); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
-check('Apagón no convierte un fallo en caída', s.falls === before.falls);
+check('Amnistía: un fallo perdonado derriba y cuenta como impacto', s.falls === before.falls + 1 && s.hits === before.hits + 1);
+await page.evaluate(() => { AAP.testRng.fn = () => 0.99; });
+before = s; await throwN(1); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
+check('sin suerte, el fallo sigue siendo fallo', s.falls === before.falls);
 await page.evaluate(() => { AAP.testRng.fn = null; });
 
 console.log('20. Persistencia'); before = await S(page);

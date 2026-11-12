@@ -1,5 +1,5 @@
 // Economía del juego: cartas, cofres, pesetas. Funciones puras (sin DOM) para poder simularlas.
-// Las mismas reglas están replicadas en supabase/schema_v2.sql y schema_v4.sql para los usuarios con cuenta.
+// Las mismas reglas están replicadas en supabase/schema_v2.sql, schema_v4.sql y schema_v5.sql para los usuarios con cuenta.
 export const RARITIES = {
   // unlock: fragmentos para desbloquear (antes de tenerla cada aparición da 1); drop: fragmentos por aparición ya desbloqueada
   common:    { name: 'Común',      color: '#8fa3b5', weightWood: 55, weightDiamond: 30, baseCost: 8,  growth: 1.42, unlock: 2, drop: 3 },
@@ -7,22 +7,25 @@ export const RARITIES = {
   epic:      { name: 'Épica',      color: '#b163ff', weightWood: 11, weightDiamond: 22, baseCost: 18, growth: 1.5,  unlock: 5, drop: 2 },
   legendary: { name: 'Legendaria', color: '#ffb400', weightWood: 4,  weightDiamond: 10, baseCost: 30, growth: 1.55, unlock: 6, drop: 2 },
 };
+// Rendimiento decreciente: cada nivel aporta menos que el anterior y nunca se pasa del tope.
+const dimin = (cap, k) => L => cap * (1 - Math.exp(-L / k));
+const pct = v => `${Math.round(v * 1000) / 10}%`;
 export const CARDS = {
-  inflacion: { id: 'inflacion', name: 'Inflación', rarity: 'common', max: 10, icon: 'inflacion',
+  inflacion: { id: 'inflacion', name: 'Inflación', rarity: 'common', max: 30, icon: 'inflacion',
     desc: 'Cada pulsación vale más clics. Todo sube, hasta tus tomates.',
     effect: L => `${1 + L} clics por pulsación`, value: L => 1 + L },
-  joyas: { id: 'joyas', name: 'Joyas de Zapatero', rarity: 'rare', max: 10, icon: 'joyas',
-    desc: 'Probabilidad de que cada caída al agua suelte pesetas extra. Como Fortuna, pero con joyas.',
-    effect: L => `${Math.round(8 * L)}% de 2 pesetas · ${Math.round(8 * L / 3)}% de 3`, value: L => 0.08 * L },
-  mariscada: { id: 'mariscada', name: 'Mariscada Sindical', rarity: 'epic', max: 8, icon: 'mariscada',
-    desc: 'Descuento en todas las mejoras de cartas. Alguien tiene que pagar la comida.',
-    effect: L => `-${4 * L}% en mejoras`, value: L => Math.min(0.32, 0.04 * L) },
-  apagon: { id: 'apagon', name: 'Apagón', rarity: 'rare', max: 10, icon: 'apagon',
-    desc: 'Con la luz a medias, Pedro puede caer también con impactos cercanos al centro.',
-    effect: L => `hasta ${7 * L}% de caída en impactos cercanos`, value: L => 0.07 * L },
-  amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'legendary', max: 5, icon: 'amnistia',
-    desc: 'Los cofres se vuelven generosos: más cartas raras y alguna carta extra.',
-    effect: L => `+${6 * L}% rareza · ${6 * L}% carta extra`, value: L => 0.06 * L },
+  joyas: { id: 'joyas', name: 'Joyas de Zapatero', rarity: 'rare', max: 25, icon: 'joyas',
+    desc: 'Cada caída al agua puede soltar pesetas extra. Cuanto más alto, menos sube cada nivel.',
+    effect: L => { const p = CARDS.joyas.value(L); return `${pct(p)} de 2 pesetas · ${pct(p / 3)} de 3`; }, value: dimin(0.45, 9) },
+  mariscada: { id: 'mariscada', name: 'Mariscada Sindical', rarity: 'epic', max: 25, icon: 'mariscada',
+    desc: 'Descuento en todas las mejoras de cartas. Cuanto más alto, menos descuenta cada nivel nuevo.',
+    effect: L => `-${pct(CARDS.mariscada.value(L))} en mejoras`, value: dimin(0.40, 8) },
+  apagon: { id: 'apagon', name: 'Apagón', rarity: 'rare', max: 25, icon: 'apagon',
+    desc: 'Con la luz a medias la diana parece más grande: el centro que tira a Pedro al agua crece.',
+    effect: L => `centro de la diana +${pct(CARDS.apagon.value(L))}`, value: dimin(0.45, 10) },
+  amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'legendary', max: 20, icon: 'amnistia',
+    desc: 'Tus fallos quedan perdonados: a veces, aunque no aciertes en el centro, Pedro cae igual al agua.',
+    effect: L => `${pct(CARDS.amnistia.value(L))} de fallos perdonados`, value: dimin(0.30, 8) },
 };
 export const CARD_IDS = Object.keys(CARDS);
 export const CHESTS = {
@@ -47,9 +50,10 @@ export function fragsNeeded(id, L) {
   if (r === 'epic') return 2 + Math.ceil(L / 2);
   return 2 + Math.floor(L / 2);
 }
+// Precio de subir del nivel L al L+1: crece con L^1.5 (muchos niveles sin precios disparatados), con el descuento de Mariscada.
 export function upgradeCost(id, L, cards) {
   const r = RARITIES[CARDS[id].rarity], disc = CARDS.mariscada.value(level(cards, 'mariscada'));
-  return Math.max(1, Math.round(r.baseCost * Math.pow(r.growth, L - 1) * (1 - disc)));
+  return Math.max(1, Math.round(r.baseCost * Math.pow(L, 1.5) * (1 - disc)));
 }
 export function canUpgrade(cards, id, pesetas) {
   const L = level(cards, id); if (L < 1 || L >= CARDS[id].max) return false;
@@ -61,30 +65,28 @@ export function rollFallPesetas(cards, rng = Math.random) {
   if (r < p / 3) return 3; if (r < p) return 2; return 1;
 }
 export function maxFallPesetas() { return 3; }
-// Apagón: probabilidad de caída en impacto cercano, mayor cuanto más cerca del centro.
-export function nearFallChance(cards, dist, perfectR, nearR) {
-  const closeness = 1 - Math.max(0, (dist - perfectR) / (nearR - perfectR));
-  return CARDS.apagon.value(level(cards, 'apagon')) * closeness;
-}
-export function rarityWeights(kind, cards) {
-  const shift = CARDS.amnistia.value(level(cards, 'amnistia')), w = {};
-  let common = 0; for (const r in RARITIES) w[r] = kind === 'wood' ? RARITIES[r].weightWood : RARITIES[r].weightDiamond;
-  common = w.common * shift; w.common -= common; // reparte lo quitado al común entre las demás
-  const rest = w.rare + w.epic + w.legendary;
-  ['rare', 'epic', 'legendary'].forEach(r => w[r] += common * (w[r] / rest));
+// Apagón: el centro de la diana (zona que tira a Pedro) es mayor.
+export function perfectRadius(cards, base) { return base * (1 + CARDS.apagon.value(level(cards, 'apagon'))); }
+// Amnistía: probabilidad de que un fallo (o un casi) se perdone y Pedro caiga igual.
+export function forgiveChance(cards) { return CARDS.amnistia.value(level(cards, 'amnistia')); }
+export function rarityWeights(kind, cards = {}) {
+  const w = {}; for (const r in RARITIES) w[r] = kind === 'wood' ? RARITIES[r].weightWood : RARITIES[r].weightDiamond;
+  // las cartas al nivel máximo ya no salen: su rareza desaparece si todas las de esa rareza están al máximo
+  for (const r in w) if (CARD_IDS.filter(id => CARDS[id].rarity === r).every(id => level(cards, id) >= CARDS[id].max)) w[r] = 0;
   return w;
 }
-export function rarityPercents(kind, cards) { const w = rarityWeights(kind, cards), t = Object.values(w).reduce((a, b) => a + b, 0), o = {}; for (const r in w) o[r] = w[r] / t * 100; return o; }
+export function rarityPercents(kind, cards) { const w = rarityWeights(kind, cards), t = Object.values(w).reduce((a, b) => a + b, 0) || 1, o = {}; for (const r in w) o[r] = w[r] / t * 100; return o; }
 function pickRarity(w, rng) { const t = Object.values(w).reduce((a, b) => a + b, 0); let x = rng() * t; for (const r in w) { x -= w[r]; if (x < 0) return r; } return 'common'; }
 export function rollChest(kind, cards, rng = Math.random) {
-  const def = CHESTS[kind], w = rarityWeights(kind, cards), extra = rng() < CARDS.amnistia.value(level(cards, 'amnistia')) ? 1 : 0;
+  const def = CHESTS[kind], w = rarityWeights(kind, cards), any = Object.values(w).some(v => v > 0);
   const out = { kind, cards: [], tomatoes: 0, pesetas: 0 };
-  for (let i = 0; i < def.cards + extra; i++) {
-    const r = pickRarity(w, rng), pool = CARD_IDS.filter(id => CARDS[id].rarity === r), id = pool[Math.floor(rng() * pool.length)];
-    out.cards.push({ id, rarity: r, bonus: i >= def.cards });
+  for (let i = 0; i < def.cards; i++) {
+    if (!any) { out.pesetas += 3; continue; }      // colección completa al máximo: cada carta se cambia por 3 pesetas
+    const r = pickRarity(w, rng), pool = CARD_IDS.filter(id => CARDS[id].rarity === r && level(cards, id) < CARDS[id].max), id = pool[Math.floor(rng() * pool.length)];
+    out.cards.push({ id, rarity: r, bonus: false });
   }
   out.tomatoes = def.tomatoes[0] + Math.floor(rng() * (def.tomatoes[1] - def.tomatoes[0] + 1));
-  if (rng() < def.pesetaChance) out.pesetas = def.pesetas[0] + Math.floor(rng() * (def.pesetas[1] - def.pesetas[0] + 1));
+  if (rng() < def.pesetaChance) out.pesetas += def.pesetas[0] + Math.floor(rng() * (def.pesetas[1] - def.pesetas[0] + 1));
   return out;
 }
 // Aplica un cofre al estado de cartas. Sin desbloquear: +1 fragmento y, al llegar a lo necesario, se desbloquea (isNew).

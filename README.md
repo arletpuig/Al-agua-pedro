@@ -48,7 +48,7 @@ Tras cambiar la ilustración de referencia: `python3 tools/pedro-parts.py` (nece
 - 200 clics = 1 tomate (antes 100: los tomates ya conseguidos se conservan). Con racha, cada toque vale hasta ×3. Los tomates son munición, nunca moneda.
 - Impacto perfecto (centro amarillo) = Pedro cae = 1 peseta. Impacto cercano: solo cae con la carta Apagón.
 - Cofre de madera: 8 pesetas (uno gratis al día). Cofre de diamante: 40 pesetas.
-- Cartas: Inflación (común), Joyas de Zapatero y Apagón (raras), Mariscada Sindical (épica), Amnistía (legendaria). Para desbloquear una carta hacen falta fragmentos (común 2, rara 3, épica 5, legendaria 6; cada aparición da 1). Ya desbloqueada, cada aparición da más (común y rara 3, épica y legendaria 2). Mejorar cuesta fragmentos y pesetas. Las cartas nuevas se marcan con un punto hasta que las miras.
+- Cartas: Inflación (común), Joyas de Zapatero y Apagón (raras), Mariscada Sindical (épica), Amnistía (legendaria). Para desbloquear una carta hacen falta fragmentos (común 2, rara 3, épica 5, legendaria 6; cada aparición da 1). Ya desbloqueada, cada aparición da más (común y rara 3, épica y legendaria 2). Mejorar cuesta fragmentos y pesetas (precio = base × nivel^1,5). Niveles máximos: Inflación 30, Joyas 25, Mariscada 25, Apagón 25, Amnistía 20. Joyas y Mariscada dan cada vez menos por nivel. Apagón agranda el centro de la diana; Amnistía perdona fallos (Pedro cae igual). Las cartas al máximo ya no salen en los cofres (con todo al máximo, cada carta se cambia por 3 pesetas). Las cartas nuevas se marcan con un punto hasta que las miras.
 - Tienda: cofre diario, cofres de madera y diamante, y ofertas con vídeo (pendientes de proveedor).
 - Simulación de progresión: `node tests/sim-economy.mjs`.
 

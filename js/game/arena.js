@@ -111,18 +111,18 @@ export class Arena {
   tauntIdle(line) { if (this.busy || this.aim || this.clipName !== 'idle') return; this.play('smug'); this.say(line, 2.6); }
 
   // ------------------------------------------------ puntería: el tomate va de lado a lado, solo en horizontal
-  startAim(mult = 1, n = 1) {
+  startAim(mult = 1, n = 1, perfectR = CONFIG.PERFECT_RADIUS) {
     this.hush();
     if (this.clipName === 'idle') this.play('idle');        // deja de pasear y vuelve al centro
-    this.aim = { x: CONFIG.AIM_MIN, dir: 1, speed: CONFIG.AIM_SPEED * mult, t0: this.now, n };
+    this.aim = { x: CONFIG.AIM_MIN, dir: 1, speed: CONFIG.AIM_SPEED * mult, t0: this.now, n, perfectR };
     SFX.throwStart();
     return new Promise(res => { this.aimResolve = res; });
   }
   stopAim() {
     if (!this.aim) return;
-    const x = this.aim.x; this.aim = null; SFX.stop();
+    const x = this.aim.x, pr = this.aim.perfectR; this.aim = null; SFX.stop();
     const dist = Math.abs(x - TARGET.x);
-    const kind = dist <= CONFIG.PERFECT_RADIUS ? 'perfect' : dist <= CONFIG.NEAR_RADIUS ? 'near' : 'miss';
+    const kind = dist <= pr ? 'perfect' : dist <= CONFIG.NEAR_RADIUS ? 'near' : 'miss';
     const precision = Math.max(0, 1 - dist / Math.max(TARGET.x - CONFIG.AIM_MIN, CONFIG.AIM_MAX - TARGET.x));
     this.aimResolve({ x, y: AIM.y, dist, kind, onPedro: false, precision });
   }
@@ -133,7 +133,7 @@ export class Arena {
     try {
       // a veces, en un fallo, Pedro atrapa el tomate al vuelo y se lo pone de nariz
       // si fallas por la izquierda el tomate va hacia Pedro: lo atrapa y se lo pone de nariz
-      if (res.kind === 'miss' && res.x < TARGET.x) return await this.catchIt(res);
+      if (res.kind === 'miss' && res.x < TARGET.x && !decision.fall) return await this.catchIt(res);
       SFX.whoosh();
       const big = 0.9 + Math.min(0.3, (n - 1) * 0.04);
       const fly = { x: res.x, y: AIM.y, s: big, rot: 0, n }; this.flying = fly;
@@ -190,7 +190,7 @@ export class Arena {
   // ------------------------------------------------ ¡al agua!
   async fallSequence(res, decision, last, n = 1) {
     SFX.clank(); SFX.win();
-    this.bigText((res.kind === 'perfect' ? '¡PERFECTO!' : '¡AL AGUA!') + (n > 1 ? ` ×${n}` : ''), '#ffd23f');
+    this.bigText((res.kind === 'perfect' ? '¡PERFECTO!' : decision.forgiven ? '¡AMNISTÍA!' : '¡AL AGUA!') + (n > 1 ? ` ×${n}` : ''), '#ffd23f');
     this.S.party = true;
     // el tablón se abre y Pedro cae
     const px = this.P.px, sx = PED.x + px * PED.s;
@@ -212,7 +212,7 @@ export class Arena {
     this.burst(wx, TANK.water, 60, 'drop', { angle: -Math.PI / 2, spread: 1.0, min: 500, max: 1300, g: 2600, r: [6, 15], life: [0.6, 1.2], w: 60 });
     this.ripples = { x: wx, t0: this.now };
     this.doShake(18, 0.4); this.frenzy = 1;
-    if (decision.pesetas) { this.burst(wx, TANK.water - 40, decision.pesetas * 4, 'coin', { angle: -Math.PI / 2, spread: 0.8, min: 500, max: 1000, g: 1800, r: [14, 18], life: [1.0, 1.5] }); this.bigText(`+${decision.pesetas} PESETA${decision.pesetas > 1 ? 'S' : ''}`, '#ffd23f', 420); SFX.coin(); }
+    if (decision.pesetas) { this.burst(wx, TANK.water - 40, Math.min(24, decision.pesetas * 4), 'coin', { angle: -Math.PI / 2, spread: 0.8, min: 500, max: 1000, g: 1800, r: [14, 18], life: [1.0, 1.5] }); this.bigText(`+${decision.pesetas} PESETA${decision.pesetas > 1 ? 'S' : ''}`, '#ffd23f', 420); SFX.coin(); }
     // el tablón vuelve a su sitio y Pedro asoma dentro de la pecera, empapado y enfadado
     this.tween(this.S, { plankAng: 0 }, 0.5, 'b');
     this.pose = { x: wx, y: TANK.water + 800, rot: 0, s: PED.s, inside: true };
@@ -345,7 +345,7 @@ export class Arena {
       c.save(); c.setLineDash([16, 14]); c.lineCap = 'round'; c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 5;
       c.beginPath(); c.moveTo(CONFIG.AIM_MIN, AIM.y); c.lineTo(CONFIG.AIM_MAX, AIM.y); c.stroke(); c.restore();
       const pulse = 0.5 + 0.5 * Math.sin(this.now * 8);
-      c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,220,90,${0.18 + pulse * 0.12})`; ell(c, TARGET.x, TARGET.y, CONFIG.PERFECT_RADIUS, CONFIG.PERFECT_RADIUS); c.fill(); c.restore();
+      c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,220,90,${0.18 + pulse * 0.12})`; ell(c, TARGET.x, TARGET.y, this.aim.perfectR, this.aim.perfectR); c.fill(); c.restore();
       const x = this.aim.x; softBlob(c, x + 10, AIM.y + 60, 50, 14, '#000000', 0.35, 6);
       const big = 0.9 + Math.min(0.3, (this.aim.n - 1) * 0.04);
       this.rig.tomato(c, [x, AIM.y], 50 * big, 1, 1, Math.sin(this.now * 6) * 0.15);

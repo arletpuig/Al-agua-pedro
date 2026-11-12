@@ -54,14 +54,14 @@ function onTap(e) {
   scheduleIdle();
 }
 // ---------- decisión de un lanzamiento ----------
-// Perfecto: siempre cae. Cercano: solo puede caer con la carta Apagón, con más probabilidad cuanto más cerca del centro. Fallo: nunca.
 export const testRng = { fn: null };   // solo para pruebas automáticas (modo ?debug)
+// Perfecto: siempre cae. Casi o fallo: solo si la Amnistía lo perdona.
 export function decide(res, n = 1, rng = testRng.fn || Math.random) {
-  let fall = false;
+  let fall = false, forgiven = false;
   if (res.kind === 'perfect') fall = true;
-  else if (res.kind === 'near') fall = rng() < E.nearFallChance(state.cards, res.dist, CONFIG.PERFECT_RADIUS, CONFIG.NEAR_RADIUS);
+  else if (rng() < E.forgiveChance(state.cards)) { fall = true; forgiven = true; }
   let pesetas = 0; if (fall) for (let i = 0; i < n; i++) pesetas += E.rollFallPesetas(state.cards, rng);
-  return { fall, pesetas };
+  return { fall, pesetas, forgiven };
 }
 function speedMult() {
   const begin = state.stats.tomatoesThrown < CONFIG.BEGINNER_THROWS ? CONFIG.BEGINNER_SPEED : 1;
@@ -77,7 +77,7 @@ export async function throwTomatoes(n) {
   let result;
   try {
     ui.showStop(true);
-    const res = await scene.startAim(speedMult(), n);
+    const res = await scene.startAim(speedMult(), n, E.perfectRadius(state.cards, CONFIG.PERFECT_RADIUS));
     ui.showStop(false);
     const d = decide(res, n);
     registerThrow(res.kind, d, n); ui.hud();

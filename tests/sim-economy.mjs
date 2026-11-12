@@ -18,13 +18,13 @@ function sim(label, policy) {
         tomatoes--; throws++; t += THROW_SEC; const r = rng();
         let fall = false;
         if (r < ACC.perfect) fall = true;
-        else if (r < ACC.perfect + ACC.near) { const dist = PERFECT_R + rng() * (NEAR_R - PERFECT_R); fall = rng() < E.nearFallChance(cards, dist, PERFECT_R, NEAR_R); }
+        else if (rng() < E.forgiveChance(cards)) fall = true;
         if (fall) { falls++; const p = E.rollFallPesetas(cards, rng); pes += p; pesTotal += p; }
       }
       // gastar
       for (let k = 0; k < 3; k++) {
         const up = E.CARD_IDS.filter(id => E.canUpgrade(cards, id, pes)).sort((a, b) => E.upgradeCost(a, E.level(cards, a), cards) - E.upgradeCost(b, E.level(cards, b), cards))[0];
-        if (up) { pes -= E.upgradeCost(up, E.level(cards, up), cards); cards[up].level++; continue; }
+        if (up) { pes -= E.upgradeCost(up, E.level(cards, up), cards); cards[up].frags -= E.fragsNeeded(up, E.level(cards, up)); cards[up].level++; continue; }
         const kind = policy(pes, cards); if (!kind) break;
         pes -= E.CHESTS[kind].price; const c = E.rollChest(kind, cards, rng); E.applyChestCards(cards, c.cards); tomatoes += c.tomatoes; pes += c.pesetas; pesTotal += c.pesetas;
       }

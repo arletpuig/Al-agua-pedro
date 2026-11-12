@@ -15,13 +15,18 @@ const cases = [
 ];
 for (const [name, opts] of cases) {
   const ctx = await browser.newContext({ ...opts, deviceScaleFactor: 1 }); const page = await ctx.newPage(); const errors = watchErrors(page); await mockTime(page); await open(page);
+  // móviles apaisados: el juego es vertical y pide girar el móvil
+  if (await page.evaluate(() => getComputedStyle(document.querySelector('#rotate')).display !== 'none')) {
+    check(`${name}: pide girar el móvil (el juego es vertical)`, await page.locator('#rotate').isVisible());
+    await page.screenshot({ path: `tests/out/layout-${name.replace(/[^a-z0-9]+/gi, '-')}.png` }); await ctx.close(); continue;
+  }
   const r = await page.evaluate(() => {
     const vw = innerWidth, vh = innerHeight, box = s => { const b = document.querySelector(s).getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
-    const main = { click: box('#dome-wrap'), throw: box('#throw'), daily: box('#btn-daily'), nav: box('#tabs'), top: box('.top') };
+    const main = { click: box('#btn-click'), throws: box('#throws'), nav: box('#tabs'), top: box('.top') };
     const inside = Object.entries(main).filter(([, b]) => b.l < -1 || b.t < -1 || b.r > vw + 1 || b.b > vh + 1).map(([k]) => k);
     const keys = Object.keys(main), overlaps = [];
     for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) { const a = main[keys[i]], b = main[keys[j]]; if (a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1) overlaps.push(keys[i] + '×' + keys[j]); }
-    const small = [...document.querySelectorAll('#seg button,#btn-launch,#tabs .tab,.sq,#btn-click,#btn-daily')].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.width < 28 || b.height < 28); }).length;
+    const small = [...document.querySelectorAll('#throws button,#tabs .tab,.sq,#btn-click,#btn-daily')].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.width < 34 || b.height < 34); }).length;
     const c = document.querySelector('#game canvas').getBoundingClientRect(), g = document.querySelector('#game').getBoundingClientRect();
     return { inside, overlaps, small, scroll: document.documentElement.scrollHeight > vh + 1 || document.documentElement.scrollWidth > vw + 1, canvasFits: Math.abs(c.width - g.width) < 2 && Math.abs(c.height - g.height) < 2, gameW: Math.round(g.width), vw, vh };
   });

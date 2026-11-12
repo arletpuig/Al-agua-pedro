@@ -1,79 +1,91 @@
 // Prueba completa del juego como invitado (guardado local). Ejecutar con el juego servido en http://localhost:8080:
 //   node tests/game.test.mjs
-import { launch, devices, check, summary, watchErrors, mockTime, open, tap, S, stopAt, idle, give, madrid } from './helpers.mjs';
+import { launch, devices, check, summary, watchErrors, mockTime, open, tap, S, stopAt, idle, give, madrid, noCombo } from './helpers.mjs';
 const browser = await launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
 const page = await ctx.newPage(); const errors = watchErrors(page); await mockTime(page);
 const txt = s => page.locator(s).innerText();
-const disabled = n => page.locator(`#seg button[data-n="${n}"]`).isDisabled();
-const throwN = async n => { await page.click(`#seg button[data-n="${n}"]`); await page.click('#btn-launch'); };
+const disabled = n => page.locator(`#throws button[data-n="${n}"]`).isDisabled();
+const throwN = async n => { await page.click(`#throws button[data-n="${n}"]`); };
 const shot = n => page.screenshot({ path: `tests/out/${n}.png` });
 
-console.log('1. Carga'); await open(page);
+console.log('1. Carga y regalo de bienvenida'); await open(page);
 check('el juego carga y la escena está lista', await page.evaluate(() => !!document.querySelector('#game canvas') && AAP.scene.ready));
-await shot('01-inicio');
+let s = await S(page);
+check('jugador nuevo: regalo de 5 tomates y 10 pesetas', s.tomatoes === 5 && s.pesetas === 10 && s.chestTomatoes === 5, `(${s.tomatoes} tomates, ${s.pesetas} pesetas)`);
+await shot('01-inicio'); await noCombo(page);
 
 console.log('2-5. Clics y tomates'); await tap(page, 250); await page.waitForTimeout(900);
-let s = await S(page);
+s = await S(page);
 check('250 clics contabilizados', s.totalClicks === 250, `(${s.totalClicks})`);
-check('2 tomates por 250 clics', s.tomatoes === 2 && s.tomatoesEarned === 2);
+check('2 tomates por 250 clics (+5 del regalo)', s.tomatoes === 7 && s.tomatoesEarned === 7);
 check('50 clics sobrantes conservados', s.clicks === 50 && (await txt('#bar-text')) === '50');
-check('HUD muestra tomates', (await txt('#tomato-num')) === '2');
+check('HUD muestra tomates', (await txt('#tomato-num')) === '7');
 
 console.log('7. Límites de lanzamiento');
-check('con 2 tomates: ×1 activo, ×3 ×5 ×10 desactivados', !(await disabled(1)) && await disabled(3) && await disabled(5) && await disabled(10));
-check('no se pueden lanzar más de los disponibles (llamada directa)', await page.evaluate(async () => (await import('./js/play.js')).throwTomatoes(3)) === false && (await S(page)).tomatoes === 2);
+check('con 7 tomates: ×1 ×3 ×5 activos, ×10 desactivado', !(await disabled(1)) && !(await disabled(3)) && !(await disabled(5)) && await disabled(10));
+check('no se pueden lanzar más de los disponibles (llamada directa)', await page.evaluate(async () => (await import('./js/play.js')).throwTomatoes(10)) === false && (await S(page)).tomatoes === 7);
 
-console.log('6, 9, 10, 11. Lanzamiento ×1: tutorial, perfecto');
+console.log('6, 9, 10, 11. Lanzamiento ×1: tutorial, el mismo botón lanza, perfecto');
 await throwN(1); await page.waitForTimeout(300);
 check('tutorial la primera vez', await page.locator('#panel-tutorial').evaluate(e => e.classList.contains('open')));
 await page.click('#panel-tutorial [data-close]'); await page.waitForTimeout(300);
-check('descuenta 1 tomate al lanzar', (await S(page)).tomatoes === 1);
-check('botón ¡AHORA! visible', await page.locator('#btn-stop').isVisible());
+check('descuenta 1 tomate al lanzar', (await S(page)).tomatoes === 6);
+check('el botón grande pasa a ¡LANZA!', await page.locator('#btn-click.aim').isVisible() && (await txt('#mega-lbl')) === '¡LANZA!');
+check('los primeros lanzamientos van más despacio', await page.evaluate(() => AAP.scene.aim.speed < 300));
 await stopAt(page, 0, 10); await page.waitForTimeout(1500); await shot('02-caida');
 await idle(page); s = await S(page);
 check('impacto perfecto: Pedro cae', s.falls === 1 && s.perfects === 1);
-check('1 peseta por caída (sin Joyas)', s.pesetas === 1 && s.pesetasEarned === 1);
+check('1 peseta por caída (sin Joyas)', s.pesetas === 11 && s.pesetasEarned === 1);
 check('Pedro vuelve al tablón', await page.evaluate(() => !AAP.scene.pose && !AAP.scene.busy && AAP.scene.S.plankAng === 0));
 
-console.log('9. Fallo y cercano con ×1');
-await throwN(1); await stopAt(page, 130, 175); await page.waitForTimeout(900); await shot('03-fallo'); await idle(page); s = await S(page);
-check('fallo: no cae, sin pesetas, tomate gastado', s.falls === 1 && s.pesetas === 1 && s.tomatoes === 0 && s.tomatoesThrown === 2);
-check('todos los botones desactivados sin tomates', await disabled(1));
-await tap(page, 100); await page.waitForTimeout(800);
-await throwN(1); await stopAt(page, 60, 110); await page.waitForTimeout(600); await shot('04-cercano'); await idle(page); s = await S(page);
+console.log('9. Fallos y cercano con ×1');
+await throwN(1); await page.waitForFunction(() => AAP.scene.aim); await page.click('#btn-click');   // el botón grande lanza
+check('pulsar el botón grande mientras apuntas lanza (no suma clics)', await page.evaluate(() => !AAP.scene.aim) && (await S(page)).totalClicks === 250);
+await idle(page);
+await throwN(1); await stopAt(page, 160, 195, 'R'); await page.waitForTimeout(900); await shot('03-fallo-derecha'); await idle(page); s = await S(page);
+check('fallo a la derecha: no cae, sin pesetas, tomate gastado', s.falls === 1 && s.pesetas === 11 && s.tomatoesThrown === 3);
+await throwN(1); await stopAt(page, 170, 280, 'L'); await page.waitForTimeout(1500); await shot('03b-fallo-izquierda-pedro-lo-coge');
+check('fallo a la izquierda: Pedro coge el tomate y se lo pone de nariz', await page.evaluate(() => AAP.scene.clipName === 'catchNose'));
+await idle(page); s = await S(page);
+check('el tomate cogido cuenta como fallo', s.falls === 1 && s.hits === 1 && s.tomatoesThrown === 4);
+await throwN(1); await stopAt(page, 80, 140); await page.waitForTimeout(600); await shot('04-cercano'); await idle(page); s = await S(page);
 check('cercano sin Apagón: cuenta como impacto pero no cae', s.hits === 2 && s.falls === 1 && s.perfects === 1);
+check('la mancha se queda en la diana', await page.evaluate(() => AAP.scene.splats.length > 0));
 
-console.log('6, 8, 12. Lanzamientos múltiples');
-await tap(page, 1900); await page.waitForTimeout(900); s = await S(page);
-check('19 tomates (sin límite artificial)', s.tomatoes === 19, `(${s.tomatoes})`);
-// ×3: perfecto, cercano, fallo
+console.log('6, 8, 12. Lanzamientos múltiples: un solo tomate que vale por varios');
+await tap(page, 100); await page.waitForTimeout(500);
 let before = await S(page);
 await throwN(3); await page.waitForTimeout(200);
 check('×3 descuenta exactamente 3', (await S(page)).tomatoes === before.tomatoes - 3);
-check('indicador de tomate 1/3', (await txt('#volley-badge')).includes('1 DE 3'));
-await stopAt(page, 0, 10); await page.waitForFunction(() => document.querySelector('#volley-i').textContent === '2' && AAP.scene.aim, null, { timeout: 30000 });
-await stopAt(page, 60, 110); await page.waitForFunction(() => document.querySelector('#volley-i').textContent === '3' && AAP.scene.aim, null, { timeout: 30000 });
-await stopAt(page, 130, 175); await page.waitForSelector('#summary:not(.hidden)', { timeout: 30000 }); await shot('05-resumen-x3');
-const sum = await txt('#summary'); await idle(page); s = await S(page);
-check('×3: 1 perfecto + 1 cercano + 1 fallo registrados', s.perfects === before.perfects + 1 && s.hits === before.hits + 2 && s.tomatoesThrown === before.tomatoesThrown + 3);
-check('×3: recompensa solo por el que derriba (+1 ₧)', s.pesetas === before.pesetas + 1 && s.falls === before.falls + 1 && /\+1/.test(sum), sum.replace(/\n/g, ' '));
-// ×5: todos fallos -> sin recompensa
-before = await S(page); await throwN(5);
-for (let i = 1; i <= 5; i++) { await page.waitForFunction(i => document.querySelector('#volley-i').textContent === String(i) && AAP.scene.aim, i, { timeout: 30000 }); await stopAt(page, 130, 175); }
-await idle(page); s = await S(page);
-check('×5 descuenta 5 y no premia fallos', s.tomatoes === before.tomatoes - 5 && s.pesetas === before.pesetas && s.falls === before.falls);
-// ×10: todos perfectos -> 10 caídas, 10 pesetas
-before = await S(page); await throwN(10);
-for (let i = 1; i <= 10; i++) { await page.waitForFunction(i => document.querySelector('#volley-i').textContent === String(i) && AAP.scene.aim, i, { timeout: 30000 }); await stopAt(page, 0, 10); }
-await idle(page); s = await S(page);
+check('×3 es un solo tiro', await page.evaluate(() => AAP.scene.aim?.n === 3));
+await stopAt(page, 0, 10); await idle(page); s = await S(page);
+check('×3 perfecto: cuenta 3 caídas y 3 pesetas', s.falls === before.falls + 3 && s.perfects === before.perfects + 3 && s.pesetas === before.pesetas + 3 && s.tomatoesThrown === before.tomatoesThrown + 3);
+check('después no hay más tiros pendientes', await page.evaluate(() => !AAP.scene.aim && !AAP.scene.busy));
+await tap(page, 1900); await page.waitForTimeout(900); s = await S(page);
+check('19 tomates (sin límite artificial)', s.tomatoes === 19, `(${s.tomatoes})`);
+before = await S(page); await throwN(5); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
+check('×5 descuenta 5 y no premia un fallo', s.tomatoes === before.tomatoes - 5 && s.pesetas === before.pesetas && s.falls === before.falls);
+before = await S(page); await throwN(10); await stopAt(page, 0, 10); await idle(page); s = await S(page);
 check('×10 descuenta 10', s.tomatoes === before.tomatoes - 10 && s.tomatoesThrown === before.tomatoesThrown + 10);
-check('×10 perfectos: 10 caídas y 10 pesetas, sin duplicados', s.falls === before.falls + 10 && s.pesetas === before.pesetas + 10, `(caídas +${s.falls - before.falls}, pesetas +${s.pesetas - before.pesetas})`);
-check('estado coherente tras ráfaga (Pedro en el tablón)', await page.evaluate(() => !AAP.scene.busy && !AAP.scene.pose && AAP.scene.S.plankAng === 0));
+check('×10 perfecto: 10 caídas y 10 pesetas, sin duplicados', s.falls === before.falls + 10 && s.pesetas === before.pesetas + 10, `(caídas +${s.falls - before.falls}, pesetas +${s.pesetas - before.pesetas})`);
+check('estado coherente (Pedro en el tablón)', await page.evaluate(() => !AAP.scene.busy && !AAP.scene.pose && AAP.scene.S.plankAng === 0));
+
+console.log('Racha de pulsaciones');
+await page.evaluate(() => import('./js/config.js').then(m => { m.CONFIG.COMBO.perTap = 1; }));
+before = await S(page);
+for (let i = 0; i < 6; i++) { await tap(page, 10); await page.waitForTimeout(120); }
+s = await S(page); await page.waitForTimeout(150); await shot('04b-racha');
+check('pulsando seguido sube el multiplicador (×3)', await page.evaluate(() => document.querySelector('#btn-click').classList.contains('c3') && !document.querySelector('#combo').classList.contains('hidden') && document.querySelector('#combo-x').textContent === '×3'));
+check('con racha cada toque vale más', s.totalClicks - before.totalClicks > 60 && s.totalClicks - before.totalClicks <= 180, `(+${s.totalClicks - before.totalClicks} con 60 toques)`);
+await page.waitForTimeout(8000);
+check('si dejas de pulsar, el multiplicador baja', await page.evaluate(() => document.querySelector('#combo').classList.contains('hidden') && !document.querySelector('#btn-click').classList.contains('c2') && !document.querySelector('#btn-click').classList.contains('c3')));
+await noCombo(page);
 
 console.log('19. Ranking: tomates históricos');
-check('los tomates históricos no bajan al lanzar', s.tomatoesEarned === 22 && s.tomatoes === 1 && s.tomatoesThrown === 21, `(históricos ${s.tomatoesEarned}, disponibles ${s.tomatoes})`);
-check('las estadísticas lo muestran', await page.evaluate(() => { AAP.ui.renderStats(); return /Tomates conseguidos\s*22/.test(document.querySelector('#stats-list').innerText); }));
+s = await S(page);
+check('los tomates históricos no bajan al lanzar', s.tomatoesEarned === Math.floor(s.totalClicks / 100) + s.chestTomatoes && s.tomatoes === s.tomatoesEarned - s.tomatoesThrown, `(históricos ${s.tomatoesEarned}, disponibles ${s.tomatoes})`);
+check('las estadísticas lo muestran', await page.evaluate(n => { AAP.ui.renderStats(); return document.querySelector('#stats-list').innerText.includes(n.toLocaleString('es-ES')); }, s.tomatoesEarned));
 
 console.log('18. Anuncios no integrados');
 await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(300); await shot('06-tienda');
@@ -107,11 +119,11 @@ check('cofre diario no se puede reclamar dos veces (llamada directa)', await pag
 await give(page, { pesetas: 300 }); await page.evaluate(() => AAP.ui.renderChests());
 before = await S(page);
 await page.click('[data-buy="wood"]'); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled); await page.click('#chest-btn'); await page.waitForTimeout(400); s = await S(page);
-check('cofre de madera: cuesta 15 ₧', s.pesetasSpent === before.pesetasSpent + 15 && s.chestsOpened === before.chestsOpened + 1);
+check('cofre de madera: cuesta 8 pesetas (más asequible)', s.pesetasSpent === before.pesetasSpent + 8 && s.chestsOpened === before.chestsOpened + 1);
 before = s;
 await page.click('[data-buy="diamond"]'); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await shot('09-cofre-diamante');
 const nCards = await page.locator('#chest-rewards .reward .tag').evaluateAll(els => els.filter(e => /nueva|fragmento/i.test(e.textContent)).length); await page.click('#chest-btn'); await page.waitForTimeout(400); s = await S(page);
-check('cofre de diamante: cuesta 80 ₧ y da 3+ cartas y 10+ tomates', s.pesetasSpent === before.pesetasSpent + 80 && nCards >= 3 && s.chestTomatoes - before.chestTomatoes >= 10, `(${nCards} cartas, +${s.chestTomatoes - before.chestTomatoes} tomates)`);
+check('cofre de diamante: cuesta 40 pesetas y da 3+ cartas y 10+ tomates', s.pesetasSpent === before.pesetasSpent + 40 && nCards >= 3 && s.chestTomatoes - before.chestTomatoes >= 10, `(${nCards} cartas, +${s.chestTomatoes - before.chestTomatoes} tomates)`);
 check('los tomates de cofre cuentan como históricos', s.tomatoesEarned === Math.floor(s.totalClicks / 100) + s.chestTomatoes);
 await page.click('#panel-chests [data-close]');
 
@@ -137,9 +149,9 @@ check('Amnistía mejora rarezas sin garantizar legendaria', await page.evaluate(
 // Apagón en juego real: con nivel 10 y azar forzado, un impacto cercano derriba; un fallo nunca.
 await give(page, { tomatoes: 3, cards: { apagon: { level: 10, frags: 0 } } });
 await page.evaluate(() => { AAP.testRng.fn = () => 0.01; });
-before = await S(page); await throwN(1); await stopAt(page, 60, 90); await idle(page); s = await S(page);
+before = await S(page); await throwN(1); await stopAt(page, 80, 120); await idle(page); s = await S(page);
 check('Apagón: un impacto cercano puede derribar', s.falls === before.falls + 1 && s.perfects === before.perfects && s.pesetas > before.pesetas);
-before = s; await throwN(1); await stopAt(page, 130, 175); await idle(page); s = await S(page);
+before = s; await throwN(1); await stopAt(page, 160, 195, 'R'); await idle(page); s = await S(page);
 check('Apagón no convierte un fallo en caída', s.falls === before.falls);
 await page.evaluate(() => { AAP.testRng.fn = null; });
 

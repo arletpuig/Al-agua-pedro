@@ -7,8 +7,12 @@ select username, total_clicks, pesetas, tomatoes from public.profiles;
 select total_clicks, tomatoes_earned, tomatoes, clicks_progress, pesetas_earned, pesetas from public.save_progress(250, 1, 1, 1, 1, 2);
 -- intento de trampa: 999999 clics de golpe y 50 pesetas -> se recorta
 select total_clicks < 100000 as clics_recortados, pesetas_earned = 3 as pesetas_recortadas from public.save_progress(999999, 1, 1, 1, 1, 50);
--- cofre sin pesetas suficientes -> error esperado
-do $$ begin perform public.open_chest('wood'); raise exception 'NO DEBERIA LLEGAR'; exception when others then raise notice 'ok error esperado: %', sqlerrm; end $$;
+-- cuenta nueva: regalo de bienvenida (5 tomates de cofre y 10 pesetas)
+select chest_tomatoes = 5 and chest_pesetas = 10 as regalo_bienvenida from public.profiles;
+-- cofre de diamante (40) sin pesetas suficientes (13) -> error esperado
+do $$ begin perform public.open_chest('diamond'); raise exception 'NO DEBERIA LLEGAR'; exception when others then if sqlerrm = 'NO DEBERIA LLEGAR' then raise; end if; raise notice 'ok error esperado: %', sqlerrm; end $$;
+-- cofre de madera: ahora cuesta 8
+select (public.open_chest('wood'))->'profile'->>'pesetas_spent' = '8' as madera_cuesta_8;
 -- cofre diario gratis, dos veces -> la segunda falla
 select (public.claim_daily())->'reward'->>'kind' as cofre_diario;
 do $$ begin perform public.claim_daily(); raise exception 'NO DEBERIA LLEGAR'; exception when others then raise notice 'ok error esperado: %', sqlerrm; end $$;

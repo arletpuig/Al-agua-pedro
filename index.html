@@ -20,33 +20,31 @@
     <div class="res" id="basket" title="Tomates"><svg class="ri ico-tomato"><use href="#ic-tomato"/></svg><b id="tomato-num">0</b></div>
     <div class="res coin" id="pill-pesetas" title="Pesetas"><svg class="ri"><use href="#ic-coin"/></svg><b id="pesetas-num">0</b><button class="plus" id="btn-plus" aria-label="Conseguir pesetas">+</button></div>
     <div class="spacer"></div>
+    <button class="daily" id="btn-daily" aria-label="Cofre diario"><i class="glow"></i><svg><use href="#ic-chest"/></svg><span class="rib" id="daily-rib">GRATIS</span></button>
     <button class="sq" id="btn-settings" aria-label="Ajustes"><svg><use href="#ic-gear"/></svg></button>
   </header>
   <div id="falcon-badge" class="boost hidden"><svg><use href="#ic-plane"/></svg>FALCÓN ×5 <span class="tm" id="falcon-time">10:00</span></div>
-  <div id="volley-badge" class="volley hidden">TOMATE <b id="volley-i">1</b> DE <b id="volley-n">1</b></div>
-  <div id="aim-hint" class="aim-hint hidden">¡Toca cuando esté en el centro!</div>
+  
   <div id="save-status" class="save-status"></div>
 
   <!-- zona de acción -->
   <div class="action">
-    <div class="throw" id="throw">
-      <div class="seg" id="seg"><button data-n="1">×1</button><button data-n="3">×3</button><button data-n="5">×5</button><button data-n="10">×10</button></div>
-      <button class="btn-y" id="btn-launch"><svg><use href="#ic-tomato"/></svg><span>LANZAR</span><i class="n" id="launch-n">×1</i><i class="shine"></i></button>
-      <button class="btn-stop hidden" id="btn-stop">¡AHORA!</button>
-      <p class="throw-empty hidden" id="throw-empty">Pulsa <b>¡DALE!</b> para conseguir tomates</p>
+    <!-- elegir cuántos tomates: al tocar uno empiezas a apuntar -->
+    <div class="throws" id="throws">
+      <span class="tl">LANZAR</span>
+      <button data-n="1"><svg><use href="#ic-tomato"/></svg><b>×1</b></button>
+      <button data-n="3"><svg><use href="#ic-tomato"/></svg><b>×3</b></button>
+      <button data-n="5"><svg><use href="#ic-tomato"/></svg><b>×5</b></button>
+      <button data-n="10"><svg><use href="#ic-tomato"/></svg><b>×10</b></button>
     </div>
-    <div class="dome-wrap" id="dome-wrap">
-      <svg class="ring" viewBox="0 0 124 124" aria-hidden="true">
-        <circle cx="62" cy="62" r="55" fill="#050a26" stroke="#0a0b18" stroke-width="5"/>
-        <circle cx="62" cy="62" r="55" fill="none" stroke="#1d2a6e" stroke-width="9"/>
-        <circle id="ring-fill" cx="62" cy="62" r="55" fill="none" stroke="url(#gRing)" stroke-width="9" stroke-linecap="round" transform="rotate(-90 62 62)" stroke-dasharray="345.6" stroke-dashoffset="345.6"/>
-        <circle cx="62" cy="62" r="60" fill="none" stroke="#0a0b18" stroke-width="2.5"/>
-      </svg>
-      <button class="dome" id="btn-click" aria-label="Pulsa para conseguir tomates"><span>¡DALE!</span></button>
-      <i class="cpt" id="cpt-badge">+1</i>
-      <div class="dome-count"><span id="bar-text">0</span><small>/100</small></div>
-    </div>
-    <button class="daily" id="btn-daily"><i class="glow"></i><svg><use href="#ic-chest"/></svg><span class="rib" id="daily-rib">GRATIS</span><span class="lbl">Cofre diario</span></button>
+    <p class="throw-empty hidden" id="throw-empty">Pulsa <b>¡DALE!</b> para conseguir tomates</p>
+    <!-- botón grande: pulsar para conseguir tomates y, mientras apuntas, lanzar -->
+    <button class="mega" id="btn-click" aria-label="Pulsa para conseguir tomates">
+      <span class="mega-lbl" id="mega-lbl">¡DALE!</span>
+      <span class="mega-sub" id="mega-sub"><i id="cpt-badge">+1</i> por toque</span>
+      <span class="prog"><i id="prog-fill"></i><em><b id="bar-text">0</b>/100</em></span>
+    </button>
+    <div class="combo hidden" id="combo"><b id="combo-x">×2</b><span>RACHA</span><i class="heat"><i id="heat-fill"></i></i></div>
   </div>
 
   <!-- navegación -->
@@ -144,9 +142,9 @@
     <div class="sheet-body">
       <ol class="howto">
         <li><i>1</i><span>Pulsa <b>¡DALE!</b> para llenar el anillo: cada 100 consigues un <b>tomate</b>.</span></li>
-        <li><i>2</i><span>Elige cuántos lanzar y pulsa <b>LANZAR</b>. El tomate irá de lado a lado por delante de la diana.</span></li>
-        <li><i>3</i><span><b>Toca la pantalla</b> cuando esté sobre el <b>centro</b>. ¡Pedro irá al agua y ganarás <b>pesetas</b>!</span></li>
-        <li><i>4</i><span>Si te quedas cerca, Pedro se tambalea... y se burlará de ti.</span></li>
+        <li><i>2</i><span>Elige cuántos tomates lanzar (<b>×1, ×3, ×5, ×10</b>): sale un solo tomate que vale por todos y va de lado a lado por delante de la diana.</span></li>
+        <li><i>3</i><span>Pulsa el <b>botón grande</b> (o la pantalla) cuando esté sobre el <b>centro</b>. ¡Pedro irá al agua y ganarás <b>pesetas</b>!</span></li>
+        <li><i>4</i><span>Si pulsas <b>¡DALE!</b> seguido sube la <b>racha</b> y cada toque vale ×2 o ×3. Si fallas, Pedro se burlará de ti.</span></li>
       </ol>
       <button class="btn-g" data-close>¡A POR ÉL!</button>
     </div>

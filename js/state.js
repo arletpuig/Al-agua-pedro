@@ -8,7 +8,7 @@ export const state = {
   clicks: 0, tomatoes: 0, pesetas: 0,
   stats: { totalClicks: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0 },
   cards: emptyCards(), dailyClaimedOn: null, falconUntil: 0,
-  tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null,
+  tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null, welcome: false,
 };
 export function derive() {
   const s = state.stats;
@@ -25,6 +25,10 @@ export function load() {
       Object.assign(state, { tutorialSeen: !!d.tutorialSeen, sound: d.sound !== false, music: !!d.music, dailyClaimedOn: d.dailyClaimedOn || null, falconUntil: d.falconUntil || 0 });
       Object.assign(state.stats, d.stats || {});
       const c = emptyCards(); CARD_IDS.forEach(id => { if (d.cards?.[id]) c[id] = { level: d.cards[id].level | 0, frags: d.cards[id].frags | 0 }; }); state.cards = c;
+    } else {
+      // jugador nuevo: regalo de bienvenida para empezar con tomates y algo de pesetas
+      state.stats.chestTomatoes = CONFIG.WELCOME.tomatoes; state.stats.chestPesetas = CONFIG.WELCOME.pesetas; state.welcome = true;
+      derive(); save();
     }
   } catch (e) {}
   derive(); return state;
@@ -47,10 +51,11 @@ export function useTomatoes(n) {
   if (n < 1 || state.tomatoes < n) return false;
   state.stats.tomatoesThrown += n; changed(); return true;
 }
-export function registerThrow(kind, decision) {
+// Un lanzamiento de n tomates es un solo tiro que vale por n: cuenta n impactos/caídas.
+export function registerThrow(kind, decision, n = 1) {
   const s = state.stats;
-  if (kind === 'perfect') { s.perfects++; s.hits++; } else if (kind === 'near') s.hits++;
-  if (decision.fall) { s.falls++; s.pesetasEarned += decision.pesetas; }
+  if (kind === 'perfect') { s.perfects += n; s.hits += n; } else if (kind === 'near') s.hits += n;
+  if (decision.fall) { s.falls += n; s.pesetasEarned += decision.pesetas; }
   changed();
 }
 export function applyChestLocal(reward, price) {

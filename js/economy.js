@@ -25,8 +25,8 @@ export const CARDS = {
 };
 export const CARD_IDS = Object.keys(CARDS);
 export const CHESTS = {
-  wood:    { id: 'wood', name: 'Cofre de madera', price: 15, cards: 1, tomatoes: [2, 6],   pesetaChance: 0.2, pesetas: [1, 2] },
-  diamond: { id: 'diamond', name: 'Cofre de diamante', price: 80, cards: 3, tomatoes: [10, 25], pesetaChance: 0.6, pesetas: [3, 8] },
+  wood:    { id: 'wood', name: 'Cofre de madera', price: 8, cards: 1, tomatoes: [2, 6],   pesetaChance: 0.2, pesetas: [1, 2] },
+  diamond: { id: 'diamond', name: 'Cofre de diamante', price: 40, cards: 3, tomatoes: [10, 25], pesetaChance: 0.6, pesetas: [3, 8] },
 };
 export const FALCON = { mult: 5, minutes: 10 };
 export const SOBRE = { pesetas: 5 };

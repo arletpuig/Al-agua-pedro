@@ -6,7 +6,7 @@ export const W = 1080, H = 1920;
 export const PLANK = { x0: 140, x1: 885, y: 1046, h: 42 };     // y = superficie donde pisa Pedro
 export const TANK = { x0: 150, x1: 630, y0: 1370, y1: 1742, water: 1440 };
 export const TOWER = { x0: 700, x1: 868, top: 1060, bottom: 1742 };
-export const TARGET = { x: 905, y: 640, r: 150 };
+export const TARGET = { x: 880, y: 640, r: 185 };
 export const FLOOR = 1742;
 const INK = '#0a0b18';
 

@@ -11,10 +11,12 @@ python3 -m http.server 8080
 y abre http://localhost:8080
 
 ## Cómo se juega
-- Pulsa **¡DALE!**: cada 100 pulsaciones dan un tomate (el anillo dorado muestra el progreso).
-- Elige ×1, ×3, ×5 o ×10 y pulsa **LANZAR**. El tomate va de lado a lado, solo en horizontal y despacio, por delante de la diana.
-- Toca la pantalla (o **¡AHORA!**) cuando esté sobre el centro: Pedro cae a la pecera de las pirañas y ganas pesetas.
-- Si te quedas cerca, Pedro se tambalea y te provoca: peineta, burla con la lengua fuera o carcajada, con frases como «¡Le tienes que dar al centro, eh! ¡Jajajaja!». Si fallas del todo, a veces atrapa el tomate y se lo pone de nariz.
+- Pulsa el botón grande **¡DALE!**: cada 100 pulsaciones dan un tomate (la barra del botón muestra el progreso).
+- **Racha**: si pulsas seguido, cada toque vale ×2 y luego ×3 (el botón cambia de color). Si paras, la racha baja.
+- Elige **×1, ×3, ×5 o ×10**: sale **un solo tomate que vale por todos** y va de lado a lado, en horizontal, por delante de la diana.
+- Mientras apuntas, el mismo botón grande se vuelve **¡LANZA!**: púlsalo (o toca la pantalla) cuando el tomate esté sobre el centro. Pedro cae a la pecera y ganas pesetas (por cada tomate del lanzamiento).
+- Los tomates se quedan pegados un momento en la diana. Si te quedas cerca, Pedro te provoca (peineta, burla, carcajada: «¡Le tienes que dar al centro, eh! ¡Jajajaja!»). Si fallas por la izquierda, Pedro atrapa el tomate y se lo pone de nariz.
+- **Jugadores nuevos**: regalo de bienvenida (5 tomates y 10 pesetas) y los primeros lanzamientos van más despacio.
 
 ## Tecnología
 - **Canvas 2D** sin motor ni dependencias: escenario, Pedro animado, puntería y efectos (`js/game/`).
@@ -30,7 +32,7 @@ y abre http://localhost:8080
 | `js/game/pedro-anims.js` | Animaciones por fotogramas clave (espera paseando, peineta, burla, risa, tomate en la nariz, caída, en el agua...) |
 | `js/game/stage-art.js` | Escenario: plató, foco, torre, trampolín, diana con bombillas y pecera con pirañas |
 | `js/ui.js`, `css/style.css` | Interfaz |
-| `js/play.js` | Pulsaciones, lanzamientos múltiples y decisión de caída |
+| `js/play.js` | Pulsaciones con racha, lanzamientos (un tiro que vale por N tomates) y decisión de caída |
 | `js/economy.js` | Reglas de la economía: cartas, cofres, precios, probabilidades |
 | `js/backend.js` | Cofres, cofre diario y mejoras: en local (invitado) o en el servidor (con cuenta) |
 | `js/config.js` | Ajustes rápidos (pulsaciones por tomate, velocidad de puntería, tamaño de la zona de acierto) |
@@ -43,9 +45,9 @@ y abre http://localhost:8080
 Tras cambiar la ilustración de referencia: `python3 tools/pedro-parts.py` (necesita `opencv-python-headless` y `numpy`).
 
 ## Economía (resumen)
-- 100 clics = 1 tomate. Los tomates son munición, nunca moneda.
+- 100 clics = 1 tomate (con racha, cada toque vale hasta ×3). Los tomates son munición, nunca moneda.
 - Impacto perfecto (centro amarillo) = Pedro cae = 1 peseta. Impacto cercano: solo cae con la carta Apagón.
-- Cofre de madera: 15 ₧ (uno gratis al día). Cofre de diamante: 80 ₧.
+- Cofre de madera: 8 pesetas (uno gratis al día). Cofre de diamante: 40 pesetas.
 - Cartas: Inflación (común), Joyas de Zapatero y Apagón (raras), Mariscada Sindical (épica), Amnistía (legendaria). Las repetidas dan fragmentos; mejorar cuesta fragmentos y pesetas.
 - Simulación de progresión: `node tests/sim-economy.mjs`.
 

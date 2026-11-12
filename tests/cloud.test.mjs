@@ -1,7 +1,7 @@
 // Prueba de extremo a extremo de la parte online: el juego real contra las funciones SQL reales (supabase/schema*.sql)
 // en un PostgreSQL local que hace de Supabase. Preparación: sh tests/pg-reset.sh   Ejecución: node tests/cloud.test.mjs
 import { execFileSync } from 'node:child_process';
-import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid } from './helpers.mjs';
+import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid, noCombo } from './helpers.mjs';
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
@@ -46,27 +46,28 @@ const email = `arlet${Date.now()}@test.com`;
 const openChestUI = async sel => { await page.click(sel); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await page.click('#chest-btn'); await page.waitForTimeout(400); };
 
 console.log('A. Invitado juega y luego crea cuenta');
-await page.evaluate(() => { AAP.state.tutorialSeen = true; });
-await tap(page, 250); await page.click('#seg button[data-n=\"1\"]'); await page.click('#btn-launch'); await stopAt(page, 0, 10); await idle(page);
-let s = await S(page); check('invitado: 250 clics, 1 caída, 1 peseta', s.totalClicks === 250 && s.falls === 1 && s.pesetas === 1);
-await page.click('#btn-account'); await page.click('.tab[data-tab="register"]');
+await page.evaluate(() => { AAP.state.tutorialSeen = true; }); await noCombo(page);
+await tap(page, 250); await page.click('#throws button[data-n="1"]'); await stopAt(page, 0, 10); await idle(page);
+let s = await S(page); check('invitado: 250 clics, 1 caída, 1 peseta (+10 del regalo)', s.totalClicks === 250 && s.falls === 1 && s.pesetas === 11);
+const openAccount = async pg => { await pg.click('#btn-settings'); await pg.waitForTimeout(250); await pg.click('#btn-account'); await pg.waitForTimeout(250); };
+await openAccount(page); await page.click('.tab-s[data-tab="register"]');
 await page.fill('#form-register [name=username]', 'Arlet'); await page.fill('#form-register [name=email]', email); await page.fill('#form-register [name=password]', 'secreto1'); await page.click('#form-register button'); await page.waitForTimeout(1200);
 let row = db(email);
 check('registro crea el perfil con el nombre', row.username === 'Arlet' && (await txt('#acc-name')) === 'Arlet');
-check('el progreso de invitado se importa a la cuenta', +row.total_clicks === 250 && row.falls === 1 && row.pesetas === 1 && row.tomatoes === 1, JSON.stringify({ c: row.total_clicks, f: row.falls, p: row.pesetas, t: row.tomatoes }));
-await page.click('#panel-account .x');
+check('el progreso de invitado (con el regalo) se importa a la cuenta', +row.total_clicks === 250 && row.falls === 1 && row.pesetas === 11 && row.tomatoes === 6, JSON.stringify({ c: row.total_clicks, f: row.falls, p: row.pesetas, t: row.tomatoes }));
+await page.click('#panel-account .close');
 
 console.log('B. Guardado automático validado');
 await tap(page, 150); await page.waitForTimeout(5200); row = db(email); s = await S(page);
-check('autoguardado: el servidor tiene los 400 clics', +row.total_clicks === 400 && row.tomatoes_earned === 4 && s.totalClicks === 400);
-await page.click('#seg button[data-n=\"3\"]'); await page.click('#btn-launch'); for (let i = 1; i <= 3; i++) { await page.waitForFunction(i => document.querySelector('#volley-i').textContent === String(i) && AAP.scene.aim, i, { timeout: 30000 }); await stopAt(page, 0, 10); }
+check('autoguardado: el servidor tiene los 400 clics', +row.total_clicks === 400 && row.tomatoes_earned === 9 && s.totalClicks === 400);
+await page.click('#throws button[data-n="3"]'); await stopAt(page, 0, 10);
 await idle(page); await page.waitForTimeout(1500); row = db(email); s = await S(page);
-check('ráfaga ×3 guardada: 4 caídas, 4 pesetas, 0 tomates', row.falls === 4 && row.pesetas === 4 && row.tomatoes === 0 && row.perfects === 4 && s.pesetas === 4);
+check('lanzamiento ×3 (un tiro) guardado: 4 caídas, 14 pesetas, 5 tomates', row.falls === 4 && row.pesetas === 14 && row.tomatoes === 5 && row.perfects === 4 && s.pesetas === 14, JSON.stringify({ f: row.falls, p: row.pesetas, t: row.tomatoes }));
 
 console.log('C. Intento de trampa desde el navegador');
 await page.evaluate(async () => { const s = AAP.state.stats; s.pesetasEarned += 5000; s.totalClicks += 10000000; s.falls += 900; (await import('./js/state.js')).changed(); });
 await page.waitForTimeout(5200); row = db(email); s = await S(page);
-check('el servidor recorta pesetas y caídas inventadas', row.pesetas_earned <= row.falls * 3 && row.falls <= row.hits && row.hits <= row.tomatoes_thrown && row.pesetas <= 12, `(pesetas ${row.pesetas}, caídas ${row.falls})`);
+check('el servidor recorta pesetas y caídas inventadas', row.pesetas_earned <= row.falls * 3 && row.falls <= row.hits && row.hits <= row.tomatoes_thrown && row.pesetas <= 12 + 10, `(pesetas ${row.pesetas}, caídas ${row.falls})`);
 check('el servidor limita los clics imposibles', +row.total_clicks < 100000, `(${row.total_clicks})`);
 check('el cliente adopta los valores del servidor', s.pesetas === row.pesetas && s.totalClicks === +row.total_clicks && s.falls === row.falls);
 check('escritura directa en la tabla prohibida', (() => { try { psql(`update public.profiles set pesetas_earned = 99999`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
@@ -81,13 +82,13 @@ check('cofre sin pesetas rechazado por el servidor', await page.evaluate(() => A
 // pesetas legítimas (simuladas en la base de datos) y recarga
 psql(`update public.profiles set falls = 300, hits = 300, perfects = 300, tomatoes_thrown = 300, total_clicks = 40000, pesetas_earned = 300, cards = jsonb_set(jsonb_set(cards, '{inflacion}', '{"level":1,"frags":4}'), '{mariscada}', '{"level":2,"frags":0}') where user_id = '${row.user_id}'`);
 await page.reload(); await page.waitForFunction(() => window.AAP?.scene?.ready && AAP.state.stats.falls === 300, null, { timeout: 15000 }); await page.waitForTimeout(400);
-check('la sesión se restaura y carga el progreso de la cuenta', (await S(page)).pesetas === db(email).pesetas && await page.locator('#btn-account').evaluate(e => e.classList.contains('logged')));
+check('la sesión se restaura y carga el progreso de la cuenta', (await S(page)).pesetas === db(email).pesetas && (await page.locator('#acc-short').textContent()) === 'Arlet');
 let before = db(email);
 await page.click('#tabs [data-panel="chests"]'); await page.waitForTimeout(300); await openChestUI('[data-buy="diamond"]'); row = db(email); s = await S(page);
-check('cofre de diamante en servidor: -80 ₧, 3+ cartas', row.pesetas_spent === before.pesetas_spent + 80 && row.chests_opened === before.chests_opened + 1 && s.pesetas === row.pesetas);
+check('cofre de diamante en servidor: -40 pesetas, 3+ cartas', row.pesetas_spent === before.pesetas_spent + 40 && row.chests_opened === before.chests_opened + 1 && s.pesetas === row.pesetas);
 await openChestUI('[data-buy="wood"]'); row = db(email); s = await S(page);
-check('cofre de madera en servidor: -15 ₧', row.pesetas_spent === before.pesetas_spent + 95 && s.pesetas === row.pesetas && s.tomatoes === row.tomatoes);
-await page.click('#panel-chests .x');
+check('cofre de madera en servidor: -8 pesetas', row.pesetas_spent === before.pesetas_spent + 48 && s.pesetas === row.pesetas && s.tomatoes === row.tomatoes);
+await page.click('#panel-chests .close');
 
 console.log('E. Mejora de cartas en el servidor');
 before = db(email); await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(300);
@@ -95,20 +96,20 @@ const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', AAP.state.
 await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(700); row = db(email); s = await S(page);
 check('mejora validada: nivel +1, precio con descuento de Mariscada idéntico en cliente y servidor', row.cards.inflacion.level === before.cards.inflacion.level + 1 && row.pesetas_spent === before.pesetas_spent + cost && s.pesetas === row.pesetas, `(coste ${cost})`);
 check('mejora imposible rechazada', await page.evaluate(() => AAP.backend.upgradeCard('amnistia').then(() => AAP.state.cards.amnistia.level === 0 ? false : 'ok', e => true)));
-await page.click('#panel-cards .x');
+await page.click('#panel-cards .close');
 check('anuncio: el servidor no concede nada', (() => { try { psql(`select public.claim_ad_reward('falcon', 'x')`, 'authenticated', row.user_id); return false; } catch (e) { return /no están disponibles/.test(String(e.stderr)); } })() && db(email).falcon_until === null);
 
 console.log('F. Ranking');
-await page.click('#btn-rank'); await page.waitForTimeout(700); const rank = await txt('#rank-list');
+await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#rank-list');
 check('ranking por tomates históricos con el jugador', rank.includes('Arlet') && rank.includes(String(db(email).tomatoes_earned.toLocaleString('es-ES'))), rank.replace(/\n/g, ' ').slice(0, 80));
-await page.screenshot({ path: 'tests/out/12-ranking.png' }); await page.click('#panel-rank .x');
+await page.screenshot({ path: 'tests/out/12-ranking.png' }); await page.click('#panel-rank .close');
 
 console.log('G. Cerrar sesión y entrar desde otro dispositivo');
 const final = db(email);
-await page.click('#btn-account'); await page.click('#btn-logout'); await page.waitForTimeout(600); s = await S(page);
-check('al cerrar sesión el progreso local queda a cero', s.totalClicks === 0 && s.pesetas === 0 && !(await page.locator('#btn-account').evaluate(e => e.classList.contains('logged'))));
+await openAccount(page); await page.click('#btn-logout'); await page.waitForTimeout(600); s = await S(page);
+check('al cerrar sesión el progreso local queda a cero', s.totalClicks === 0 && s.pesetas === 0 && (await page.locator('#acc-short').textContent()) === 'Invitado');
 const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 800 } }); const p2 = await ctx2.newPage(); const errors2 = watchErrors(p2); await bridge(p2); await open(p2);
-await p2.click('#btn-account'); await p2.fill('#form-login [name=email]', email); await p2.fill('#form-login [name=password]', 'mal'); await p2.click('#form-login button'); await p2.waitForTimeout(500);
+await openAccount(p2); await p2.fill('#form-login [name=email]', email); await p2.fill('#form-login [name=password]', 'mal'); await p2.click('#form-login button'); await p2.waitForTimeout(500);
 check('contraseña incorrecta: mensaje claro', (await p2.locator('#acc-msg').innerText()).includes('incorrectos'));
 await p2.fill('#form-login [name=password]', 'secreto1'); await p2.click('#form-login button'); await p2.waitForTimeout(1200); s = await S(p2);
 check('otro dispositivo: mismo progreso (tomates, pesetas, cartas)', s.totalClicks === +final.total_clicks && s.pesetas === final.pesetas && s.tomatoes === final.tomatoes && s.cards.inflacion.level === final.cards.inflacion.level);

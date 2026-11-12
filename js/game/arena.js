@@ -11,6 +11,7 @@ import { SFX } from '../audio.js';
 export const LINES = {
   near: ['¡Le tienes que dar al centro, eh! ¡Jajajaja!', '¡Uy, casi! Pero no.', '¡Al centro, campeón! ¡AL CENTRO!', 'Caliente, caliente... ¡pero no!', '¡Por los pelos! Y no los míos.', '¿Eso es todo? ¡Al centro, hombre!', 'Casi me das un susto. Casi.'],
   miss: ['JAJAJA, ¿eso es todo?', '¡Ni me has rozado!', 'Con esa puntería no entras ni en el Congreso', '¿Eso era un tomate o una disculpa?', 'Lanzas peor que la oposición', '¡Sigue practicando, campeón!', 'La diana es la redonda, ¿eh?'],
+  leftMiss: ['¡Le tienes que dar al centro, eh! ¡Jajajaja!', '¡Que la diana está a la DERECHA!', 'Eso no es la diana, eso soy yo', '¡Al centro, campeón! ¡AL CENTRO!'],
   catch: ['¡Gracias por el tomate!', 'Mira qué nariz más bonita', 'Esto, para la ensalada de Moncloa', '¡Atrapado! Como los presupuestos'],
   wetWater: ['¡GLUB! ¡Esto es un ataque!', '¡Mi traje! ¡Era de Moncloa!', '¡Pido una comisión de investigación!', '¡Que venga el Falcon a por mí!', '¡Las pirañas votan a la oposición!'],
   wetChair: ['Mojado, pero no derrotado', 'Vale, esa te la concedo', 'Esto lo vas a pagar', 'No dimito. Ni mojado.', 'Tengo frío. Me quejaré en rueda de prensa'],
@@ -109,10 +110,10 @@ export class Arena {
   tauntIdle(line) { if (this.busy || this.aim || this.clipName !== 'idle') return; this.play('smug'); this.say(line, 2.6); }
 
   // ------------------------------------------------ puntería: el tomate va de lado a lado, solo en horizontal
-  startAim(mult = 1) {
+  startAim(mult = 1, n = 1) {
     this.hush();
     if (this.clipName === 'idle') this.play('idle');        // deja de pasear y vuelve al centro
-    this.aim = { x: CONFIG.AIM_MIN, dir: 1, speed: CONFIG.AIM_SPEED * mult, t0: this.now };
+    this.aim = { x: CONFIG.AIM_MIN, dir: 1, speed: CONFIG.AIM_SPEED * mult, t0: this.now, n };
     SFX.throwStart();
     return new Promise(res => { this.aimResolve = res; });
   }
@@ -126,24 +127,26 @@ export class Arena {
   }
 
   // ------------------------------------------------ resultado de un lanzamiento
-  async resolveThrow(res, decision, last) {
+  async resolveThrow(res, decision, last, n = 1) {
     this.busy = true;
     try {
       // a veces, en un fallo, Pedro atrapa el tomate al vuelo y se lo pone de nariz
-      if (res.kind === 'miss' && !decision.fall && last && Math.random() < 0.4) return await this.catchIt(res);
+      // si fallas por la izquierda el tomate va hacia Pedro: lo atrapa y se lo pone de nariz
+      if (res.kind === 'miss' && res.x < TARGET.x) return await this.catchIt(res);
       SFX.whoosh();
-      const fly = { x: res.x, y: AIM.y, s: 1.35, rot: 0 }; this.flying = fly;
+      const big = 1.35 + Math.min(0.5, (n - 1) * 0.06);
+      const fly = { x: res.x, y: AIM.y, s: big, rot: 0, n }; this.flying = fly;
       await this.tween(fly, { s: 0.78, y: AIM.y - 16, rot: 4 }, 0.28, 'o');
       this.flying = null;
       SFX.splat(); this.burst(res.x, AIM.y, 18, 'juice', { min: 150, max: 520, g: 1400, r: [5, 11] });
       if (res.kind === 'miss') { this.wall.push({ x: res.x, y: AIM.y, rot: rand(0, 6), t0: this.now }); if (this.wall.length > 6) this.wall.shift(); }
       else {
-        this.splats.push({ x: res.x - TARGET.x, y: rand(-8, 8), rot: rand(0, 6), s: res.kind === 'perfect' ? 1.1 : 0.9, t0: this.now }); if (this.splats.length > 8) this.splats.shift();
+        this.splats.push({ x: res.x - TARGET.x, y: rand(-8, 8), rot: rand(0, 6), s: (res.kind === 'perfect' ? 1.1 : 0.9) * (1 + Math.min(0.4, (n - 1) * 0.05)), t0: this.now, tr: rand(-0.4, 0.4) }); if (this.splats.length > 8) this.splats.shift();
         this.S.targetBump = 0.09; this.S.targetRot = res.kind === 'perfect' ? -0.16 : -0.09;
         this.tween(this.S, { targetBump: 0, targetRot: 0 }, 0.6, 'b');
       }
       this.doShake(decision.fall ? 14 : 5, 0.25);
-      if (decision.fall) await this.fallSequence(res, decision, last);
+      if (decision.fall) await this.fallSequence(res, decision, last, n);
       else if (res.kind === 'near') await this.nearMiss(last);
       else await this.miss(last);
     } finally { this.busy = false; }
@@ -178,15 +181,15 @@ export class Arena {
     this.clipT0 -= 0.3;                           // el vuelo empieza ya
     SFX.whoosh(); this.bigText('¡FALLO!', '#9fb0ff');
     await this.wait(0.8); this.say(pick(LINES.catch), 2.2);
-    await this.wait(3.6); this.say(pick(LINES.near), 2.4); SFX.laugh();
-    await this.wait(3.2);
-    CLIPS.catchNose.start = null;
+    await this.wait(1.0); CLIPS.catchNose.start = null;
+    await this.wait(2.6); this.say(pick(LINES.leftMiss), 2.6); SFX.laugh();
+    await this.wait(0.8);                          // se puede volver a lanzar mientras sigue burlándose
   }
 
   // ------------------------------------------------ ¡al agua!
-  async fallSequence(res, decision, last) {
+  async fallSequence(res, decision, last, n = 1) {
     SFX.clank(); SFX.win();
-    this.bigText(res.kind === 'perfect' ? '¡PERFECTO!' : '¡AL AGUA!', '#ffd23f');
+    this.bigText((res.kind === 'perfect' ? '¡PERFECTO!' : '¡AL AGUA!') + (n > 1 ? ` ×${n}` : ''), '#ffd23f');
     this.S.party = true;
     // el tablón se abre y Pedro cae
     const px = this.P.px, sx = PED.x + px * PED.s;
@@ -305,14 +308,26 @@ export class Arena {
     this.rig.draw(c, P, t);
     c.restore();
   }
+  label(c, text, x, y) {
+    c.save(); c.font = '54px "Titan One", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    c.strokeStyle = '#0a0b18'; c.lineWidth = 14; c.strokeText(text, x, y); c.fillStyle = '#ffe766'; c.fillText(text, x, y); c.restore();
+  }
+  // el tomate se queda pegado en la diana un momento, resbala un poco y cae; la mancha dura más
   drawSplats(c) {
     for (const s of this.splats) {
-      const age = this.now - s.t0, a = Math.max(0, 1 - Math.max(0, age - 3) / 1.5); if (a <= 0) continue;
-      c.save(); c.globalAlpha = a; c.translate(s.x, s.y + Math.min(30, age * 6)); c.rotate(s.rot); const k = s.s * Math.min(1, age * 8);
-      splatShape(c, 34 * k);
+      const age = this.now - s.t0, a = Math.max(0, 1 - Math.max(0, age - 5) / 1.5); if (a <= 0) continue;
+      const slide = Math.min(1, age / 2.2) ** 2 * 26;
+      c.save(); c.globalAlpha = a; c.translate(s.x, s.y + Math.min(40, age * 5)); c.rotate(s.rot); const k = s.s * Math.min(1, age * 8);
+      splatShape(c, 36 * k);
       c.restore();
+      if (age < 2.6) {
+        const out = age > 2.2 ? (age - 2.2) / 0.4 : 0, imp = Math.min(1, age / 0.12);
+        c.save(); c.globalAlpha = 1 - out; c.translate(0, slide + out * 60);
+        this.rig.tomato(c, [s.x, s.y], 46 * s.s, 1.25 - 0.1 * imp, 0.78 + 0.07 * imp, s.tr);
+        c.restore();
+      }
     }
-    this.splats = this.splats.filter(s => this.now - s.t0 < 4.5);
+    this.splats = this.splats.filter(s => this.now - s.t0 < 6.5);
   }
   drawWall(c) {
     for (const s of this.wall) {
@@ -331,9 +346,11 @@ export class Arena {
       const pulse = 0.5 + 0.5 * Math.sin(this.now * 8);
       c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,220,90,${0.18 + pulse * 0.12})`; ell(c, TARGET.x, TARGET.y, CONFIG.PERFECT_RADIUS, CONFIG.PERFECT_RADIUS); c.fill(); c.restore();
       const x = this.aim.x; softBlob(c, x + 10, AIM.y + 60, 50, 14, '#000000', 0.35, 6);
-      this.rig.tomato(c, [x, AIM.y], 50 * 1.35, 1, 1, Math.sin(this.now * 6) * 0.15);
+      const big = 1.35 + Math.min(0.5, (this.aim.n - 1) * 0.06);
+      this.rig.tomato(c, [x, AIM.y], 50 * big, 1, 1, Math.sin(this.now * 6) * 0.15);
+      if (this.aim.n > 1) this.label(c, '×' + this.aim.n, x + 46 * big, AIM.y - 46 * big);
     }
-    if (fly) this.rig.tomato(c, [fly.x, fly.y], 50 * fly.s, 1, 1, fly.rot);
+    if (fly) { this.rig.tomato(c, [fly.x, fly.y], 50 * fly.s, 1, 1, fly.rot); if (fly.n > 1) this.label(c, '×' + fly.n, fly.x + 46 * fly.s, fly.y - 46 * fly.s); }
   }
   drawRipples(c) {
     if (!this.ripples) return;

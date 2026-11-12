@@ -10,8 +10,6 @@ const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAl
 const fmt = n => n.toLocaleString('es-ES');
 const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
 let H = {}, busy = false, aiming = false, toastTimer = null, tutorialCb = null;
-let sel = 1;
-try { sel = +localStorage.getItem('alaguapedro.sel') || 1; } catch (e) {}
 
 export function init(handlers) {
   H = handlers;
@@ -28,9 +26,7 @@ export function init(handlers) {
   $('#pill-pesetas').addEventListener('click', () => openPanel('#panel-shop'));
   $('#btn-falcon').addEventListener('click', () => H.onAd(PLACEMENTS.FALCON));
   $('#btn-sobre').addEventListener('click', () => H.onAd(PLACEMENTS.SOBRE));
-  $$('#seg button').forEach(b => b.addEventListener('click', () => { sel = +b.dataset.n; try { localStorage.setItem('alaguapedro.sel', sel); } catch (e) {} SFX.ui(); hud(); }));
-  $('#btn-launch').addEventListener('click', () => { unlock(); H.onThrow(effectiveSel()); });
-  $('#btn-stop').addEventListener('pointerdown', e => { e.preventDefault(); H.onStop(); });
+  $$('#throws button').forEach(b => b.addEventListener('click', () => { unlock(); H.onThrow(+b.dataset.n); }));
   $('#btn-daily').addEventListener('click', () => { unlock(); backend.dailyAvailable() ? H.onClaimDaily() : openPanel('#panel-chests'); });
   $('#chests-body').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -38,26 +34,21 @@ export function init(handlers) {
   });
   $('#cards-grid').addEventListener('click', e => { const b = e.target.closest('button[data-upgrade]'); if (b) H.onUpgrade(b.dataset.upgrade); });
 }
-// cuántos se lanzan: lo elegido, o lo máximo posible si no hay tantos
-function effectiveSel() { const opts = CONFIG.THROW_OPTIONS.filter(n => n <= state.tomatoes); return opts.includes(sel) ? sel : (opts[opts.length - 1] || 1); }
 
 // ---------- marcador ----------
 export function hud(pop = false) {
   const cpt = E.clicksPerTap(state.cards, falconActive());
-  $('#ring-fill').setAttribute('stroke-dashoffset', (345.6 * (1 - state.clicks / CONFIG.CLICKS_PER_TOMATO)).toFixed(1));
+  $('#prog-fill').style.width = (state.clicks / CONFIG.CLICKS_PER_TOMATO * 100) + '%';
   $('#bar-text').textContent = state.clicks;
   setNum('#tomato-num', state.tomatoes, '#basket'); setNum('#pesetas-num', state.pesetas, '#pill-pesetas');
-  $('#cpt-badge').textContent = `+${cpt}`;
   $('#btn-click').classList.toggle('falcon', falconActive());
-  const n = effectiveSel(), none = state.tomatoes < 1;
-  $$('#seg button').forEach(b => { b.classList.toggle('on', +b.dataset.n === n); b.disabled = busy || state.tomatoes < +b.dataset.n; });
-  $('#launch-n').textContent = '×' + n;
-  $('#btn-launch').disabled = busy || none;
-  $('#seg').classList.toggle('hidden', aiming || none);
-  $('#btn-launch').classList.toggle('hidden', aiming || none);
-  $('#throw-empty').classList.toggle('hidden', aiming || !none);
-  $('#btn-stop').classList.toggle('hidden', !aiming);
-  $('#aim-hint').classList.toggle('hidden', !aiming);
+  const none = state.tomatoes < 1;
+  $$('#throws button').forEach(b => { b.disabled = busy || state.tomatoes < +b.dataset.n; });
+  $('#throws').classList.toggle('hidden', aiming || none);
+  $('#throw-empty').classList.toggle('hidden', aiming || !none || busy);
+  $('#btn-click').classList.toggle('aim', aiming);
+  $('#mega-lbl').textContent = aiming ? '¡LANZA!' : '¡DALE!';
+  $('#mega-sub').innerHTML = aiming ? 'cuando esté en el <b>centro</b>' : `<i id="cpt-badge">+${cpt * comboX}</i> por toque`;
   const fb = $('#falcon-badge'); fb.classList.toggle('hidden', !falconActive());
   if (falconActive()) { const ms = state.falconUntil - Date.now(), m = Math.floor(ms / 60000), s = Math.floor(ms % 60000 / 1000); $('#falcon-time').textContent = `${m}:${String(s).padStart(2, '0')}`; }
   const daily = backend.dailyAvailable();
@@ -69,8 +60,19 @@ export function hud(pop = false) {
 }
 function setNum(sel2, v, bumpSel) { const el = $(sel2); if (el.textContent !== fmt(v)) { el.textContent = fmt(v); const b = $(bumpSel); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); } }
 export function setBusy(b) { busy = b; $('#btn-click').disabled = false; hud(); }
-export function showStop(v) { aiming = v; if (!v) $('#volley-badge').classList.add('hidden'); hud(); }
-export function volleyProgress(i, n) { $('#volley-badge').classList.toggle('hidden', !n || n < 2); if (n) { $('#volley-i').textContent = i; $('#volley-n').textContent = n; } }
+export function showStop(v) { aiming = v; hud(); }
+export function volleyProgress() {}
+// racha de pulsaciones: insignia ×2/×3 y color del botón
+let comboX = 1;
+export function combo(mult, heat, next) {
+  const el = $('#combo'), b = $('#btn-click');
+  if (mult !== comboX) { comboX = mult; hud(); }
+  el.classList.toggle('hidden', mult < 2 || aiming); el.classList.toggle('c3', mult >= 3);
+  $('#combo-x').textContent = '×' + mult;
+  $('#heat-fill').style.width = Math.min(100, heat / next * 100) + '%';
+  b.classList.toggle('c2', mult === 2 && !aiming); b.classList.toggle('c3', mult >= 3 && !aiming);
+}
+export function comboUp(mult) { const el = $('#combo'); el.classList.remove('up'); void el.offsetWidth; el.classList.add('up'); showToast(mult >= 3 ? '¡RACHA ×3! ¡Sigue así!' : '¡RACHA ×2! Cada toque vale el doble', 1400); }
 export function floater(text, x, y) {
   const r = $('#btn-click').getBoundingClientRect(), el = document.createElement('div'); el.className = 'floater'; el.textContent = text;
   el.style.left = ((x ?? r.left + r.width / 2) - 18 + (Math.random() - .5) * 40) + 'px'; el.style.top = ((y ?? r.top + 10) - 34) + 'px';

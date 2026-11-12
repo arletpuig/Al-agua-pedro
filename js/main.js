@@ -14,10 +14,13 @@ let username = null, saveTimer = null, saving = null, falconWas = false, opening
 
 load();
 setEnabled(state.sound);
-const { scene } = createArena('game', { top: 58, bottom: 214 });
+const { scene } = createArena('game', { top: 58, bottom: 252 });
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank });
 ui.setSoundUI(state.sound, state.music); ui.hud();
-const start = () => { ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: () => pushNow() }); };
+const start = () => {
+  ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: () => pushNow() });
+  if (state.welcome) setTimeout(() => ui.showToast(`🎁 ¡Regalo de bienvenida! ${CONFIG.WELCOME.tomatoes} tomates y ${CONFIG.WELCOME.pesetas} pesetas para empezar`, 4200), 900);
+};
 scene.ready ? start() : scene.bus.once('ready', start);
 onChange(() => ui.hud());
 backend.syncTime().then(() => ui.hud());

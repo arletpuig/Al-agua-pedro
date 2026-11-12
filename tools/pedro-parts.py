@@ -103,7 +103,14 @@ neck = poly_mask([(486, 640), (836, 640), (836, 690), (745, 806), (680, 882), (4
 neck_fill = (neck > 0) & (bust_a < 200)
 bust_c[neck_fill] = (60, 99, 197)  # BGR de la sombra del cuello
 bust_a[neck_fill] = 255
-# aplanar la parte superior del cuello (queda oculta tras la mandíbula)
+# el centro del borde inferior del busto se borra con un degradado: ahí sigue el torso dibujado (cintura, botón)
+ramp = np.clip((np.arange(H) - 1108) / 10.0, 0, 1)[:, None]
+cols = np.zeros(W, bool); cols[357:1009] = True
+bust_a = (bust_a * (1 - ramp * cols[None, :])).astype(np.uint8)
+# los muñones de las mangas del busto se quitan: los brazos se dibujan aparte desde el hombro
+yr = np.clip((np.arange(H) - 985) / 14.0, 0, 1)[:, None]
+side = np.zeros(W, np.float32); side[:350] = 1; side[1014:] = 1
+bust_a = (bust_a * (1 - yr * side[None, :])).astype(np.uint8)
 parts['bust'] = save_layer('bust', bust_c, bust_a, (160, 600, 965, 590))
 parts['pivots'] = {'neck': [690, 790], 'browL': [645, 385], 'browR': [852, 402]}
 json.dump(parts, open(f'{OUT}/parts.json', 'w'), indent=1)

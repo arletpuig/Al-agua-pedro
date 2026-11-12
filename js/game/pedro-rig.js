@@ -3,7 +3,8 @@
 // manos, piernas y tomate se dibujan con el mismo estilo (contorno negro grueso + sombreado suave).
 // Unidades: píxeles de la ilustración original (1312x1199). ROOT = punto de asiento sobre el tablón.
 
-export const ROOT = [642, 1160];
+export const ROOT = [642, 1310];
+const DROP = 150;                                       // cintura: separa el busto de las piernas
 const NECK = [690, 790];
 const SH_L = [300, 985], SH_R = [985, 985];            // hombros (espacio del torso)
 const UPPER = 225, FORE = 215;                          // longitud de brazo y antebrazo
@@ -49,8 +50,8 @@ export const DEFAULT = {
   bLy: 0, bLr: 0, bRy: 0, bRr: 0,
   mOpen: 0, mSmile: 1, mWide: 1, mSmirk: 0, mTongue: 0, mTeeth: 1, mRound: 0,
   blush: 0,
-  aLx: 410, aLy: 1165, aLh: 0, aLhx: 380, aLhy: 520, aLb: 1, aLg: 0, aLk: 0.62, hLr: 1.15, hLs: 1, hLf: 0, hLw: 0,
-  aRx: 875, aRy: 1165, aRh: 0, aRhx: 950, aRhy: 500, aRb: 1, aRg: 0, aRk: 0.62, hRr: -1.15, hRs: 1, hRf: 0, hRw: 0,
+  aLx: 415, aLy: 1300, aLh: 0, aLhx: 380, aLhy: 520, aLb: 1, aLg: 0, aLk: 0.85, hLr: 0.75, hLs: 1, hLf: 0, hLw: 0,
+  aRx: 870, aRy: 1300, aRh: 0, aRhx: 950, aRhy: 500, aRb: 1, aRg: 0, aRk: 0.85, hRr: -0.75, hRs: 1, hRf: 0, hRw: 0,
   ...handParams('L', 'rest'), ...handParams('R', 'rest'),
   legAmp: 1, legSpeed: 1, legOut: 0,
   tom: 0, tomX: 0, tomY: 0, tomS: 1, tomSqx: 1, tomSqy: 1, tomR: 0, tomHx: 0, tomHy: -10,
@@ -121,18 +122,19 @@ export class PedroRig {
     // capas procedimentales: respiración, parpadeo y piernas
     const br = Math.sin(t * Math.PI * 2 / 3.4) * P.breath;
     const sq = P.sq * (1 + br * 0.012);
-    const blink = P.blinkOff ? 0 : blinkAt(t);
+    const blink = P.blink ?? (P.blinkOff ? 0 : blinkAt(t));
     const lid = v => Math.max(0, v * (1 - blink));
     P = { ...P, lidL: lid(P.lidL), lidR: lid(P.lidR), hy: P.hy + br * 3 };
 
     ctx.save();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    this.legs(ctx, P, t);
+    ctx.save(); ctx.translate(0, DROP); this.legs(ctx, P, t); ctx.restore();
 
     // ---- torso (busto de la ilustración), inclinado sobre el punto de asiento
     ctx.save();
     ctx.translate(ROOT[0] + P.bx, ROOT[1] + P.by); ctx.rotate(P.lean); ctx.scale(1, sq); ctx.translate(-ROOT[0], -ROOT[1]);
     const torsoM = ctx.getTransform();
+    this.waist(ctx);
     const b = this.parts.bust; ctx.drawImage(this.img.bust, b.x, b.y, b.w, b.h);
 
     // ---- cabeza
@@ -141,15 +143,15 @@ export class PedroRig {
     const headM = ctx.getTransform();
     const h = this.parts.head; ctx.drawImage(this.img.head, h.x, h.y, h.w, h.h);
     this.face(ctx, P, t);
-    if (P.tom === 3) this.tomato(ctx, add(NOSE, [P.tomHx, P.tomHy]), 62 * P.tomS, P.tomSqx, P.tomSqy, P.tomR);
     ctx.restore();
     ctx.restore();
 
-    this.lap(ctx);
+    ctx.save(); ctx.translate(0, DROP); this.lap(ctx); ctx.restore();
     // ---- brazos: hombros en espacio del torso, objetivos en torso o en cabeza
     const inv = ctx.getTransform().inverse();
     const toLocal = m => p => xf(inv, xf(m, p));                     // de torso/cabeza a espacio actual
     const torsoP = toLocal(torsoM), headP = toLocal(headM);
+    let grip = null;
     for (const s of ['L', 'R']) {
       const Tt = torsoP([P[`a${s}x`], P[`a${s}y`]]);
       const Th = headP([P[`a${s}hx`], P[`a${s}hy`]]);
@@ -159,9 +161,14 @@ export class PedroRig {
       const S0 = torsoP(sh);
       const lift = Math.min(1, Math.max(0, (S0[1] - T[1] - 250) / 200)) * 40;
       const S = torsoP([sh[0], sh[1] - lift]);
-      this.arm(ctx, s, S, T, P, t, s === 'R' && P.tom === 2);
+      const gp = this.arm(ctx, s, S, T, P, t, s === 'R' && P.tom === 2);
+      if (gp) grip = gp;
     }
     if (P.tom === 1) this.tomato(ctx, [P.tomX, P.tomY], 62 * P.tomS, P.tomSqx, P.tomSqy, P.tomR);
+    // tomate en la mano: al acercarlo a la cara se va pegando a la nariz, así el paso a la nariz no salta
+    const nose = headP(add(NOSE, [P.tomHx, P.tomHy]));
+    if (P.tom === 2 && grip) this.tomato(ctx, lerp2(grip, nose, P.aRh ** 3), 62 * P.tomS, P.tomSqx, P.tomSqy, P.tomR + P.hr * P.aRh);
+    if (P.tom === 3) this.tomato(ctx, nose, 62 * P.tomS, P.tomSqx, P.tomSqy, P.tomR + P.hr + P.lean);
     ctx.restore();
   }
 
@@ -206,7 +213,6 @@ export class PedroRig {
     ctx.save(); ctx.translate(...W); ctx.rotate(handAng); ctx.scale(hs * HS, hs * HS);
     const mir = (s === 'L' ? 1 : -1) * (facing ? -1 : 1);
     drawHand(ctx, fingers, P[`h${s}sp`], mir, facing, P[`h${s}w`], t + (s === 'L' ? 0 : 0.37));
-    if (holding) this.tomato(ctx, [0, GRIP], 62 * P.tomS / (hs * HS), P.tomSqx, P.tomSqy, P.tomR - handAng);
     ctx.restore();
     // manga: hombro -> codo -> muñeca (termina antes de la muñeca para dejar ver el puño)
     const dirW = [Math.cos(fa), Math.sin(fa)];
@@ -245,6 +251,60 @@ export class PedroRig {
     ctx.beginPath(); ctx.moveTo(4, -sign * 40); ctx.quadraticCurveTo(14, -sign * 22, 6, -sign * 4); ctx.stroke();
     ctx.restore();
     void el;
+    return holding ? [W[0] - Math.sin(handAng) * GRIP * HS * hs, W[1] + Math.cos(handAng) * GRIP * HS * hs] : null;
+  }
+
+  // ------------------------------------------------ cintura: chaqueta abrochada bajo el busto (detrás del busto)
+  waist(ctx) {
+    const T = 1095, X = 724;                       // X: centro de la chaqueta (la cara mira a 3/4)
+    const body = new Path2D();
+    body.moveTo(352, T); body.lineTo(1012, T);
+    body.bezierCurveTo(1016, 1170, 990, 1215, 996, 1290);
+    body.bezierCurveTo(1000, 1350, 900, 1372, X, 1372);
+    body.bezierCurveTo(520, 1372, 330, 1352, 334, 1290);
+    body.bezierCurveTo(338, 1215, 350, 1170, 352, T); body.closePath();
+    blob(ctx, body, C.navy);
+    ctx.save(); ctx.clip(body);
+    // volumen: costados oscuros, centro algo más claro
+    ctx.filter = 'blur(16px)';
+    ctx.fillStyle = C.navySh; ctx.globalAlpha = 0.85; ctx.fill(ellipse(345, 1240, 70, 170)); ctx.fill(ellipse(1005, 1240, 60, 170));
+    ctx.globalAlpha = 0.5; ctx.fill(ellipse(X, 1380, 330, 40));
+    ctx.fillStyle = C.navyHi; ctx.globalAlpha = 0.35; ctx.fill(ellipse(560, 1200, 70, 110));
+    ctx.filter = 'none'; ctx.globalAlpha = 1;
+    // camisa y corbata en la abertura de la chaqueta
+    const vee = new Path2D(); vee.moveTo(633, T - 2); vee.lineTo(809, T - 2); vee.lineTo(X, 1240); vee.closePath();
+    ctx.fillStyle = C.shirt; ctx.fill(vee);
+    ctx.save(); ctx.clip(vee);
+    ctx.filter = 'blur(5px)'; ctx.fillStyle = C.shirtSh; ctx.globalAlpha = 0.8;
+    ctx.fill(ellipse(640, 1120, 16, 80, -0.4)); ctx.fill(ellipse(805, 1120, 16, 80, 0.4)); ctx.filter = 'none'; ctx.globalAlpha = 1;
+    const tie = new Path2D(); tie.moveTo(664, T - 4); tie.lineTo(788, T - 4); tie.lineTo(758, 1196); tie.lineTo(X + 2, 1232); tie.lineTo(694, 1196); tie.closePath();
+    ctx.lineWidth = 8; ctx.strokeStyle = C.ink; ctx.stroke(tie);
+    const tg = ctx.createLinearGradient(664, 0, 788, 0); tg.addColorStop(0, '#f02a2c'); tg.addColorStop(0.6, '#e01b22'); tg.addColorStop(1, '#a8121a');
+    ctx.fillStyle = tg; ctx.fill(tie);
+    ctx.restore();
+    // solapas que bajan hasta el botón
+    ctx.strokeStyle = C.ink; ctx.lineCap = 'round'; ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.moveTo(634, T - 4); ctx.lineTo(X, 1242); ctx.lineTo(809, T - 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(509, T - 4); ctx.quadraticCurveTo(560, 1200, X - 2, 1250); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(894, T - 4); ctx.quadraticCurveTo(858, 1196, X + 4, 1250); ctx.stroke();
+    // borde delantero bajo el botón
+    ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(X, 1270); ctx.quadraticCurveTo(X - 8, 1330, X - 34, 1372); ctx.stroke();
+    // bolsillos y pinzas
+    ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(418, 1282); ctx.quadraticCurveTo(490, 1274, 566, 1280); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(850, 1278); ctx.quadraticCurveTo(912, 1272, 972, 1278); ctx.stroke();
+    ctx.strokeStyle = C.navySh; ctx.lineWidth = 6; ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.moveTo(472, 1150); ctx.quadraticCurveTo(478, 1210, 476, 1270); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(918, 1150); ctx.quadraticCurveTo(914, 1210, 916, 1268); ctx.stroke();
+    // arrugas de tensión desde el botón
+    ctx.lineWidth = 5; ctx.globalAlpha = 0.7;
+    ctx.beginPath(); ctx.moveTo(X - 18, 1262); ctx.quadraticCurveTo(X - 70, 1250, X - 120, 1258); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X + 18, 1262); ctx.quadraticCurveTo(X + 60, 1252, X + 105, 1260); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // botón
+    ctx.fillStyle = '#121729'; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(X, 1258, 14, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#5d6890'; ctx.beginPath(); ctx.arc(X - 4, 1253, 4, 0, 7); ctx.fill();
+    ctx.restore();
   }
 
   // ------------------------------------------------ regazo y rodillas (tapan el borde inferior del busto)
@@ -337,7 +397,7 @@ export class PedroRig {
 
 // ---------------------------------------------------------------- parpadeo determinista
 const BLINKS = []; { let s = 7, x = 0.9; while (x < 600) { BLINKS.push(x); s = (s * 9301 + 49297) % 233280; x += 2.2 + (s / 233280) * 2.8; } }
-function blinkAt(t) {
+export function blinkAt(t) {
   for (const b of BLINKS) { if (b > t + 0.2) break; const d = t - b; if (d >= 0 && d < 0.17) return d < 0.06 ? d / 0.06 : 1 - (d - 0.06) / 0.11; }
   return 0;
 }
@@ -350,11 +410,13 @@ function eye(ctx, E, open, P, side) {
   const big = P.eyeBig, happy = P.happy;
   const up = [E.up[0], E.up[1] - big * 22], lo = [E.lo[0], E.lo[1] + big * 10];
   const o = [E.o[0] - side * big * 4, E.o[1]], i = [E.i[0] + side * big * 4, E.i[1]];
-  const cl = lerp2(lo, [lo[0], lo[1] - 6], 1);                      // línea del párpado cerrado
-  const u = lerp2(cl, up, open);
-  // borde del párpado inferior sube al sonreír (ojos achinados)
-  const lw = [lo[0], lo[1] - happy * 18];
-  if (open > 0.04) {
+  // ojo cerrado: línea hacia abajo, o arco hacia arriba al reír. Abrir es interpolar desde ahí,
+  // así el paso de abierto a cerrado es continuo (sin saltos de dibujo).
+  const C0 = [lo[0], lo[1] - 6 - happy * 74];
+  const u = lerp2(C0, up, open);
+  const lw = lerp2(C0, [lo[0], lo[1] - happy * 18], Math.min(1, open * 2.5));
+  const a = Math.min(1, open * 6);
+  if (open > 0.004) {
     const w = new Path2D(); w.moveTo(...o); w.quadraticCurveTo(...u, ...i); w.quadraticCurveTo(...lw, ...o); w.closePath();
     ctx.save(); ctx.fillStyle = C.eyeW; ctx.fill(w); ctx.clip(w);
     // iris
@@ -373,18 +435,15 @@ function eye(ctx, E, open, P, side) {
     ctx.beginPath(); ctx.moveTo(...o); ctx.quadraticCurveTo(u[0], u[1] + 8, ...i); ctx.stroke();
     ctx.restore();
     // línea del párpado inferior
+    ctx.save(); ctx.globalAlpha = a;
     ctx.strokeStyle = C.ink; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(...lerp2(o, i, 0.12)); ctx.quadraticCurveTo(...lw, ...lerp2(i, o, 0.04)); ctx.stroke();
+    ctx.restore();
   }
   // párpado superior: trazo grueso con pestaña exterior
-  const thick = open > 0.04 ? 9 : 8;
-  ctx.strokeStyle = C.ink; ctx.lineWidth = thick; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(...o);
-  if (open > 0.04) ctx.quadraticCurveTo(...u, ...i);
-  else ctx.quadraticCurveTo(cl[0], cl[1] - happy * 70 + 4, ...i);
-  ctx.stroke();
-  // pestaña
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 8 + a; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(...o); ctx.quadraticCurveTo(...u, ...i); ctx.stroke();
   ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(...o); ctx.lineTo(o[0] - side * 13, o[1] - 6 - happy * 4); ctx.stroke();
-  if (open > 0.04) { ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(...lerp2(o, u, 0.15)); ctx.lineTo(o[0] - side * 10, o[1] - 16); ctx.stroke(); }
+  if (a > 0) { ctx.save(); ctx.globalAlpha = a; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(...lerp2(o, u, 0.15)); ctx.lineTo(o[0] - side * 10, o[1] - 16); ctx.stroke(); ctx.restore(); }
 }
 
 // ---------------------------------------------------------------- boca
@@ -400,7 +459,9 @@ function mouth(ctx, P, t) {
   const m2 = lerp2(L, R, 0.55);
   const upC = [m2[0], m2[1] + sag - op * 34 - rd * 22];
   const loC = [m2[0], m2[1] + sag + op * 120 + rd * 40];
-  if (op + rd < 0.06) {
+  const k = Math.min(1, (op + rd) / 0.12);               // 0 cerrada ... 1 abierta (fundido entre las dos)
+  if (k < 1) {
+    ctx.save(); ctx.globalAlpha = 1 - k;
     // boca cerrada: trazo cónico (como en la ilustración) con hoyuelos en las comisuras
     const p = new Path2D();
     p.moveTo(...L); p.quadraticCurveTo(upC[0], upC[1] - 5, ...R); p.quadraticCurveTo(upC[0], upC[1] + 7, ...L);
@@ -411,7 +472,10 @@ function mouth(ctx, P, t) {
     // labio inferior: sombra suave
     ctx.save(); ctx.filter = 'blur(5px)'; ctx.globalAlpha = 0.35; ctx.fillStyle = C.skinSh;
     ctx.fill(ellipse(upC[0] - 5, upC[1] / 2 + (L[1] + R[1]) / 4 + 22, 70, 9)); ctx.restore();
-  } else {
+    ctx.restore();
+  }
+  if (op + rd > 0.003) {
+    ctx.save(); ctx.globalAlpha = Math.min(1, (op + rd) / 0.04);
     const p = new Path2D();
     p.moveTo(...L); p.quadraticCurveTo(...upC, ...R); p.quadraticCurveTo(...loC, ...L); p.closePath();
     ctx.save();
@@ -429,6 +493,7 @@ function mouth(ctx, P, t) {
     if (op > 0.3) { ctx.fillStyle = C.tongue; ctx.fill(ellipse(loC[0] - 4, loC[1] - (loC[1] - upC[1]) * 0.12, (R[0] - L[0]) * 0.26, (loC[1] - upC[1]) * 0.22 * Math.min(1, (op - 0.3) * 2))); }
     ctx.restore();
     ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.stroke(p);
+    ctx.restore();
   }
   // lengua fuera (burla)
   if (P.mTongue > 0.02) {

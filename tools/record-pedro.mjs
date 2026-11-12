@@ -32,7 +32,7 @@ if (args[0] === '--stills') {
   for (const t of args.slice(2).map(Number)) { const f = path.join(OUT, `${clip}-${t}.png`); fs.writeFileSync(f, await grab(clip, t)); console.log(f); }
 } else {
   const clips = args.length ? args : ['idle', 'catchNose', 'peineta'];
-  const FPS = 30;
+  const FPS = Number(process.env.FPS || 60);
   for (const clip of clips) {
     const dur = await page.evaluate(c => window.clipDur(c), clip);
     const file = path.join(OUT, `${clip}.mp4`);

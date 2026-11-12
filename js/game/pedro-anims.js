@@ -2,17 +2,25 @@
 // Cada clave dice "en el instante t estos parámetros valen esto" y `d` es cuánto dura el movimiento
 // que lleva hasta ahí (por defecto 0.3 s). Antes de empezar ese movimiento el valor se mantiene.
 // `e` es la curva: io (suave), o (frena), i (acelera), b (se pasa y vuelve), el (elástico), l (lineal).
-// `fx` añade movimiento procedimental encima (risas, meneos...).
-import { DEFAULT, DISCRETE, hand } from './pedro-rig.js';
+//
+// Para que el movimiento no sea robótico, encima de las claves se aplica:
+//  - retraso: la cabeza y las muñecas siguen al cuerpo unas centésimas tarde (acción superpuesta)
+//  - pose viva: nada se queda congelado del todo entre claves (ligera deriva de cabeza, tronco y brazos)
+//  - parpadeos colocados a mano en las acciones (los automáticos solo en la espera)
+//  - `fx` añade movimiento procedimental propio de cada animación
+import { DEFAULT, DISCRETE, hand, blinkAt } from './pedro-rig.js';
 
 const EASE = {
   l: x => x,
-  io: x => 0.5 - Math.cos(Math.PI * x) / 2,
+  io: x => (x < 0.5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2),
+  s: x => 0.5 - Math.cos(Math.PI * x) / 2,
   o: x => 1 - (1 - x) ** 3,
   i: x => x ** 3,
-  b: x => { const c = 1.9; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; },
+  b: x => { const c = 1.7; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; },
   el: x => (x === 0 || x === 1 ? x : 2 ** (-10 * x) * Math.sin((x * 10 - 0.75) * (2 * Math.PI / 3)) + 1),
 };
+// parámetros que van con retraso respecto al resto (segundos)
+const LAG = { hr: 0.07, hx: 0.07, hy: 0.06, hLr: 0.08, hRr: 0.08, bLy: -0.03, bRy: -0.03, tomR: 0.05 };
 
 function compile(clip) {
   const tracks = {};
@@ -25,23 +33,37 @@ function compile(clip) {
   clip.tracks = tracks;
   return clip;
 }
+function track(tr, p, t) {
+  let v = DEFAULT[p], prevT = -1e9;
+  for (const k of tr) {
+    const start = Math.max(prevT, k.t - k.d);
+    if (t >= k.t) { v = k.v; prevT = k.t; continue; }
+    if (t > start && !DISCRETE.has(p)) v = v + (k.v - v) * EASE[k.e]((t - start) / (k.t - start));
+    break;
+  }
+  return v;
+}
+function blinkList(list, t) {
+  for (const b of list) { const d = t - b; if (d >= 0 && d < 0.2) return d < 0.07 ? EASE.s(d / 0.07) : 1 - EASE.s((d - 0.07) / 0.13); }
+  return 0;
+}
 
 export function sample(clip, t) {
   const P = { ...DEFAULT };
-  for (const [p, tr] of Object.entries(clip.tracks)) {
-    let v = DEFAULT[p], prevT = -1e9;
-    for (const k of tr) {
-      const start = Math.max(prevT, k.t - k.d);
-      if (t >= k.t || DISCRETE.has(p) && t >= k.t) { v = k.v; prevT = k.t; continue; }
-      if (t > start && !DISCRETE.has(p)) v = v + (k.v - v) * EASE[k.e]((t - start) / (k.t - start));
-      break;
-    }
-    P[p] = v;
-  }
+  for (const [p, tr] of Object.entries(clip.tracks)) P[p] = track(tr, p, LAG[p] ? Math.max(0, t - LAG[p]) : t);
+  // pose viva
+  const n = (f, ph) => Math.sin(t * f + ph);
+  P.hr += 0.014 * n(1.3, 0.4) + 0.008 * n(2.9, 1.7);
+  P.hx += 3 * n(0.9, 2.1); P.hy += 2 * n(1.7, 0.3);
+  P.lean += 0.006 * n(0.7, 1.1);
+  P.aLx += 3 * n(1.1, 0.2); P.aLy += 2.5 * n(1.6, 2.4); P.aRx += 3 * n(1.0, 1.4); P.aRy += 2.5 * n(1.5, 0.9);
+  P.bLy += 1.5 * n(0.8, 0.5); P.bRy += 1.5 * n(0.75, 2.5);
+  P.blink = clip.blinks ? blinkList(clip.blinks, t) : blinkAt(t);
   clip.fx?.(P, t);
   return P;
 }
 const win = (t, a, b, ramp = 0.25) => Math.max(0, Math.min(1, (t - a) / ramp, (b - t) / ramp));
+const bez = (a, c, b, u) => (1 - u) ** 2 * a + 2 * (1 - u) * u * c + u * u * b;
 // vuelta al reposo: todo lo que tocan las animaciones vuelve al valor por defecto
 const REST = {
   bx: 0, by: 0, lean: 0, sq: 1, hx: 0, hy: 0, hr: 0, lookX: DEFAULT.lookX, lookY: DEFAULT.lookY, cross: 0,
@@ -52,104 +74,127 @@ const REST = {
   ...hand('L', 'rest'), ...hand('R', 'rest'),
 };
 const rest = (t, d = 0.6, keep = {}) => ({ t, d, ...REST, ...keep });
-const AX = DEFAULT.aRx, AY = DEFAULT.aRy, LX = DEFAULT.aLx, LY = DEFAULT.aLy;
+const AX = DEFAULT.aRx, AY = DEFAULT.aRy, LY = DEFAULT.aLy;
 
 // ------------------------------------------------------------------ esperando sentado (bucle)
 export const idle = compile({
   dur: 8, loop: true,
   keys: [
-    // mira a un lado
-    { t: 1.2, d: 0.35, lookX: -0.95, lookY: 0.25, hr: -0.05, hx: -4 },
+    // mira a un lado (los ojos van primero, la cabeza después)
+    { t: 1.0, d: 0.18, lookX: -0.95, lookY: 0.25 },
+    { t: 1.35, d: 0.5, hr: -0.06, hx: -6 },
     // vuelve a cámara y levanta una ceja, chulesco
-    { t: 2.5, d: 0.35, lookX: 0.1, lookY: 0.05, hr: 0.06, hx: 0 },
-    { t: 2.65, d: 0.25, e: 'o', bRy: -16, bRr: -0.06, mSmirk: 0.7, lidL: 0.85, lidR: 0.85 },
-    { t: 3.9, d: 0.35, bRy: 0, bRr: 0, mSmirk: 0, hr: 0, lidL: 1, lidR: 1 },
+    { t: 2.35, d: 0.18, lookX: 0.1, lookY: 0.05 },
+    { t: 2.7, d: 0.5, hr: 0.06, hx: 0 },
+    { t: 2.75, d: 0.3, e: 'o', bRy: -16, bRr: -0.06, mSmirk: 0.7, lidL: 0.85, lidR: 0.85 },
+    { t: 3.9, d: 0.45, bRy: 0, bRr: 0, mSmirk: 0, hr: 0, lidL: 1, lidR: 1 },
     // se encoge de hombros
-    { t: 4.6, d: 0.3, e: 'o', by: -14, sq: 1.025, aLy: LY - 22, aRy: AY - 22, hy: -10, bLy: -10, bRy: -12, hr: -0.04, mSmile: 0.6 },
-    { t: 5.2, d: 0.45, by: 0, sq: 1, aLy: LY, aRy: AY, hy: 0, bLy: 0, bRy: 0, hr: 0, mSmile: 1 },
+    { t: 4.6, d: 0.35, e: 'o', by: -14, sq: 1.025, aLy: LY - 24, aRy: AY - 24, hy: -10, bLy: -10, bRy: -12, hr: -0.04, mSmile: 0.6 },
+    { t: 5.25, d: 0.55, by: 0, sq: 1, aLy: LY, aRy: AY, hy: 0, bLy: 0, bRy: 0, hr: 0, mSmile: 1 },
     // mira la diana y silba
-    { t: 5.8, d: 0.4, lookX: 0.95, lookY: -0.7, hr: 0.07 },
-    { t: 6.1, d: 0.25, mRound: 0.5, mSmile: 0.3, bLy: -6, bRy: -6 },
-    rest(7.6, 0.5),
+    { t: 5.7, d: 0.18, lookX: 0.95, lookY: -0.7 },
+    { t: 6.0, d: 0.45, hr: 0.07 },
+    { t: 6.2, d: 0.3, mRound: 0.5, mSmile: 0.3, bLy: -6, bRy: -6 },
+    rest(7.7, 0.65),
   ],
 });
 
 // ------------------------------------------------------------------ atrapa el tomate, se lo pone de nariz y se burla
-const START = [960, 2200], CATCH = [1175, 800];
+const START = [965, 2260], CTRL = [1220, 1150], CATCH = [1175, 800];
+const T0 = 0.3, T1 = 0.97;                                         // vuelo del tomate
 export const catchNose = compile({
-  dur: 8.6,
+  dur: 8.8,
+  blinks: [0.15, 1.75, 2.7, 3.75, 7.8],
   keys: [
-    // el tomate sale desde el jugador; Pedro lo sigue con la mirada
-    { t: 0.3, d: 0, tom: 1, tomX: START[0], tomY: START[1], tomS: 2.4, tomR: 0 },
-    { t: 0.5, d: 0.2, lookX: 0.4, lookY: 0.9 },
-    { t: 0.55, d: 0.22, e: 'o', eyeBig: 0.45, bLy: -14, bRy: -16, mRound: 0.3, mSmile: 0.2, lean: -0.03 },
-    { t: 0.95, d: 0.65, e: 'o', tomX: CATCH[0], tomY: CATCH[1], tomS: 1, tomR: 4 },
-    { t: 0.95, d: 0.45, e: 'l', lookX: 0.95, lookY: -0.4 },
+    // el tomate sale desde el jugador; Pedro lo ve venir
+    { t: T0, d: 0, tom: 1 },
+    { t: 0.45, d: 0.15, lookX: 0.4, lookY: 0.9 },
+    { t: 0.6, d: 0.25, e: 'o', eyeBig: 0.45, bLy: -14, bRy: -16, mRound: 0.3, mSmile: 0.2, lean: -0.03 },
+    { t: T1, d: 0.5, e: 's', lookX: 0.95, lookY: -0.35 },
     // estira el brazo con la mano abierta
-    { t: 0.92, d: 0.38, e: 'o', aRx: CATCH[0], aRy: CATCH[1], aRg: 1, aRk: 1, ...hand('R', 'open'), hRf: 1, hRr: -0.1, lean: 0.07, hr: 0.08 },
+    { t: 0.6, d: 0.2, ...hand('R', 'open'), hRf: 1 },
+    { t: 0.94, d: 0.42, aRx: CATCH[0], aRy: CATCH[1], aRg: 1, aRk: 1, hRr: -0.1, lean: 0.07, hr: 0.08 },
     // ¡atrapado! la mano cede con el golpe
-    { t: 0.97, d: 0, tom: 2, tomSqx: 1.3, tomSqy: 0.72 },
+    { t: T1, d: 0, tom: 2, tomSqx: 1.3, tomSqy: 0.72 },
     { t: 1.05, d: 0.08, ...hand('R', 'catch') },
-    { t: 1.12, d: 0.15, e: 'o', aRx: CATCH[0] + 45, aRy: CATCH[1] + 45, lean: 0.1, sq: 0.97, eyeBig: 0.6 },
-    { t: 1.45, d: 0.45, e: 'el', tomSqx: 1, tomSqy: 1 },
+    { t: 1.14, d: 0.17, e: 'o', aRx: CATCH[0] + 45, aRy: CATCH[1] + 45, lean: 0.1, sq: 0.97, eyeBig: 0.6 },
+    { t: 1.5, d: 0.5, e: 'el', tomSqx: 1, tomSqy: 1 },
     // lo mira
-    { t: 1.65, d: 0.5, aRx: 1060, aRy: 790, lean: 0.03, sq: 1, ...hand('R', 'hold'), lookX: 0.8, lookY: -0.1, eyeBig: 0, mRound: 0, mSmile: 1, bLy: 0, bRy: 0, hr: 0.06 },
+    { t: 1.7, d: 0.55, aRx: 1060, aRy: 790, lean: 0.03, sq: 1, ...hand('R', 'hold'), eyeBig: 0, mRound: 0, mSmile: 1, bLy: 0, bRy: 0, hr: 0.06 },
+    { t: 1.45, d: 0.2, lookX: 0.8, lookY: -0.1 },
     // mira a cámara con picardía y sube y baja las cejas
-    { t: 2.1, d: 0.3, lookX: 0, lookY: 0, mSmirk: 0.9, lidL: 0.8, lidR: 0.8, hr: 0.04 },
-    { t: 2.22, d: 0.12, bLy: -16, bRy: -16 }, { t: 2.34, d: 0.12, bLy: 0, bRy: 0 },
-    { t: 2.46, d: 0.12, bLy: -16, bRy: -16 }, { t: 2.6, d: 0.14, bLy: 0, bRy: 0 },
+    { t: 2.05, d: 0.16, lookX: 0, lookY: 0 },
+    { t: 2.2, d: 0.35, mSmirk: 0.9, lidL: 0.8, lidR: 0.8, hr: 0.04 },
+    { t: 2.32, d: 0.12, e: 's', bLy: -16, bRy: -16 }, { t: 2.45, d: 0.13, e: 's', bLy: 0, bRy: 0 },
+    { t: 2.57, d: 0.12, e: 's', bLy: -16, bRy: -16 }, { t: 2.72, d: 0.15, e: 's', bLy: 0, bRy: 0 },
     // se lo lleva a la nariz (bizquea al acercarlo)
-    { t: 2.6, d: 0, aRhx: 748, aRhy: 548 },
-    { t: 3.15, d: 0.42, aRh: 1, hRr: -0.25, cross: 1, lookY: 0.6, lookX: 0, lidL: 1, lidR: 1, hr: -0.04, hy: -4, mSmirk: 0.3, eyeBig: 0.25 },
+    { t: 2.7, d: 0, aRhx: 748, aRhy: 548 },
+    { t: 3.2, d: 0.48, aRh: 1, hRr: -0.25, hr: -0.04, hy: -4, mSmirk: 0.3, eyeBig: 0.25, lidL: 1, lidR: 1 },
+    { t: 3.15, d: 0.3, cross: 1, lookY: 0.6, lookX: 0 },
     // ¡plof! se queda pegado
-    { t: 3.2, d: 0, tom: 3, tomSqx: 1.35, tomSqy: 0.72 },
-    { t: 3.26, d: 0.06, hy: 5 },
-    { t: 3.65, d: 0.4, e: 'el', tomSqx: 1, tomSqy: 1, hy: 0 },
-    { t: 3.62, d: 0.4, e: 'o', aRh: 0, aRx: AX, aRy: AY, aRg: 0, aRk: DEFAULT.aRk, ...hand('R', 'rest'), hRf: 0, hRr: DEFAULT.hRr, cross: 0, lookX: 0.05, lookY: 0.05, eyeBig: 0, mSmirk: 0.5 },
+    { t: 3.22, d: 0, tom: 3, tomSqx: 1.35, tomSqy: 0.72 },
+    { t: 3.28, d: 0.06, hy: 6 },
+    { t: 3.7, d: 0.42, e: 'el', tomSqx: 1, tomSqy: 1, hy: 0 },
+    // la mano se aparta hacia fuera y vuelve a la rodilla
+    { t: 3.48, d: 0.26, e: 's', aRhx: 930, aRhy: 640, aRg: 0, ...hand('R', 'open') },
+    { t: 4.0, d: 0.52, aRh: 0, aRx: AX, aRy: AY, aRk: DEFAULT.aRk, ...hand('R', 'rest'), hRf: 0, hRr: DEFAULT.hRr },
+    { t: 3.65, d: 0.25, cross: 0, lookX: 0.05, lookY: 0.05, eyeBig: 0, mSmirk: 0.5 },
     // burla: manos a las sienes con los dedos meneándose y la lengua fuera
-    { t: 3.8, d: 0, aLhx: 285, aLhy: 520, aRhx: 1035, aRhy: 500 },
-    { t: 4.25, d: 0.3, e: 'o', aLh: 1, aRh: 1, aLk: 1, aRk: 1, ...hand('L', 'open'), ...hand('R', 'open'), hLf: 1, hRf: 1, hLr: 0.15, hRr: -0.15, hLw: 1, hRw: 1,
-      mTongue: 1, mOpen: 0.22, mSmile: 0.6, mSmirk: 0, mTeeth: 0, lidL: 0, lidR: 0, happy: 1, bLy: -12, bRy: -12 },
-    // carcajada sujetándose la barriga
-    { t: 6.35, d: 0.35, e: 'o', aLh: 0, aRh: 0, aLk: DEFAULT.aLk, aRk: DEFAULT.aRk, aLx: LX, aLy: LY, aRx: AX, aRy: AY, ...hand('L', 'rest'), ...hand('R', 'rest'), hLf: 0, hRf: 0, hLw: 0, hRw: 0,
-      hLr: DEFAULT.hLr, hRr: DEFAULT.hRr, mTongue: 0, mOpen: 1, mTeeth: 1, mSmile: 1.2, blush: 1, hr: -0.09, hy: -10, bLy: -6, bRy: -6 },
-    rest(8.1, 0.6, { mSmirk: 0.3 }),
+    { t: 4.01, d: 0, aLhx: 285, aLhy: 520, aRhx: 1035, aRhy: 500 },
+    { t: 4.55, d: 0.5, aLh: 1, aRh: 1, aLk: 1, aRk: 1, ...hand('L', 'open'), ...hand('R', 'open'), hLf: 1, hRf: 1, hLr: -0.3, hRr: 0.3 },
+    { t: 4.6, d: 0.2, hLw: 1, hRw: 1 },
+    { t: 4.45, d: 0.3, e: 'o', mTongue: 1, mOpen: 0.22, mSmile: 0.6, mSmirk: 0, mTeeth: 0, lidL: 0, lidR: 0, happy: 1, bLy: -12, bRy: -12 },
+    // carcajada dándose palmadas en las rodillas
+    { t: 6.15, d: 0.2, hLw: 0, hRw: 0 },
+    { t: 6.6, d: 0.45, aLh: 0, aRh: 0, aLk: DEFAULT.aLk, aRk: DEFAULT.aRk, ...hand('L', 'rest'), ...hand('R', 'rest'), hLf: 0, hRf: 0, hLr: DEFAULT.hLr, hRr: DEFAULT.hRr },
+    { t: 6.45, d: 0.3, e: 'o', mTongue: 0, mOpen: 1, mTeeth: 1, mSmile: 1.2, blush: 1, hr: -0.09, hy: -10, bLy: -6, bRy: -6 },
+    rest(8.3, 0.7, { mSmirk: 0.3 }),
   ],
   fx(P, t) {
-    const w = win(t, 4.3, 6.05);
-    P.hr += Math.sin(t * 8.5) * 0.09 * w; P.bx += Math.sin(t * 8.5) * 8 * w; P.hx += Math.sin(t * 8.5) * 6 * w;
-    const l = win(t, 6.35, 7.5, 0.15);
-    const k = Math.abs(Math.sin(t * 13));
-    P.by -= k * 12 * l; P.sq += (k - 0.5) * 0.03 * l; P.hy -= k * 8 * l; P.mOpen -= (1 - k) * 0.35 * l;
-    // se da palmadas en las rodillas al ritmo de la risa
-    const slap = Math.max(0, Math.sin(t * 13)) * l;
-    P.aLy -= slap * 60; P.aRy -= Math.max(0, Math.sin(t * 13 + 1.2)) * l * 60; P.lean -= 0.05 * l;
-    // el tomate de la nariz se bambolea
-    if (P.tom === 3 && t > 3.6) P.tomR = Math.sin(t * 9) * 0.06;
+    // vuelo del tomate: parábola que se aleja de la cámara (se hace pequeño) girando
+    if (P.tom === 1) {
+      const u = Math.min(1, (t - T0) / (T1 - T0)), e = 1 - (1 - u) ** 1.6;
+      P.tomX = bez(START[0], CTRL[0], CATCH[0], e); P.tomY = bez(START[1], CTRL[1], CATCH[1], e);
+      P.tomS = 2.5 - 1.5 * e; P.tomR = u * 5;
+    }
+    const w = win(t, 4.55, 6.2, 0.3);
+    const wob = Math.sin((t - 4.55) * 8.5);
+    P.hr += wob * 0.09 * w; P.bx += wob * 8 * w; P.hx += Math.sin((t - 4.62) * 8.5) * 7 * w;
+    P.aLhy += wob * 10 * w; P.aRhy -= wob * 10 * w;
+    const l = win(t, 6.45, 7.7, 0.2);
+    const k = Math.abs(Math.sin((t - 6.45) * 12));
+    P.by -= k * 12 * l; P.sq += (k - 0.5) * 0.03 * l; P.hy -= k * 8 * l; P.mOpen -= (1 - k) * 0.35 * l; P.lean -= 0.05 * l;
+    // palmadas en las rodillas al ritmo de la risa
+    P.aLy -= Math.max(0, Math.sin((t - 6.45) * 12)) * 55 * l; P.aRy -= Math.max(0, Math.sin((t - 6.45) * 12 + 1.2)) * 55 * l;
+    if (P.tom === 3 && t > 3.7) P.tomR += Math.sin(t * 9) * 0.06;
   },
 });
 
 // ------------------------------------------------------------------ peineta
 export const peineta = compile({
-  dur: 5.6,
+  dur: 5.8,
+  blinks: [0.1, 3.35, 5.2],
   keys: [
-    { t: 0.35, d: 0.3, e: 'o', lookX: 0, lookY: 0, lidL: 0.68, lidR: 0.68, bRy: -18, bRr: -0.08, bLy: 4, mSmirk: 0.9, hr: 0.05 },
+    { t: 0.2, d: 0.15, lookX: 0, lookY: 0 },
+    { t: 0.45, d: 0.35, e: 'o', lidL: 0.68, lidR: 0.68, bRy: -18, bRr: -0.08, bLy: 4, mSmirk: 0.9, hr: 0.05 },
     // anticipación: se echa atrás y baja el brazo
-    { t: 0.75, d: 0.35, lean: -0.05, sq: 0.98, aRx: 905, aRy: 1195, ...hand('R', 'fist'), hRr: 0.3 },
+    { t: 0.85, d: 0.4, lean: -0.05, sq: 0.98, aRx: 905, aRy: 1320, ...hand('R', 'fist'), hRr: 0.3 },
     // ¡arriba!
-    { t: 1.05, d: 0.3, e: 'b', lean: 0.03, sq: 1.01, aRx: 1120, aRy: 660, aRk: 1, ...hand('R', 'middle'), hRr: 0.45, hRs: 1.2, hr: -0.03, mOpen: 0.18, mSmile: 1.3, mSmirk: 0.6 },
-    { t: 1.35, d: 0.15, e: 'o', hRs: 1.45, aRy: 635, by: -6 }, { t: 1.55, d: 0.2, hRs: 1.2, aRy: 660, by: 0 },
-    { t: 1.8, d: 0.15, e: 'o', hRs: 1.5, aRy: 630, by: -8 }, { t: 2.0, d: 0.2, hRs: 1.2, aRy: 660, by: 0 },
+    { t: 1.15, d: 0.3, e: 'b', lean: 0.03, sq: 1.01, aRx: 1120, aRy: 660, aRk: 1, hRr: 0.45, hRs: 1.2, hr: -0.03 },
+    { t: 1.1, d: 0.2, ...hand('R', 'middle') },
+    { t: 1.2, d: 0.25, e: 'o', mOpen: 0.18, mSmile: 1.3, mSmirk: 0.6 },
+    { t: 1.45, d: 0.15, e: 'o', hRs: 1.45, aRy: 635, by: -6 }, { t: 1.68, d: 0.23, hRs: 1.2, aRy: 660, by: 0 },
+    { t: 1.9, d: 0.15, e: 'o', hRs: 1.5, aRy: 630, by: -8 }, { t: 2.13, d: 0.23, hRs: 1.2, aRy: 660, by: 0 },
     // guiño
-    { t: 2.3, d: 0.12, e: 'o', lidR: 0 }, { t: 2.85, d: 0.15, lidR: 0.68, mOpen: 0 },
+    { t: 2.42, d: 0.12, e: 'o', lidR: 0 }, { t: 2.95, d: 0.16, lidR: 0.68, mOpen: 0 },
     // baja el brazo, satisfecho
-    { t: 3.55, d: 0.5, aRx: AX, aRy: AY, aRk: DEFAULT.aRk, ...hand('R', 'rest'), hRr: DEFAULT.hRr, hRs: 1, lean: 0, sq: 1,
-      lidL: 0, lidR: 0, happy: 1, mSmile: 1.25, mSmirk: 0.2, bRy: -8, bLy: -8, bRr: 0, hr: -0.05 },
-    rest(5.0, 0.6),
+    { t: 3.7, d: 0.55, aRx: AX, aRy: AY, aRk: DEFAULT.aRk, ...hand('R', 'rest'), hRr: DEFAULT.hRr, hRs: 1, lean: 0, sq: 1 },
+    { t: 3.65, d: 0.35, lidL: 0, lidR: 0, happy: 1, mSmile: 1.25, mSmirk: 0.2, bRy: -8, bLy: -8, bRr: 0, hr: -0.05 },
+    rest(5.2, 0.65),
   ],
   fx(P, t) {
     // la mano tiembla un pelín mientras la mantiene arriba
-    P.aRx += Math.sin(t * 31) * 2.5 * win(t, 1.1, 3.0, 0.1);
+    P.aRx += Math.sin(t * 31) * 2.5 * win(t, 1.2, 3.1, 0.1);
   },
 });
 

@@ -41,7 +41,11 @@ export function hud(pop = false) {
   $('#hist-num').textContent = fmt(s.tomatoesEarned);
   $('#cpt-badge').textContent = `+${cpt}`;
   $('#btn-click').classList.toggle('falcon', falconActive());
-  $$('.btn-throw').forEach(b => { b.disabled = busy || state.tomatoes < +b.dataset.n; });
+  // solo se muestran las cantidades que el jugador puede lanzar
+  $$('.btn-throw').forEach(b => { const ok = state.tomatoes >= +b.dataset.n; b.classList.toggle('hidden', !ok); b.disabled = busy || !ok; });
+  const none = state.tomatoes < 1, aiming = !$('#btn-stop').classList.contains('hidden');
+  $('#throw-row').classList.toggle('hidden', aiming || none);
+  $('#throw-empty').classList.toggle('hidden', !none || aiming || busy); $('.throw-label').classList.toggle('hidden', none && !aiming && !busy);
   const fb = $('#falcon-badge'); fb.classList.toggle('hidden', !falconActive());
   if (falconActive()) { const ms = state.falconUntil - Date.now(), m = Math.floor(ms / 60000), sec = Math.floor(ms % 60000 / 1000); $('#falcon-time').textContent = `${m}:${String(sec).padStart(2, '0')}`; }
   $('#chest-dot').classList.toggle('hidden', !backend.dailyAvailable());
@@ -49,7 +53,7 @@ export function hud(pop = false) {
 function setNum(sel, v, popSel) { const el = $(sel); if (el.textContent !== fmt(v)) { el.textContent = fmt(v); popEl(popSel ? $(popSel) : el); } }
 function popEl(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 export function setBusy(b) { busy = b; hud(); }
-export function showStop(v) { $('#btn-stop').classList.toggle('hidden', !v); $('#throw-row').classList.toggle('hidden', v); if (!v) $('#volley-badge').classList.add('hidden'); }
+export function showStop(v) { $('#btn-stop').classList.toggle('hidden', !v); $('#throw-row').classList.toggle('hidden', v); if (!v) $('#volley-badge').classList.add('hidden'); hud(); }
 export function volleyProgress(i, n) { $('#volley-badge').classList.toggle('hidden', !n); if (n) { $('#volley-i').textContent = i; $('#volley-n').textContent = n; } }
 export function floater(text, x, y) {
   const r = $('#btn-click').getBoundingClientRect(), el = document.createElement('div'); el.className = 'floater'; el.textContent = text;

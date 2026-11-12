@@ -43,6 +43,7 @@ export function buildStage(scene) {
   scene.add.image(L.TOWER_X, L.FLOOR, 'atlas', 'tower').setOrigin(84 / 190, 758 / 764).setScale(1 / T).setDepth(1);
   const strut = img(scene, L.TOWER_X - 32, 560, 'strut', [-10, -10, 214, 20], [0, 0]).setDepth(1).setAngle(-134);
   const plank = img(scene, L.HINGE_X, L.HINGE_Y, 'plank', [-338, -17, 424, 34], [0, 0]).setDepth(4);
+  const seatShadow = scene.add.ellipse(L.SEAT_X, L.SEAT_Y + 3, 150, 12, 0x000000, .38).setDepth(4);
   // reflejos tenues sobre el suelo brillante
   scene.add.image(L.TANK_X - 8, L.FLOOR + 106, 'atlas', 'tankFront').setOrigin(0, 0).setScale(1 / T, -1 / T).setDepth(1).setAlpha(.16);
   scene.add.image(L.TOWER_X, L.FLOOR - 2, 'atlas', 'tower').setOrigin(84 / 190, 758 / 764).setScale(1 / T, -1 / T).setDepth(1).setAlpha(.13);
@@ -51,7 +52,7 @@ export function buildStage(scene) {
   const bulbs = []; for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2 - Math.PI / 2; bulbs.push(scene.add.image(L.TARGET_X + Math.cos(a) * 92.5, L.TARGET_Y + Math.sin(a) * 92.5, 'atlas', 'bulb').setScale(.42).setDepth(2).setBlendMode('ADD')); }
   let bt = 0, mode = 'chase';
   return {
-    fish, bubbles, tankFront, strut, plank, target, bulbs,
+    fish, bubbles, tankFront, strut, plank, target, bulbs, seatShadow,
     setBulbs(m) { mode = m; },
     update(dt) {
       surf.tilePositionX += dt * .03; fish.forEach(f => f.update(dt, L.TANK_X + 52, L.TANK_X + L.TANK_W - 52));

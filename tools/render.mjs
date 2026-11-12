@@ -34,8 +34,17 @@ const P = {
   brows: `<path d="M552,392 L612,354 L744,408" stroke="${SK}" stroke-width="56" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#b4)"/><path d="M818,408 L884,386" stroke="${SK}" stroke-width="52" fill="none" stroke-linecap="round" filter="url(#b4)"/>`,
 };
 const pupil = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#3a2216" stroke="${INK}" stroke-width="5"/><circle cx="${x - r * .35}" cy="${y - r * .35}" r="${r * .3}" fill="#fff"/>`;
+// ojos redibujados con la mirada desplazada (dx, dy) dentro de la forma original del ojo
+const EYE_L = 'M582,440 Q628,404 684,422 Q694,432 698,450 Q650,456 600,446 Q588,444 582,440Z', EYE_R = 'M788,446 Q822,420 874,436 Q884,446 886,464 Q840,472 794,462 Q789,456 788,446Z';
+const iris = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#26110e"/><circle cx="${x}" cy="${y}" r="${r * .62}" fill="#5a3220"/><circle cx="${x}" cy="${y}" r="${r * .34}" fill="#0a0605"/><circle cx="${x - r * .35}" cy="${y - r * .4}" r="${r * .2}" fill="#fff"/><circle cx="${x + r * .3}" cy="${y - r * .3}" r="${r * .12}" fill="#fff"/>`;
+const eyes = (dx, dy) => `<defs><clipPath id="el"><path d="${EYE_L}"/></clipPath><clipPath id="er"><path d="${EYE_R}"/></clipPath></defs>
+  <path d="${EYE_L}" fill="#f6f1ee"/><g clip-path="url(#el)">${iris(635 + dx, 432 + dy, 25)}</g><path d="${EYE_R}" fill="#f6f1ee"/><g clip-path="url(#er)">${iris(832 + dx * .9, 452 + dy, 22)}</g>
+  <path d="M578,441 Q628,402 684,421 Q695,431 699,451 M786,447 Q822,418 874,435 Q885,445 887,465" stroke="${INK}" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M600,447 Q650,457 697,451 M794,463 Q840,473 886,465" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
 const HEADS = {
   head: '',
+  headDown: eyes(-7, 11),
+  headSide: eyes(17, 1),
   headBlink: P.eyes + `<path d="M580,440 Q640,464 698,450 M582,440 l-10,-6 M600,452 l-7,9 M790,458 Q838,476 884,464 M884,464 l10,-5 M868,470 l6,9" stroke="${INK}" stroke-width="8" fill="none" stroke-linecap="round"/>`,
   headLaugh: P.eyes + `<path d="M580,450 Q640,402 700,448 M790,464 Q840,422 886,462" stroke="${INK}" stroke-width="9" fill="none" stroke-linecap="round"/>
     <path d="M586,584 Q715,630 846,602 Q856,702 732,724 Q606,716 586,584Z" fill="#6e1220" stroke="${INK}" stroke-width="9" stroke-linejoin="round"/>

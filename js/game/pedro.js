@@ -21,6 +21,7 @@ const PARTS = {
 const HEAD_PARTS = ['head', 'noseTomato', 'sweat'];
 const GESTURES = ['armUp', 'armNose', 'armPoint'];
 const HEAD_FRAME = { smile: 'head', smug: 'head', laugh: 'headLaugh', shock: 'headShock', angry: 'headAngry' };
+const rnd = (a, b) => a + Math.random() * (b - a);
 const REST_L = -52, REST_R = 51;
 
 export class Pedro extends Phaser.GameObjects.Container {
@@ -50,21 +51,59 @@ export class Pedro extends Phaser.GameObjects.Container {
   headTween(cfg) { return this.scene.tweens.add({ targets: this.head, ...cfg, onUpdate: () => this.applyHead() }); }
   resetHead() { this.head.angle = 0; this.head.x = 0; this.head.y = 0; this.applyHead(); }
   restArms() { this.p.armL.angle = REST_L; this.p.armR.angle = REST_R; }
+  // ---------- espera: bucles de base + gestos sueltos encadenados ----------
+  // Estado 'idle' = puede hacer gestos; cualquier reacción (setMood distinto de smile) lo bloquea, como un "modo cinemático".
   idle() {
-    const t = this.scene.tweens; this.stopIdle();
+    const t = this.scene.tweens; this.stopIdle(); this.locked = false;
     this.idleTweens = [
-      t.add({ targets: this.p.bust, scaleY: (1 / TEX_SCALE) * 1.03, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
-      this.headTween({ angle: { from: -2.5, to: 2.5 }, y: { from: 0, to: -1.5 }, duration: 2400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+      t.add({ targets: this.p.bust, scaleY: (1 / TEX_SCALE) * 1.035, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+      t.add({ targets: this, angle: { from: -0.9, to: 0.9 }, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+      this.headTween({ angle: { from: -2.5, to: 2.5 }, y: { from: 0, to: -1.5 }, duration: 2300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
       t.add({ targets: this.p.armL, angle: { from: REST_L - 2, to: REST_L + 3 }, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
       t.add({ targets: this.p.armR, angle: { from: REST_R + 2, to: REST_R - 3 }, duration: 2300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
-      t.add({ targets: this.p.shinL, angle: { from: 7, to: -6 }, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
-      t.add({ targets: this.p.shinR, angle: { from: -6, to: 7 }, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 350 }),
+      t.add({ targets: this.p.shinL, angle: { from: 8, to: -7 }, duration: 1250, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+      t.add({ targets: this.p.shinR, angle: { from: -7, to: 8 }, duration: 1250, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 380 }),
     ];
-    this.blinkEv = this.scene.time.addEvent({ delay: 3600, loop: true, callback: () => this.blink() });
+    this.blinkEv = this.scene.time.addEvent({ delay: 3300, loop: true, callback: () => this.blink() });
+    this.scheduleBeat();
   }
-  blink() { if (HEAD_FRAME[this.mood] !== 'head') return; this.p.head.setFrame('headBlink'); this.scene.time.delayedCall(120, () => { if (HEAD_FRAME[this.mood] === 'head') this.p.head.setFrame('head'); }); }
-  stopIdle() { this.idleTweens?.forEach(t => t.stop()); this.idleTweens = null; this.blinkEv?.remove(); this.resetHead(); this.restArms(); this.p.bust.scaleY = 1 / TEX_SCALE; this.p.shinL.angle = 0; this.p.shinR.angle = 0; }
-  setMood(m) { this.mood = m; this.p.head.setFrame(HEAD_FRAME[m] || 'head'); this.p.sweat.setVisible(m === 'shock'); }
+  scheduleBeat() { this.beatEv?.remove(); this.beatEv = this.scene.time.delayedCall(rnd(2600, 5200), () => { if (!this.locked && this.idleTweens) this.playBeat(); this.scheduleBeat(); }); }
+  playBeat(name) {
+    const beats = ['glanceDown', 'glanceTarget', 'tie', 'tap', 'kick'], pick = name || beats.filter(b => b !== this.lastBeat)[Math.floor(Math.random() * 4)];
+    this.lastBeat = pick; this.stopBeat(); this.inBeat = true;
+    const P = this.p, done = () => { this.inBeat = false; if (!this.locked) { P.head.setFrame('head'); P.sweat.setVisible(false); } };
+    const pause = on => this.idleTweens?.forEach((tw, i) => { if (i >= 3) on ? tw.pause() : tw.resume(); });   // brazos y piernas
+    const chain = tweens => { this.beat = this.scene.tweens.chain({ tweens, onComplete: () => { pause(false); done(); } }); };
+    const H = this.head, upd = () => this.applyHead();
+    if (pick === 'glanceDown') {          // mira a las pirañas, traga saliva, recoge las piernas
+      pause(true); P.head.setFrame('headDown'); P.sweat.setVisible(true); P.sweat.base.y = -178;
+      this.scene.tweens.add({ targets: P.sweat.base, y: -150, duration: 1300, onUpdate: upd });
+      chain([{ targets: [P.shinL, P.shinR], angle: 0, duration: 200, ease: 'Quad.Out' },
+        { targets: P.shinL, angle: 16, duration: 260, ease: 'Back.Out' }, { targets: P.shinR, angle: -16, duration: 220, ease: 'Back.Out', offset: '-=200' },
+        { targets: P.bust, y: 1, duration: 120, yoyo: true, repeat: 1, delay: 500 },                                  // trago
+        { targets: [P.shinL, P.shinR], angle: 0, duration: 350, ease: 'Sine.InOut', delay: 250 }]);
+    } else if (pick === 'glanceTarget') { // mira la diana de reojo y suelta una risita
+      P.head.setFrame('headSide');
+      chain([{ targets: P.bust, x: 2, duration: 500, ease: 'Sine.Out', hold: 500, yoyo: true },
+        { targets: P.bust, y: { from: 3, to: 0.5 }, duration: 80, yoyo: true, repeat: 3, onStart: () => P.head.setFrame('head') }]);
+    } else if (pick === 'tie') {          // se ajusta la corbata con suficiencia
+      pause(true);
+      chain([{ targets: P.armR, angle: 124, duration: 380, ease: 'Back.Out' },
+        { targets: P.armR, angle: { from: 124, to: 116 }, duration: 110, yoyo: true, repeat: 3 },
+        { targets: P.armR, angle: REST_R, duration: 420, ease: 'Sine.InOut', delay: 150 }]);
+    } else if (pick === 'tap') {          // tamborilea con los dedos en la rodilla
+      pause(true);
+      chain([{ targets: P.armL, angle: { from: REST_L, to: REST_L - 6 }, duration: 75, yoyo: true, repeat: 7 }, { targets: P.armL, angle: REST_L, duration: 120 }]);
+    } else {                              // patalea
+      pause(true);
+      chain([{ targets: P.shinL, angle: -20, duration: 170, ease: 'Quad.Out' }, { targets: P.shinR, angle: 20, duration: 170, ease: 'Quad.Out', offset: '-=90' },
+        { targets: [P.shinL, P.shinR], angle: 0, duration: 520, ease: 'Bounce.Out' }]);
+    }
+  }
+  stopBeat() { if (this.beat) { this.beat.stop(); this.beat = null; } if (this.inBeat) { this.inBeat = false; this.idleTweens?.forEach(tw => tw.resume()); this.p.bust.x = 0; this.p.bust.y = 3; this.p.sweat.base.y = -178; } }
+  blink() { if (this.locked || this.inBeat || HEAD_FRAME[this.mood] !== 'head') return; this.p.head.setFrame('headBlink'); this.scene.time.delayedCall(120, () => { if (!this.locked && !this.inBeat && HEAD_FRAME[this.mood] === 'head') this.p.head.setFrame('head'); }); }
+  stopIdle() { this.stopBeat(); this.beatEv?.remove(); this.idleTweens?.forEach(t => t.stop()); this.idleTweens = null; this.blinkEv?.remove(); this.resetHead(); this.restArms(); this.angle = 0; this.p.bust.scaleY = 1 / TEX_SCALE; this.p.shinL.angle = 0; this.p.shinR.angle = 0; }
+  setMood(m) { this.locked = m !== 'smile'; if (this.locked) this.stopBeat(); this.mood = m; this.p.head.setFrame(HEAD_FRAME[m] || 'head'); this.p.sweat.setVisible(m === 'shock'); }
   setGesture(g) { GESTURES.forEach(k => this.p[k].setVisible(k === g)); this.p.armR.setVisible(!g); this.p.noseTomato.setVisible(g === 'armNose'); }
   setWet(v) { this.wet = v; const tint = v ? 0xdcecfa : 0xffffff; ['head', 'bust', 'hips', 'shinL', 'shinR', 'armL', 'armR', 'armUp', 'armNose', 'armPoint'].forEach(k => this.p[k].setTint(tint)); v ? this.drips.start() : this.drips.stop(); }
   tween(cfg) { return new Promise(r => this.scene.tweens.add({ ...cfg, onComplete: r })); }

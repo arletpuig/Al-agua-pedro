@@ -105,7 +105,7 @@ export class MainScene extends Phaser.Scene {
     if (this.splats.length > 14) this.splats.first.destroy();
   }
   async fall(res, decision, last) {
-    const P = this.pedro; P.stopIdle(); SFX.clank(); SFX.win();
+    const P = this.pedro; P.stopIdle(); this.sc.seatShadow.setVisible(false); SFX.clank(); SFX.win();
     this.fxText(res.kind === 'perfect' ? '¡PERFECTO!' : '¡AL AGUA!', 400, 62);
     P.setMood('shock'); this.say(['¡¿QUÉ?! ¡NOOO!', '¡Esto es un golpe de Estado!', '¡Aaaaah!'][Phaser.Math.Between(0, 2)], 1200);
     this.tweens.add({ targets: this.chair, angle: -75, x: this.chair.x - 18, y: this.chair.y + 8, duration: 650, ease: 'Quad.easeIn' });
@@ -123,7 +123,7 @@ export class MainScene extends Phaser.Scene {
     this.tweens.add({ targets: this.chair, angle: 0, x: this.chairHome.x, y: this.chairHome.y, duration: 400, ease: 'Back.easeOut' });
     P.setPosition(L.SEAT_X, L.SEAT_Y - 140).setAlpha(0).setAngle(0);
     await this.tween({ targets: P, y: L.SEAT_Y, alpha: 1, duration: 550, ease: 'Bounce.easeOut' });
-    P.idle();
+    P.idle(); this.sc.seatShadow.setVisible(true);
     if (last) { this.say(LINES.wetChair[Phaser.Math.Between(0, LINES.wetChair.length - 1)], 2400); }
     this.time.delayedCall(last ? 4500 : 2500, () => { P.setWet(false); if (!this.busy) P.setMood('smile'); });
   }

@@ -7,6 +7,7 @@ const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST 
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
 const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title']);
 const users = new Map(); // token -> usuario
+const payRequests = [];
 const calls = [];
 // Puente PostgREST/GoTrue mínimo sobre PostgreSQL
 async function bridge(page) {
@@ -28,6 +29,14 @@ async function bridge(page) {
       if (p === '/auth/v1/logout') return json(204, {});
       if (p === '/auth/v1/user') return me ? json(200, me) : json(401, { msg: 'invalid token' });
       if (p === '/auth/v1/settings') return json(200, { external: { google: true, email: true } });
+      // pagos: la función crear-pago (simulada) y la consulta de compras. El «webhook» se simula entregando el pack con la clave de servicio.
+      if (p === '/functions/v1/crear-pago') {
+        if (!me) return json(401, { message: 'Necesitas iniciar sesión para comprar' });
+        payRequests.push(body);
+        psql(`select public.grant_pack('cs_test_e2e', '${me.id}', ${lit(body.pack)}, 299, 'eur')`, 'service_role');
+        return json(200, { url: 'http://localhost:8080/?debug&pago=ok&sesion=cs_test_e2e' });
+      }
+      if (p === '/rest/v1/purchases') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(x)), '[]') from public.purchases x where stripe_session = ${lit((u.searchParams.get('stripe_session') || '').replace(/^eq\./, ''))}`, 'authenticated', me?.id)));
       if (p === '/rest/v1/profiles') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(p)), '[]') from public.profiles p`, 'authenticated', me?.id)));
       if (p === '/rest/v1/leaderboard') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(l)), '[]') from public.leaderboard l`, 'anon')));
       if (p.startsWith('/rest/v1/rpc/')) {
@@ -137,6 +146,22 @@ row = db(email); s = await S(page);
 check('regalo abierto en el servidor: 50–60 pesetas y 30–40 tomates, una sola vez', row.welcome_claimed && row.chest_pesetas - before.chest_pesetas >= 50 && row.chest_pesetas - before.chest_pesetas <= 60 && row.chest_tomatoes - before.chest_tomatoes >= 30 && s.pesetas === row.pesetas && s.tomatoes === row.tomatoes, `(+${row.chest_pesetas - before.chest_pesetas} pesetas)`);
 check('abrirlo otra vez: rechazado por el servidor', await page.evaluate(() => AAP.backend.claimWelcome().then(() => false, e => /Ya has abierto/.test(e.message))));
 await page.evaluate(() => { AAP.giftTest.off = true; });
+
+console.log('J. Packs de pesetas con pago (Stripe simulado)');
+await page.evaluate(async () => { (await import('./js/config.js')).CONFIG.PAYMENTS = true; });
+before = db(email);
+await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(400); await page.click('.pack.maletin .pk-buy'); await page.waitForTimeout(300);
+check('elegir pack abre la compra, con el botón de pagar bloqueado hasta aceptar las condiciones', await page.evaluate(() => document.querySelector('#pay-overlay').classList.contains('open')) && await page.locator('#pay-go').isDisabled() && (await txt('#pay-price')) === '2,99 €');
+await page.check('#pay-ok'); await page.click('#pay-go', { force: true });
+await page.waitForURL(/localhost:8080\/\?debug/, { timeout: 15000 }); await page.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
+await page.waitForFunction(() => /YA ES TUYO/.test(document.querySelector('#paid-title')?.textContent || ''), null, { timeout: 20000 }).catch(() => {});
+row = db(email); s = await S(page);
+check('la compra se pide al servidor con la sesión del jugador y el pack elegido', payRequests.length === 1 && payRequests[0].pack === 'maletin' && /^http:\/\/localhost:8080\//.test(payRequests[0].returnUrl), JSON.stringify(payRequests));
+check('al volver del pago: +550 pesetas y +220 tomates, en el servidor y en el juego', row.chest_pesetas === before.chest_pesetas + 550 && row.chest_tomatoes === before.chest_tomatoes + 220 && s.pesetas === row.pesetas, `(${before.pesetas} → ${row.pesetas})`);
+check('pantalla «¡YA ES TUYO!» y la dirección queda limpia', /YA ES TUYO/.test(await txt('#paid-title')) && !page.url().includes('pago='), page.url());
+check('el pago solo se entrega una vez', psql(`select public.grant_pack('cs_test_e2e', '${row.user_id}', 'maletin', 299, 'eur')`, 'service_role') === 'f' && db(email).chest_pesetas === row.chest_pesetas);
+check('un jugador no puede entregarse pesetas a sí mismo', (() => { try { psql(`select public.grant_pack('cs_trampa', '${row.user_id}', 'camara', 0, 'eur')`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
+await page.click('#paid-ok', { force: true });
 
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#rank-list');

@@ -79,4 +79,7 @@ export const myRank = () => rpc('my_rank', {});
 export const setTitle = title => rpc('set_title', { p_title: title });                     // -> profile
 export const offerWelcome = () => rpc('offer_welcome', {});                               // -> { offered_at, claimed, now }
 export const claimWelcome = () => rpc('claim_welcome', {});                               // -> { reward, profile }
+// Pagos (Stripe): crea la página de pago en la función «crear-pago» y consulta si una compra ya se ha entregado
+export async function createCheckout(pack, returnUrl) { const d = await req('/functions/v1/crear-pago', { method: 'POST', body: { pack, returnUrl } }); if (!d?.url) throw new Error('No se ha podido iniciar el pago'); return d.url; }
+export async function getPurchase(session) { const rows = await req(`/rest/v1/purchases?select=*&stripe_session=eq.${encodeURIComponent(session)}`); return rows?.[0] || null; }
 export const leaderboard = () => req('/rest/v1/leaderboard?select=*&order=tomatoes_earned.desc,falls.desc&limit=20', { auth: false });

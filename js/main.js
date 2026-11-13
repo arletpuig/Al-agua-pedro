@@ -12,6 +12,8 @@ import { DEFAULT_AVATAR } from './avatars.js';
 import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
 import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
 import { showVideo, PLACEMENTS, videosOn } from './ads.js';
+import { initPayments, openPack, consumeReturn, awaitPurchase } from './payments.js';
+const payReturn = consumeReturn();   // vuelta de la página de pago de Stripe
 
 const $ = s => document.querySelector(s);
 let saveTimer = null, saving = null, falconWas = false, opening = false, shareFile = null, shareURL = null;
@@ -28,7 +30,7 @@ load();
 setEnabled(state.sound);
 const { scene } = createArena('game', { top: 58, bottom: 252 });
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank,
-  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onTitle: saveTitle, onShare: share, onShareGo: shareGo, onShareSave: shareSave });
+  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onTitle: saveTitle, onPack: id => openPack(id), onShare: share, onShareGo: shareGo, onShareSave: shareSave });
 ui.setAccountUI(null, null, profile.avatar || DEFAULT_AVATAR);
 ui.setSoundUI(state.sound, state.music); ui.hud();
 // Pedro provocando en la pantalla de acceso (un fotograma real de la escena)
@@ -41,6 +43,7 @@ const start = () => {
   try { gatePedro(); } catch (e) {}
   window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { pushNow(); if (r?.[0]?.fall) maybeOffer(); } });
   initGift(ui, e => fail(e)); if (!ui.gated()) restoreGift();
+  initPayments(ui, e => fail(e), async () => { const row = await sb.getProfile(); state.updatedAt = null; applyServer(row); ui.hud(); });
   if (state.welcome && !ui.gated()) setTimeout(() => ui.showToast(`🎁 ¡Regalo de bienvenida! ${CONFIG.WELCOME.tomatoes} tomates y ${CONFIG.WELCOME.pesetas} pesetas para empezar`, 4200), 900);
 };
 scene.ready ? start() : scene.bus.once('ready', start);
@@ -117,6 +120,9 @@ async function afterLogin(user) {
       applyServer(row); ui.showToast('☁️ Tu progreso se ha guardado en tu cuenta');
     } else if (row) { applyServer(row); ui.showToast('☁️ Progreso cargado de tu cuenta'); }
     ui.hud(); restoreGift();
+    if (payReturn && !payReturn.done) { payReturn.done = true;
+      if (payReturn.status === 'ok') awaitPurchase(payReturn.session);
+      else ui.showToast('Pago cancelado: no se te ha cobrado nada', 2800); }
   } catch (e) { ui.showToast('No se pudo cargar tu progreso. Inténtalo más tarde.', 3500, true); }
 }
 
@@ -152,7 +158,7 @@ function traducir(m = '') {
   const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
   // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
-  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
+  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {

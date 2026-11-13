@@ -30,7 +30,7 @@ export function init(handlers) {
   $('#btn-daily').addEventListener('click', () => { unlock(); backend.dailyAvailable() ? H.onClaimDaily() : openPanel('#panel-shop'); });
   $('#shop-body').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
+    if (b.dataset.pack) H.onPack?.(b.dataset.pack); else if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
     else if ('probs' in b.dataset) b.parentElement.querySelector('.probs').classList.toggle('open');
   });
   // perfil: bandera, nombre e imagen para compartir
@@ -153,6 +153,25 @@ function seenCard(id) { setNewCards(newCards().filter(x => x !== id)); }
 export function markNewCards(ids) { if (ids.length) setNewCards([...new Set([...newCards(), ...ids])]); hud(); }
 
 // ---------- tienda: cofre diario, cofres y ofertas ----------
+// monedas y joyas tiradas por el suelo de cada pack (posiciones fijas para que no «salten» al refrescar)
+const FLOOR = { calderilla: [[8, 6, -20], [22, 2, 15], [70, 4, 30], [84, 8, -10], [48, 1, 5]], maletin: [[6, 4, 10], [18, 9, -25], [30, 2, 40], [66, 3, -15], [80, 8, 20], [90, 2, -5]],
+  camara: [[4, 6, 15], [12, 2, -30], [22, 8, 20], [36, 3, -10], [58, 2, 35], [70, 7, -20], [82, 3, 10], [92, 8, -35]] };
+const GEMS = { calderilla: [[34, 5, 'r'], [60, 9, 'e']], maletin: [[42, 6, 's'], [74, 10, 'r'], [12, 12, 'e']], camara: [[28, 10, 'r'], [46, 4, 'e'], [64, 11, 's'], [88, 13, 'd'], [8, 12, 's']] };
+function packCard(p) {
+  const bonus = Math.round((p.pesetas / p.base - 1) * 100);
+  const floor = FLOOR[p.id].map(([x, y, r]) => `<svg class="fc" style="left:${x}%;bottom:${y}px;transform:rotate(${r}deg)"><use href="#ic-coin"/></svg>`).join('')
+    + GEMS[p.id].map(([x, y, g]) => `<i class="fg ${g}" style="left:${x}%;bottom:${y}px"></i>`).join('');
+  return `<div class="pack ${p.id}${p.best ? ' best' : ''}">
+    <i class="pk-rays"></i><i class="ribbon">${p.best ? '¡MÁS VALOR!' : '¡OFERTA!'}</i>${p.best ? '<i class="pk-x">×2,2</i>' : ''}
+    <i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>
+    <div class="pk-art">${icon(p.icon)}</div>
+    <div class="pk-info"><h3>${p.name}</h3>
+      <div class="pk-amount">${icon('ic-coin')}<b>${fmt(p.pesetas)}</b></div>
+      <div class="pk-was"><s>${fmt(p.base)}</s><i>+${bonus}%</i></div>
+      <div class="pk-tom">${icon('ic-tomato')}+${fmt(p.tomatoes)} tomates</div>
+      <button class="pk-buy" data-pack="${p.id}">${p.price} €</button></div>
+    <i class="floor">${floor}</i></div>`;
+}
 export function renderShop() {
   const daily = backend.dailyAvailable(), ms = backend.msToNextDaily(), h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000);
   const probs = kind => { const p = E.rarityPercents(kind, state.cards), d = E.CHESTS[kind]; return `<div class="probs">
@@ -170,6 +189,8 @@ export function renderShop() {
   $('#shop-body').innerHTML = `
     <div class="free ${daily ? '' : 'off'}"><i class="rays"></i><span class="tag">COFRE DIARIO</span><span class="sub">${daily ? '¡Gratis! Uno cada día' : `Vuelve en ${h} h ${String(m).padStart(2, '0')} min`}</span>
       ${icon('ic-chest', 'big')}<button class="btn-g" data-daily ${daily ? '' : 'disabled'}>${daily ? 'ABRIR GRATIS' : 'MAÑANA'}</button></div>
+    <h4 class="sec gold"><span>PACKS DE PESETAS</span></h4>
+    <div class="packs">${Object.values(E.PACKS).map(packCard).join('')}</div>
     <h4 class="sec"><span>COFRES</span></h4>
     <div class="grid2">${card('wood', 'POPULAR')}${card('diamond', 'MEJOR VALOR')}</div>
     <h4 class="sec"><span>OFERTAS ESPECIALES</span></h4>

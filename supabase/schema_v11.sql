@@ -3,8 +3,8 @@
 --  · Las pesetas SOLO las entrega el webhook de Stripe (función supabase/functions/stripe-webhook), con la clave de servicio.
 --  · Cada pago (sesión de Stripe) se entrega una sola vez aunque Stripe repita el aviso.
 --  · El jugador puede ver sus propias compras (para que el juego sepa cuándo han llegado).
---  · Organización criminal 0,99 € (200 pesetas + 80 tomates), Caso Koldo 2,99 € (750 + 300) y
---    Financiación ilegal PSOE 9,95 € (3.000 + 1.200 + 4 cartas épicas o legendarias).
+--  · Organización criminal 1,99 € (750 pesetas + 300 tomates), Caso Koldo 2,99 € (1.300 + 520) y
+--    Financiación ilegal PSOE 9,95 € (5.000 + 2.000 + 4 cartas épicas o legendarias).
 -- Conserva todos los jugadores y su progreso. Se puede ejecutar más de una vez.
 
 create table if not exists public.purchases (
@@ -28,9 +28,9 @@ grant select on public.purchases to authenticated;
 -- Contenido de cada pack (igual que PACKS en js/economy.js). El precio lo fija Stripe, no el juego.
 create or replace function public.fn_pack(p text) returns jsonb language sql immutable as $$
   select case p
-    when 'calderilla' then '{"pesetas": 200, "tomatoes": 80, "cards": 0}'::jsonb
-    when 'maletin'    then '{"pesetas": 750, "tomatoes": 300, "cards": 0}'::jsonb
-    when 'camara'     then '{"pesetas": 3000, "tomatoes": 1200, "cards": 4}'::jsonb
+    when 'calderilla' then '{"pesetas": 750, "tomatoes": 300, "cards": 0}'::jsonb
+    when 'maletin'    then '{"pesetas": 1300, "tomatoes": 520, "cards": 0}'::jsonb
+    when 'camara'     then '{"pesetas": 5000, "tomatoes": 2000, "cards": 4}'::jsonb
   end $$;
 
 -- Tirada de cartas del pack grande («premium»: solo épicas y legendarias). Es la misma función de los cofres, con un tipo más.

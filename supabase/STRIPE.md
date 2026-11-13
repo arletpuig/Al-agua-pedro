@@ -9,9 +9,9 @@
 
 | Pack | Precio (IVA incluido) | Entrega |
 |---|---|---|
-| Organización criminal (`calderilla`) | 0,99 € | 200 pesetas + 80 tomates |
-| Caso Koldo (`maletin`) | 2,99 € | 750 pesetas + 300 tomates |
-| Financiación ilegal PSOE (`camara`) | 9,95 € | 3.000 pesetas + 1.200 tomates + 4 cartas épicas o legendarias (más valor) |
+| Organización criminal (`calderilla`) | 1,99 € | 750 pesetas + 300 tomates |
+| Caso Koldo (`maletin`) | 2,99 € | 1.300 pesetas + 520 tomates |
+| Financiación ilegal PSOE (`camara`) | 9,95 € | 5.000 pesetas + 2.000 tomates + 4 cartas épicas o legendarias (más valor) |
 
 Lo que entrega cada pack está en `fn_pack` (`schema_v11.sql`) y en `PACKS` (`js/economy.js`); el precio, en Stripe.
 
@@ -23,8 +23,8 @@ Lo que entrega cada pack está en `fn_pack` (`schema_v11.sql`) y en `PACKS` (`js
 
 ### 2. Stripe: los tres productos
 *Catálogo de productos → Añadir producto*, tres veces:
-- Nombre en Stripe descriptivo (sale en la página de pago, el extracto y la factura): «Pack de 200 pesetas – Al Agua Pedro», «Pack de 750 pesetas – Al Agua Pedro», «Pack de 3.000 pesetas y 4 cartas – Al Agua Pedro». Los nombres de broma los pone el juego.
-- Precio: **pago único** en EUR: 0,99 / 2,99 / 9,95.
+- Nombre en Stripe descriptivo (sale en la página de pago, el extracto y la factura): «Pack de 750 pesetas – Al Agua Pedro» (1,99 €), «Pack de 1.300 pesetas – Al Agua Pedro» (2,99 €), «Pack de 5.000 pesetas y 4 cartas – Al Agua Pedro» (9,95 €). Los nombres de broma los pone el juego.
+- Precio: **pago único** en EUR: 1,99 / 2,99 / 9,95.
 - **Incluir impuestos en el precio: sí** (el precio final es el que ve el jugador).
 - **Código fiscal del producto**: elige uno para contenido digital / objetos virtuales de videojuego en la lista de Stripe (https://docs.stripe.com/tax/tax-codes) y confírmalo con tu gestor.
 - Copia el **ID del precio** de cada uno (`price_…`).
@@ -49,7 +49,7 @@ Lo que entrega cada pack está en `fn_pack` (`schema_v11.sql`) y en `PACKS` (`js
 | Nombre | Valor |
 |---|---|
 | `STRIPE_API_KEY` | la clave restringida (`rk_…`) |
-| `STRIPE_PRICE_CALDERILLA` | `price_…` de 0,99 € |
+| `STRIPE_PRICE_CALDERILLA` | `price_…` de 1,99 € |
 | `STRIPE_PRICE_MALETIN` | `price_…` de 2,99 € |
 | `STRIPE_PRICE_CAMARA` | `price_…` de 9,95 € |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` (paso 7) |

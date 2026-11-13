@@ -326,7 +326,7 @@ check('Sobre de la Moncloa: 25 pesetas', await page.evaluate(() => AAP.E.SOBRE.p
 console.log('26. Packs de pesetas (pago)');
 await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(400); await shot('17-packs');
 const packs = await page.evaluate(() => [...document.querySelectorAll('.pack')].map(p => ({ id: [...p.classList].find(c => AAP.E.PACKS[c]), price: p.querySelector('.pk-buy').textContent, best: p.classList.contains('best'), ribbon: p.querySelector('.ribbon').textContent, coins: p.querySelectorAll('.floor .fc').length })));
-check('tres packs: 0,99 €, 2,99 € y 9,95 €, con monedas por el suelo', packs.length === 3 && packs.map(p => p.price).join('|') === '0,99 €|2,99 €|9,95 €' && packs.every(p => p.coins >= 5), JSON.stringify(packs.map(p => p.price)));
+check('tres packs: 1,99 €, 2,99 € y 9,95 €, con monedas por el suelo', packs.length === 3 && packs.map(p => p.price).join('|') === '1,99 €|2,99 €|9,95 €' && packs.every(p => p.coins >= 5), JSON.stringify(packs.map(p => p.price)));
 check('el de 9,95 € es el de más valor', packs[2].best && /MÁS VALOR/.test(packs[2].ribbon) && packs.slice(0, 2).every(p => /OFERTA/.test(p.ribbon)));
 check('cada pack da más pesetas por euro que el anterior', await page.evaluate(() => { const P = Object.values(AAP.E.PACKS), r = P.map(p => p.pesetas / parseFloat(p.price.replace(',', '.'))); return r[0] < r[1] && r[1] < r[2] && P.every(p => p.pesetas > p.base); }));
 await page.click('.pack.maletin .pk-buy'); await page.waitForTimeout(300);

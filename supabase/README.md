@@ -7,6 +7,9 @@
 4. **Authentication → URL Configuration**: pon la dirección del juego en **Site URL** y en **Redirect URLs** (por ejemplo `https://arletpuig.github.io/Al-agua-pedro/`).
 5. (Opcional) **Authentication → Providers → Email**: desactiva "Confirm email" para entrar sin confirmar el correo.
 
+## Lo más fácil: todo en uno
+Ejecuta solo `schema_todo.sql`. Sirve desde cualquier versión (o desde cero), conserva el progreso y se puede repetir sin problema.
+
 ## Si ya tenías la versión 5
 Solo ejecuta `schema_v6.sql`.
 

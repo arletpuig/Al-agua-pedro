@@ -9,4 +9,16 @@ export class NoAdProvider {
 }
 export let adProvider = new NoAdProvider();
 export function setAdProvider(p) { adProvider = p; }
-export const PLACEMENTS = { FALCON: 'falcon', SOBRE: 'sobre' };
+export const PLACEMENTS = { FALCON: 'falcon', SOBRE: 'sobre', WELCOME: 'welcome' };
+
+// Mientras no haya proveedor: vídeo de muestra de unos segundos (solo para el regalo de bienvenida).
+// Cuando se integre un proveedor real, showVideo usará ese proveedor.
+export const DEMO_AD = { seconds: 5 };
+export async function showVideo(placement) {
+  if (adProvider.isAvailable(placement)) return adProvider.showRewarded(placement);
+  const ov = document.querySelector('#ad-overlay'), cnt = document.querySelector('#ad-count');
+  ov.classList.add('open');
+  for (let s = DEMO_AD.seconds; s > 0; s--) { cnt.textContent = `El cofre se abre en ${s}…`; await new Promise(r => setTimeout(r, 1000)); }
+  ov.classList.remove('open');
+  return { completed: true, demo: true };
+}

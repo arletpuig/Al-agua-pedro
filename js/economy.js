@@ -43,7 +43,11 @@ export const CARD_IDS = Object.keys(CARDS);
 export const CHESTS = {
   wood:    { id: 'wood', name: 'Cofre de madera', price: 8, cards: 1, tomatoes: [2, 6],   pesetaChance: 0.2, pesetas: [1, 2] },
   diamond: { id: 'diamond', name: 'Cofre de diamante', price: 40, cards: 3, tomatoes: [10, 25], pesetaChance: 0.6, pesetas: [3, 8] },
+  // regalo de bienvenida (no se vende): llega la primera vez que Pedro cae al agua y se abre con un vídeo
+  welcome: { id: 'welcome', name: 'Regalo de bienvenida', price: 0, cards: 2, tomatoes: [30, 40], pesetaChance: 1, pesetas: [50, 60] },
 };
+export const WELCOME_MINUTES = 10;
+const WELCOME_WEIGHTS = { common: 60, rare: 30, epic: 10, legendary: 0 };
 export const FALCON = { mult: 5, minutes: 10 };
 export const SOBRE = { pesetas: 5 };
 
@@ -89,7 +93,7 @@ export function perfectRadius(cards, base) { return base * (1 + CARDS.apagon.val
 // Amnistía: probabilidad de que un fallo (o un casi) se perdone y Pedro caiga igual.
 export function forgiveChance(cards) { return CARDS.amnistia.value(level(cards, 'amnistia')); }
 export function rarityWeights(kind, cards = {}) {
-  const w = {}; for (const r in RARITIES) w[r] = kind === 'wood' ? RARITIES[r].weightWood : RARITIES[r].weightDiamond;
+  const w = {}; for (const r in RARITIES) w[r] = kind === 'wood' ? RARITIES[r].weightWood : kind === 'welcome' ? WELCOME_WEIGHTS[r] : RARITIES[r].weightDiamond;
   // las cartas al nivel máximo ya no salen: su rareza desaparece si todas las de esa rareza están al máximo
   for (const r in w) if (CARD_IDS.filter(id => CARDS[id].rarity === r).every(id => level(cards, id) >= CARDS[id].max)) w[r] = 0;
   return w;

@@ -50,6 +50,26 @@ export const backend = {
     state.cards[id].frags -= E.fragsNeeded(id, L); state.cards[id].level++; state.stats.pesetasSpent += cost;
     state.stats.chestPesetas += bonus.refund; state.stats.chestTomatoes += bonus.tomatoes; changed(false); return bonus;
   },
+  // Regalo de bienvenida: se ofrece la primera vez que Pedro cae (el servidor necesita la caída guardada) y caduca a los 10 minutos.
+  async offerWelcome() {
+    if (state.welcomeClaimed || state.welcomeOfferedAt) return;
+    if (this.cloud) {
+      const { r } = await cloudOp(() => sb.offerWelcome());
+      timeOffset = Date.parse(r.now) - Date.now();
+      state.welcomeClaimed = !!r.claimed; state.welcomeOfferedAt = r.offered_at ? Date.parse(r.offered_at) : null;
+    } else { if (state.stats.falls < 1) return; state.welcomeOfferedAt = this.now(); }
+    changed(false);
+  },
+  welcomeLeftMs() {
+    if (state.welcomeClaimed || !state.welcomeOfferedAt) return 0;
+    return Math.max(0, state.welcomeOfferedAt + E.WELCOME_MINUTES * 60000 - this.now());
+  },
+  async claimWelcome() {
+    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimWelcome()); applyServer(r.profile, sent); return r.reward; }
+    if (state.welcomeClaimed) throw new Error('Ya has abierto el regalo de bienvenida');
+    if (!this.welcomeLeftMs()) throw new Error('El regalo de bienvenida ha caducado');
+    const reward = E.rollChest('welcome', state.cards); E.applyChestCards(state.cards, reward.cards); state.welcomeClaimed = true; applyChestLocal(reward, 0); return reward;
+  },
   // Anuncio recompensado: solo da recompensa con verificación real del proveedor y del servidor.
   async watchAd(placement) {
     if (!adProvider.isAvailable(placement)) throw new Error('Los anuncios todavía no están disponibles');

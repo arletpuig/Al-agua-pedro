@@ -5,7 +5,7 @@ import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idl
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
-const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile']);
+const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title']);
 const users = new Map(); // token -> usuario
 const calls = [];
 // Puente PostgREST/GoTrue mínimo sobre PostgreSQL
@@ -48,6 +48,7 @@ const email = `arlet${Date.now()}@test.com`;
 const openChestUI = async sel => { await page.click(sel); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await page.click('#chest-btn'); await page.waitForTimeout(400); };
 
 console.log('A. Acceso obligatorio: un jugador de antes (con partida en el navegador) crea su cuenta');
+await page.evaluate(() => { AAP.giftTest.off = true; });   // el regalo de bienvenida se prueba en el apartado I
 check('sin sesión no se puede jugar: pantalla de cuenta obligatoria', await page.evaluate(() => document.querySelector('#panel-account').classList.contains('forced') && document.querySelector('#panel-account').classList.contains('open')));
 // partida guardada en el navegador de una versión anterior (sin cuenta)
 await page.evaluate(() => { AAP.state.tutorialSeen = true; }); await noCombo(page);
@@ -108,6 +109,24 @@ check('mejora validada: nivel +1, precio con descuento de Mariscada idéntico en
 check('mejora imposible rechazada', await page.evaluate(() => AAP.backend.upgradeCard('amnistia').then(() => AAP.state.cards.amnistia.level === 0 ? false : 'ok', e => true)));
 await page.click('#panel-cards .close');
 check('anuncio: el servidor no concede nada', (() => { try { psql(`select public.claim_ad_reward('falcon', 'x')`, 'authenticated', row.user_id); return false; } catch (e) { return /no están disponibles/.test(String(e.stderr)); } })() && db(email).falcon_until === null);
+
+console.log('I. Título del perfil y regalo de bienvenida en el servidor');
+await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400);
+await page.fill('#title-input', 'Azote de Ferraz'); await page.click('#form-title button'); await page.waitForTimeout(600);
+check('el título se guarda en el servidor', db(email).title === 'Azote de Ferraz' && (await page.locator('#prof-title').textContent()) === 'Azote de Ferraz');
+await page.click('#panel-profile [data-close]');
+psql(`update public.profiles set welcome_offered_at = null, welcome_claimed = false where user_id = '${row.user_id}'`);
+await page.evaluate(async () => { AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = null; AAP.giftTest.off = false; (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+await page.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(page, 0, 10); await idle(page);
+await page.waitForSelector('#gift-overlay.open', { timeout: 10000 }).catch(() => {});
+check('tras tirar a Pedro, el servidor ofrece el regalo y empieza la cuenta atrás', !!db(email).welcome_offered_at && await page.evaluate(() => document.querySelector('#gift-overlay').classList.contains('open')));
+before = db(email);
+await page.click('#gift-watch', { force: true }); await page.waitForSelector('#chest-overlay.open', { timeout: 10000 }); await page.click('#chest-btn');
+await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 10000 }); await page.click('#chest-btn'); await page.waitForTimeout(500);
+row = db(email); s = await S(page);
+check('regalo abierto en el servidor: 50–60 pesetas y 30–40 tomates, una sola vez', row.welcome_claimed && row.chest_pesetas - before.chest_pesetas >= 50 && row.chest_pesetas - before.chest_pesetas <= 60 && row.chest_tomatoes - before.chest_tomatoes >= 30 && s.pesetas === row.pesetas && s.tomatoes === row.tomatoes, `(+${row.chest_pesetas - before.chest_pesetas} pesetas)`);
+check('abrirlo otra vez: rechazado por el servidor', await page.evaluate(() => AAP.backend.claimWelcome().then(() => false, e => /Ya has abierto/.test(e.message))));
+await page.evaluate(() => { AAP.giftTest.off = true; });
 
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#rank-list');

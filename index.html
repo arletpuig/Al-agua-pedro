@@ -30,7 +30,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
 <div id="app">
@@ -98,6 +98,11 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
         <input id="name-input" name="name" type="text" placeholder="Tu nombre de jugador" maxlength="20" autocomplete="nickname" aria-label="Nombre de jugador">
         <button class="btn-g" type="submit">CAMBIAR</button>
       </form>
+      <form id="form-title" class="name-row" autocomplete="off">
+        <input id="title-input" name="title" type="text" placeholder="Tu título" maxlength="28" aria-label="Título del perfil">
+        <button class="btn-g" type="submit">PONER</button>
+      </form>
+      <div class="title-chips" id="title-chips"></div>
       <div class="prof-stats" id="prof-stats"></div>
       <button id="btn-share" class="btn-share"><svg><use href="#ic-camera"/></svg><span>PRESUME DE ESTADÍSTICAS<small>Crea una imagen para compartir</small></span></button>
       <h3 class="sec" id="flags-title">Elige tu bandera</h3>
@@ -190,11 +195,41 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     </div>
   </div>
 
+  <!-- regalo de bienvenida: baja en paracaídas -->
+  <div id="gift-drop" class="gift-drop hidden" aria-hidden="true">
+    <svg class="gd" viewBox="0 0 140 176">
+      <path d="M8 46 C8 8 132 8 132 46 C122 39 111 39 101 46 C92 39 80 39 70 46 C60 39 48 39 39 46 C29 39 18 39 8 46Z" fill="#fff" stroke="#0a0b18" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M39 46 C42 20 56 11 70 10 C56 18 48 30 39 46Z M101 46 C98 20 84 11 70 10 C84 18 92 30 101 46Z" fill="#e3262c" stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M22 30 C32 17 50 12 66 11" stroke="#fff" stroke-width="4" fill="none" opacity=".7" stroke-linecap="round"/>
+      <g stroke="#0a0b18" stroke-width="2"><path d="M8 46 L42 112 M39 46 L50 108 M70 46 V106 M101 46 L90 108 M132 46 L98 112"/></g>
+      <use href="#ic-chest-gift" x="30" y="100" width="80" height="72"/>
+    </svg>
+  </div>
+  <div id="gift-overlay" class="overlay gift-ov">
+    <i class="rays"></i>
+    <div class="gift-stage">
+      <h2 class="t-big">¡REGALO DE BIENVENIDA!</h2>
+      <p class="gift-sub">Por tirar a Pedro al agua por primera vez</p>
+      <div class="gift-art"><i class="glow"></i><svg><use href="#ic-chest-gift"/></svg><i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i></div>
+      <ul class="gift-list">
+        <li><svg><use href="#ic-coin"/></svg><b>50–60</b><span>pesetas</span></li>
+        <li><svg><use href="#ic-tomato"/></svg><b>30–40</b><span>tomates</span></li>
+        <li><svg><use href="#ic-cards"/></svg><b>2</b><span>cartas</span></li>
+      </ul>
+      <button id="gift-watch" class="btn-gold"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 L20 12 L7 20Z" fill="#fff" stroke="#6b3300" stroke-width="2.4" stroke-linejoin="round"/></svg>VER VÍDEO Y ABRIR</button>
+      <button id="gift-later" class="gift-later">Más tarde <span>· se pierde en <b id="gift-left">10:00</b></span></button>
+    </div>
+  </div>
+  <button id="gift-slot" class="gift-slot hidden" aria-label="Abrir el regalo de bienvenida"><i class="glow"></i><svg><use href="#ic-chest-gift"/></svg><span id="gift-timer">10:00</span></button>
+  <div id="ad-overlay" class="overlay ad-ov">
+    <div class="ad-box"><span class="ad-tag">ANUNCIO</span><div class="ad-screen"><svg><use href="#ic-chest-gift"/></svg><p>Aquí irá el vídeo del anuncio</p></div><p class="ad-count" id="ad-count">El cofre se abre en 5…</p></div>
+  </div>
+
   <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
   <div id="test-badge" class="test-badge hidden">PRUEBAS</div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 12</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 13</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -204,14 +239,21 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <linearGradient id="gGold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff0a0"/><stop offset=".5" stop-color="#ffc02a"/><stop offset="1" stop-color="#c47a00"/></linearGradient>
 <linearGradient id="gDia" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#d9f6ff"/><stop offset=".45" stop-color="#5fc8ff"/><stop offset="1" stop-color="#2155d6"/></linearGradient>
 <linearGradient id="gSteel" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#b9c2d9"/><stop offset="1" stop-color="#6b7593"/></linearGradient>
+<radialGradient id="gRuby" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffd6de"/><stop offset=".4" stop-color="#ff2b55"/><stop offset="1" stop-color="#7a0020"/></radialGradient>
+<radialGradient id="gEmer" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#dcffe6"/><stop offset=".4" stop-color="#1fd062"/><stop offset="1" stop-color="#06572a"/></radialGradient>
+<radialGradient id="gSapph" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#e0ecff"/><stop offset=".4" stop-color="#3b78ff"/><stop offset="1" stop-color="#0b2370"/></radialGradient>
+<radialGradient id="gGem" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#c8f1ff"/><stop offset="1" stop-color="#5aa9e6"/></radialGradient>
+<linearGradient id="gPurple" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#d48bff"/><stop offset=".5" stop-color="#8a2be2"/><stop offset="1" stop-color="#3f0a78"/></linearGradient>
+<radialGradient id="gGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff7b0"/><stop offset=".45" stop-color="#ffd23f" stop-opacity=".8"/><stop offset="1" stop-color="#ffd23f" stop-opacity="0"/></radialGradient>
 <linearGradient id="gRing" x1="0" x2="1"><stop offset="0" stop-color="#ffe766"/><stop offset="1" stop-color="#ff9d1a"/></linearGradient>
 <symbol id="ic-tomato" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><path d="M32 17 C47 15 58 25 57 39 C56 52 45 59 32 59 C19 59 8 52 7 39 C6 25 17 15 32 17Z" fill="url(#gTom)"/><path d="M16 34 Q15 25 24 21" stroke="#fff" stroke-width="4.5" fill="none" opacity=".65"/><path d="M19 16 Q26 21 32 13 Q38 21 45 16 Q43 25 32 23 Q21 25 19 16Z" fill="#52c24a"/><path d="M32 13 Q33 7 38 5" stroke-width="6" fill="none"/><path d="M32 13 Q33 7 38 5" stroke="#3a9a3a" stroke-width="2.6" fill="none"/></g></symbol>
 <symbol id="ic-coin" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="32" cy="35" rx="26" ry="25" fill="#9a5c00"/><circle cx="32" cy="31" r="26" fill="url(#gCoin)"/><circle cx="32" cy="31" r="19" fill="none" stroke="#b97400" stroke-width="2.4"/><path d="M27 43 V20 h8 a7.5 7.5 0 0 1 0 15 h-8 M22 30 h13" fill="none" stroke="#8a5200" stroke-width="5.5"/><path d="M14 22 Q20 12 32 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".75"/></g></symbol>
 <symbol id="ic-gear" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round"><path d="M57.8,28.6 L57.8,35.4 L50.3,36.9 L48.5,41.5 L52.6,47.8 L47.8,52.6 L41.5,48.5 L36.9,50.3 L35.4,57.8 L28.6,57.8 L27.1,50.3 L22.5,48.5 L16.2,52.6 L11.4,47.8 L15.5,41.5 L13.7,36.9 L6.2,35.4 L6.2,28.6 L13.7,27.1 L15.5,22.5 L11.4,16.2 L16.2,11.4 L22.5,15.5 L27.1,13.7 L28.6,6.2 L35.4,6.2 L36.9,13.7 L41.5,15.5 L47.8,11.4 L52.6,16.2 L48.5,22.5 L50.3,27.1 Z" fill="#ffffff"/><circle cx="32" cy="32" r="9" fill="#3567f0"/></g></symbol>
 <symbol id="ic-plane" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M6 36 L28 30 L44 12 Q50 8 52 12 L42 32 L58 36 Q60 40 56 41 L40 40 L32 52 L26 52 L30 40 L10 42Z" fill="#ffffff"/><path d="M28 30 L42 32" stroke="#3567f0" stroke-width="4"/></g></symbol>
 <symbol id="ic-envelope" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><rect x="6" y="16" width="52" height="36" rx="5" fill="#fff8e6"/><path d="M6 20 L32 38 L58 20" fill="none"/><circle cx="32" cy="38" r="7" fill="#e3262c"/><path d="M8 50 L26 34 M56 50 L38 34" fill="none" stroke-width="2"/></g></symbol>
-<symbol id="ic-chest" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gWood)"/><path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/><path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gWood)"/><path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/><path d="M7 19 C20 16 44 16 57 19" stroke="#00000055" stroke-width="2" fill="none"/><rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/><rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gGold)"/><path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gGold)"/><path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gGold)"/><circle cx="32" cy="29" r="2.6" fill="#0a0b18" stroke="none"/><path d="M32 30 v5" stroke-width="3"/></g></symbol>
-<symbol id="ic-chest-dia" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gDia)"/><path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/><path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gDia)"/><path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/><path d="M24 14 L28 9 M38 40 L44 32 M14 40 L20 34" stroke="#ffffff" stroke-width="2.2" opacity=".7"/><rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/><rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gSteel)"/><path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gSteel)"/><path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gSteel)"/><circle cx="32" cy="29" r="2.6" fill="#0a0b18" stroke="none"/><path d="M32 30 v5" stroke-width="3"/></g></symbol>
+<symbol id="ic-chest" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="9" cy="54" rx="6" ry="2.8" fill="url(#gGold)" stroke-width="1.6"/><ellipse cx="56" cy="54.5" rx="5" ry="2.4" fill="url(#gGold)" stroke-width="1.6"/><rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gWood)"/><path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/><path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gWood)"/><path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/><path d="M7 19 C20 16 44 16 57 19" stroke="#00000055" stroke-width="2" fill="none"/><rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gGold)"/><rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gGold)"/><path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gGold)"/><path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gGold)"/><path d="M32 25.5 L36.5 30.5 L32 35.5 L27.5 30.5Z" fill="url(#gRuby)" stroke-width="1.6"/><path d="M17 13.2 L19.5 16 L17 18.8 L14.5 16Z" fill="url(#gEmer)" stroke-width="1.2"/><path d="M47 13.2 L49.5 16 L47 18.8 L44.5 16Z" fill="url(#gEmer)" stroke-width="1.2"/><path d="M17 38.2 L19.5 41 L17 43.8 L14.5 41Z" fill="url(#gSapph)" stroke-width="1.2"/><path d="M47 38.2 L49.5 41 L47 43.8 L44.5 41Z" fill="url(#gSapph)" stroke-width="1.2"/></g><path d="M30.6 27.6 l1.6 -1.2" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/></symbol>
+<symbol id="ic-chest-dia" viewBox="0 0 64 58"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gDia)"/><path d="M8 36 H56 M8 45 H56" stroke="#00000055" stroke-width="2"/><path d="M6 28 C6 13 16 6 32 6 C48 6 58 13 58 28 Z" fill="url(#gDia)"/><path d="M10 22 C14 14 22 10 32 10" stroke="#ffffff" stroke-width="2.6" fill="none" opacity=".55"/><path d="M7 19 C20 16 44 16 57 19" stroke="#00000055" stroke-width="2" fill="none"/><rect x="14" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/><rect x="44" y="7.5" width="6" height="46" rx="2" fill="url(#gSteel)"/><rect x="4" y="24" width="56" height="7" rx="3" fill="url(#gSteel)"/><path d="M6 45 h9 v9 h-4 a5 5 0 0 1 -5 -5Z M58 45 h-9 v9 h4 a5 5 0 0 0 5 -5Z" fill="url(#gSteel)"/><path d="M25 21 h14 v13 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gSteel)"/><path d="M32 25.5 L36.5 30.5 L32 35.5 L27.5 30.5Z" fill="url(#gGem)" stroke-width="1.6"/><path d="M17 13 L19.7 16 L17 19 L14.3 16Z" fill="url(#gSapph)" stroke-width="1.2"/><path d="M47 13 L49.7 16 L47 19 L44.3 16Z" fill="url(#gSapph)" stroke-width="1.2"/><path d="M17 38 L19.7 41 L17 44 L14.3 41Z" fill="url(#gRuby)" stroke-width="1.2"/><path d="M47 38 L49.7 41 L47 44 L44.3 41Z" fill="url(#gRuby)" stroke-width="1.2"/><path d="M32 46.4 L34.3 49 L32 51.6 L29.7 49Z" fill="url(#gEmer)" stroke-width="1.2"/></g><path d="M30.6 27.6 l1.6 -1.2" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/><path d="M10 5 L11.0 8.0 L14 9 L11.0 10.0 L10 13 L9.0 10.0 L6 9 L9.0 8.0Z" fill="#fff"/><path d="M57 2.6 L57.8 5.2 L60.4 6 L57.8 6.8 L57 9.4 L56.2 6.8 L53.6 6 L56.2 5.2Z" fill="#fff"/><path d="M60 33.4 L60.6 35.4 L62.6 36 L60.6 36.6 L60 38.6 L59.4 36.6 L57.4 36 L59.4 35.4Z" fill="#fff"/></symbol>
+<symbol id="ic-chest-gift" viewBox="0 0 64 58"><ellipse cx="32" cy="20" rx="30" ry="20" fill="url(#gGlow)"/><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M7 19 C9 6 19 1.5 32 1.5 C45 1.5 55 6 57 19 C46 15.5 18 15.5 7 19Z" fill="url(#gPurple)"/><path d="M7 19 C18 15.5 46 15.5 57 19" fill="none" stroke="url(#gGold)" stroke-width="3.4"/><path d="M10 28 C12 19 52 19 54 28Z" fill="url(#gGold)"/><circle cx="18" cy="23.5" r="3.4" fill="url(#gGold)" stroke-width="1.5"/><circle cx="46" cy="24" r="3.4" fill="url(#gGold)" stroke-width="1.5"/><circle cx="38" cy="25" r="2.8" fill="url(#gGold)" stroke-width="1.4"/><path d="M31 15.3 L35.7 20.5 L31 25.7 L26.3 20.5Z" fill="url(#gEmer)" stroke-width="1.5"/><path d="M41.5 15.9 L44.7 19.5 L41.5 23.1 L38.3 19.5Z" fill="url(#gRuby)" stroke-width="1.3"/><path d="M23 15.9 L26.2 19.5 L23 23.1 L19.8 19.5Z" fill="url(#gSapph)" stroke-width="1.3"/><path d="M51 19.4 L53.3 22 L51 24.6 L48.7 22Z" fill="url(#gGem)" stroke-width="1.1"/><rect x="6" y="27" width="52" height="27" rx="5" fill="url(#gPurple)"/><path d="M8 37 H56 M8 46 H56" stroke="#00000044" stroke-width="2"/><rect x="14" y="27" width="6" height="26.5" rx="2" fill="url(#gGold)"/><rect x="44" y="27" width="6" height="26.5" rx="2" fill="url(#gGold)"/><rect x="4" y="25" width="56" height="7" rx="3" fill="url(#gGold)"/><path d="M6 46 h9 v8 h-4 a5 5 0 0 1 -5 -5Z M58 46 h-9 v8 h4 a5 5 0 0 0 5 -5Z" fill="url(#gGold)"/><path d="M25 30 h14 v12 q0 6 -7 8 q-7 -2 -7 -8 Z" fill="url(#gGold)"/><path d="M32 33.9 L37.0 39.5 L32 45.1 L27.0 39.5Z" fill="url(#gRuby)" stroke-width="1.6"/><path d="M17 38.2 L19.5 41 L17 43.8 L14.5 41Z" fill="url(#gEmer)" stroke-width="1.2"/><path d="M47 38.2 L49.5 41 L47 43.8 L44.5 41Z" fill="url(#gSapph)" stroke-width="1.2"/></g><path d="M30.4 36.4 l1.8 -1.3 M28.6 17.6 l1.6 -1.2" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/><path d="M6 3.5999999999999996 L7.1 6.9 L10.4 8 L7.1 9.1 L6 12.4 L4.9 9.1 L1.5999999999999996 8 L4.9 6.9Z" fill="#fff"/><path d="M58 1.4 L58.9 4.1 L61.6 5 L58.9 5.9 L58 8.6 L57.1 5.9 L54.4 5 L57.1 4.1Z" fill="#fff"/><path d="M61 30.2 L61.7 32.3 L63.8 33 L61.7 33.7 L61 35.8 L60.3 33.7 L58.2 33 L60.3 32.3Z" fill="#fff"/><path d="M3 30.6 L3.6 32.4 L5.4 33 L3.6 33.6 L3 35.4 L2.4 33.6 L0.6000000000000001 33 L2.4 32.4Z" fill="#fff"/></symbol>
 <symbol id="ic-shop" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><rect x="10" y="30" width="44" height="26" rx="3" fill="url(#gWood)"/><rect x="27" y="38" width="11" height="18" fill="#5a3410"/><path d="M5 30 L10 10 H54 L59 30 Q53 37 47 30 Q41 37 35 30 Q29 37 23 30 Q17 37 11 30 Q8 34 5 30Z" fill="#fff8ea"/><path d="M17 10 L17 30 Q23 37 29 30 L29 10Z M41 10 L41 30 Q47 37 53 30 L54 10Z" fill="#e3262e"/><rect x="8" y="5" width="48" height="7" rx="3" fill="url(#gGold)"/></g></symbol>
 <symbol id="ic-cards" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><rect x="8" y="16" width="24" height="34" rx="4" fill="#3fa9f5" transform="rotate(-16 20 33)"/><rect x="32" y="16" width="24" height="34" rx="4" fill="#b163ff" transform="rotate(16 44 33)"/><rect x="20" y="10" width="24" height="38" rx="4" fill="url(#gGold)"/><path d="M32 19 l3.2 6.8 7.3 .8 -5.5 5 1.6 7.3 -6.6 -3.8 -6.6 3.8 1.6 -7.3 -5.5 -5 7.3 -.8Z" fill="#fff8ea" stroke-width="2"/></g></symbol>
 <symbol id="ic-trophy" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M17 14 H7 Q7 31 20 32 M47 14 H57 Q57 31 44 32" fill="none" stroke-width="7"/><path d="M17 14 H7 Q7 31 20 32 M47 14 H57 Q57 31 44 32" fill="none" stroke="#ffc02a" stroke-width="3"/><path d="M16 7 H48 V22 Q48 40 32 41 Q16 40 16 22Z" fill="url(#gGold)"/><rect x="28" y="40" width="8" height="8" fill="url(#gGold)"/><rect x="18" y="47" width="28" height="9" rx="3" fill="url(#gWood)"/><path d="M22 12 V22 Q22 29 26 32" stroke="#fff" stroke-width="3" fill="none" opacity=".75"/></g></symbol>
@@ -243,7 +285,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 12</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 13</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -257,7 +299,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=12"></script>
+<script type="module" src="js/main.js?v=13"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>
 </html>

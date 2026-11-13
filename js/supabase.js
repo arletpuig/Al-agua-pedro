@@ -76,4 +76,7 @@ export const claimAdReward = (placement, token) => rpc('claim_ad_reward', { p_pl
 export const serverNow = () => rpc('server_now', {}, { auth: false });         // -> { date, now, next_midnight }
 export const updateProfile = (username, avatar) => rpc('update_profile', { p_username: username, p_avatar: avatar });   // -> profile
 export const myRank = () => rpc('my_rank', {});
+export const setTitle = title => rpc('set_title', { p_title: title });                     // -> profile
+export const offerWelcome = () => rpc('offer_welcome', {});                               // -> { offered_at, claimed, now }
+export const claimWelcome = () => rpc('claim_welcome', {});                               // -> { reward, profile }
 export const leaderboard = () => req('/rest/v1/leaderboard?select=*&order=tomatoes_earned.desc,falls.desc&limit=20', { auth: false });

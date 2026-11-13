@@ -449,3 +449,70 @@ svg { display: block; }
 .legal-links { display: flex; justify-content: center; gap: 16px; margin: 4px 0 0; font: 700 13px 'Baloo 2'; }
 .test-badge { position: absolute; left: 50%; top: calc(58px + var(--safe-top)); transform: translateX(-50%) rotate(-2deg); z-index: 7; padding: 1px 10px 2px; border-radius: 8px;
   border: 2.5px solid var(--ink); background: linear-gradient(#ff9a3c, #e8560f); font: 12px/16px 'Titan One'; letter-spacing: .08em; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); pointer-events: none; box-shadow: 0 3px 0 #0008; }
+
+/* ---------- v13: regalo de bienvenida en paracaídas, vídeo, títulos y tienda más apetecible ---------- */
+.btn-gold { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; height: 60px; padding: 0 22px; border-radius: 18px; border: 3px solid var(--ink); overflow: hidden;
+  background: linear-gradient(#fff6a8 0, var(--gold1) 18%, var(--gold2) 70%, var(--gold3)); box-shadow: inset 0 3px 0 #fffc, inset 0 -6px 0 #0003, 0 6px 0 #6b3a00, 0 10px 18px #000a;
+  font: 22px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 6px #6b3300; animation: goldpulse 1.4s ease-in-out infinite; }
+.btn-gold svg { width: 26px; height: 26px; flex-shrink: 0; }
+.btn-gold::before { content: ''; position: absolute; top: 0; bottom: 0; width: 60px; left: -80px; background: linear-gradient(100deg, #fff0, #fffb, #fff0); animation: shine 2.2s ease-in-out infinite; }
+.btn-gold:active { transform: translateY(3px); }
+@keyframes goldpulse { 50% { transform: scale(1.04); box-shadow: inset 0 3px 0 #fffc, inset 0 -6px 0 #0003, 0 6px 0 #6b3a00, 0 0 34px #ffd23f; } }
+/* caída en paracaídas */
+.gift-drop { position: absolute; inset: 0; z-index: 38; pointer-events: none; overflow: hidden; }
+.gift-drop .gd { position: absolute; left: 50%; top: 18%; width: 190px; margin-left: -95px; transform-origin: 50% 0; animation: chute 3s cubic-bezier(.3, .6, .4, 1) forwards, sway 1.5s ease-in-out infinite alternate; filter: drop-shadow(0 10px 12px #000a) drop-shadow(0 0 22px #ffd23f88); }
+@keyframes chute { from { top: -45%; } to { top: 24%; } }
+@keyframes sway { from { rotate: -9deg; } to { rotate: 9deg; } }
+.gift-drop.landed .gd { animation: landed .5s ease-in forwards; }
+@keyframes landed { to { transform: translateY(40px) scale(1.4); opacity: 0; } }
+/* pantalla del regalo */
+.gift-ov { z-index: 42; background: radial-gradient(circle at 50% 38%, #9b4dff, #3f0a78 45%, #0b0626); }
+.gift-ov .rays { animation-duration: 14s; }
+.gift-stage { position: absolute; inset: calc(24px + var(--safe-top)) 16px calc(24px + var(--safe-bot)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+.gift-stage .t-big { margin: 0; font: 30px/1.05 'Titan One'; color: #ffe766; paint-order: stroke fill; -webkit-text-stroke: 7px var(--ink); text-shadow: 0 5px 0 var(--ink); transform: rotate(-2deg); }
+.gift-sub { margin: 0; font: 800 15px 'Baloo 2'; color: #f1e2ff; }
+.gift-art { position: relative; width: 230px; height: 206px; animation: giftbob 1.6s ease-in-out infinite; }
+.gift-art svg { position: relative; width: 100%; height: 100%; filter: drop-shadow(0 12px 0 #0008); }
+.gift-art .glow, .gift-slot .glow { position: absolute; left: 50%; top: 50%; width: 140%; height: 140%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #fff6b0cc, #ffd23f55 40%, #ffd23f00 70%); animation: glowpulse 1.6s ease-in-out infinite; }
+.gift-art .sparkle { width: 22px; height: 22px; } .gift-art .sparkle.s1 { left: 6%; top: 20%; } .gift-art .sparkle.s2 { right: 4%; top: 6%; } .gift-art .sparkle.s3 { right: 14%; top: 66%; }
+@keyframes giftbob { 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes glowpulse { 50% { opacity: .55; transform: translate(-50%, -50%) scale(.9); } }
+.gift-list { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; }
+.gift-list li { display: flex; flex-direction: column; align-items: center; min-width: 88px; padding: 6px 8px 7px; border-radius: 16px; border: 3px solid var(--ink); background: linear-gradient(#5b2aa8, #2c0d63); box-shadow: inset 0 2px 0 #ffffff33, 0 4px 0 #0009; }
+.gift-list svg { width: 34px; height: 34px; filter: drop-shadow(0 2px 0 #0008); }
+.gift-list b { font: 20px/1.1 'Titan One'; color: #ffe766; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); }
+.gift-list span { font: 800 12px 'Baloo 2'; color: #e6d6ff; }
+.gift-later { margin-top: 2px; padding: 8px 14px; font: 800 14px 'Baloo 2'; color: #d9c8ff; text-decoration: underline; text-underline-offset: 3px; }
+.gift-later b { color: #ffe766; font-variant-numeric: tabular-nums; }
+/* cofre aparcado a la izquierda, debajo de los tomates */
+.gift-slot { position: absolute; left: 8px; top: calc(78px + var(--safe-top)); z-index: 6; width: 72px; display: flex; flex-direction: column; align-items: center; animation: giftbob 1.6s ease-in-out infinite; }
+.gift-slot svg { position: relative; width: 66px; height: 60px; filter: drop-shadow(0 4px 0 #0009); }
+.gift-slot span { position: relative; margin-top: -6px; padding: 0 8px; border-radius: 10px; border: 2.5px solid var(--ink); background: linear-gradient(var(--red1), var(--red2)); font: 14px/20px 'Titan One'; font-variant-numeric: tabular-nums; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); box-shadow: 0 3px 0 #0008; }
+.gift-slot.urgent span { animation: badge .6s ease-in-out infinite; }
+/* vídeo (de muestra mientras no hay proveedor de anuncios) */
+.ad-ov { z-index: 48; background: #03040c; }
+.ad-box { position: absolute; inset: calc(40px + var(--safe-top)) 18px calc(40px + var(--safe-bot)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+.ad-tag { padding: 2px 10px; border-radius: 8px; background: #ffd23f; color: #222; font: 800 12px 'Baloo 2'; letter-spacing: .12em; }
+.ad-screen { width: 100%; max-width: 360px; aspect-ratio: 16 / 10; border-radius: 16px; border: 3px solid #333; background: radial-gradient(circle, #2a2f5a, #0b0d1f); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #cfd6ff; font: 700 15px 'Baloo 2'; }
+.ad-screen svg { width: 96px; height: 86px; animation: giftbob 1.6s ease-in-out infinite; }
+.ad-screen p, .ad-count { margin: 0; }
+.ad-count { font: 18px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); font-variant-numeric: tabular-nums; }
+/* títulos del perfil */
+.title-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -4px; }
+.title-chips button { padding: 4px 10px; border-radius: 999px; border: 2px solid var(--ink); background: #0a1442; font: 800 12px 'Baloo 2'; color: #c9d4ff; }
+.title-chips button.on { background: linear-gradient(#fff3a0, #ffb21a); color: #4a2600; }
+/* tienda: cofres más apetecibles */
+.chest-card .c, .free svg.big { animation: chestbob 2s ease-in-out infinite; }
+@keyframes chestbob { 50% { transform: translateY(-5px) rotate(-2deg); } }
+.free svg.big { animation-name: chestbobc; }
+@keyframes chestbobc { 0%, 100% { transform: translateX(-50%); } 50% { transform: translateX(-50%) translateY(-6px) rotate(-2deg); } }
+.chest-card::before { content: ''; position: absolute; left: 50%; top: 92px; width: 190px; height: 190px; margin: -95px 0 0 -95px; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(#ffffff2a 0 10deg, #fff0 10deg 24deg); -webkit-mask: radial-gradient(circle, #000 25%, #0000 68%); mask: radial-gradient(circle, #000 25%, #0000 68%); animation: spin 12s linear infinite; }
+.chest-card::after { content: ''; position: absolute; inset: 0; border-radius: 15px; pointer-events: none; overflow: hidden;
+  background: linear-gradient(105deg, #fff0 40%, #ffffff40 50%, #fff0 60%) no-repeat; background-size: 250% 100%; animation: cardshine 3.4s ease-in-out infinite; }
+.chest-card.diamond::after { animation-delay: 1.7s; }
+@keyframes cardshine { 0%, 60% { background-position: 150% 0; } 100% { background-position: -60% 0; } }
+.chest-card > * { position: relative; }
+.chest-card .ribbon { position: absolute; }
+.chest-card svg.c { width: 116px; height: 100px; filter: drop-shadow(0 5px 0 #0008) drop-shadow(0 0 14px #ffe76699); }
+.chest-card.wood .sparkle { background: #ffe766; }

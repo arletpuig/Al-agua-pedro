@@ -5,6 +5,9 @@ import { avatarImage } from './avatars.js';
 const fmt = n => Math.round(n).toLocaleString('es-ES');
 export const TITLES = [[1000, 'Leyenda de la pecera'], [200, 'Terror de la Moncloa'], [50, 'Azote de Ferraz'], [10, 'Lanzador de feria'], [1, 'Tomatero'], [0, 'Recién llegado']];
 export const titleFor = falls => TITLES.find(([n]) => falls >= n)[1];
+// Título del perfil: cada jugador pone el suyo; de serie, uno de estos al azar (siempre el mismo para cada jugador)
+export const DEFAULT_TITLES = ['Azote de Ferraz', 'Gran anticomunista', 'Conservador', 'Antisanchista'];
+export function defaultTitle(seed = '') { let h = 0; for (const ch of String(seed)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return DEFAULT_TITLES[h % DEFAULT_TITLES.length]; }
 export const gameURL = () => (location.host + location.pathname).replace(/\/index\.html$/, '').replace(/\/$/, '');
 
 // Los iconos del juego (símbolos SVG de index.html) como imágenes para el canvas
@@ -57,7 +60,7 @@ export async function renderShareCard(scene, d) {
   const gl = c.createRadialGradient(100, py - 40, 0, 130, py, 80); gl.addColorStop(0, 'rgba(255,255,255,.45)'); gl.addColorStop(0.5, 'rgba(255,255,255,.05)'); gl.addColorStop(1, 'rgba(0,0,0,.2)'); c.fillStyle = gl; c.fillRect(40, py - 90, 180, 180);
   c.restore(); c.beginPath(); c.arc(130, py, 78, 0, Math.PI * 2); c.lineWidth = 6; c.strokeStyle = '#0a0b18'; c.stroke();
   text(c, d.name || 'Jugador', 250, py - 24, { size: 66, align: 'left', lw: 11, shadow: 6, maxW: 760 });
-  text(c, titleFor(s.falls).toUpperCase(), 252, py + 44, { size: 38, font: 'Baloo 2', weight: '800', fill: '#ffd23f', align: 'left', lw: 8, shadow: 4, maxW: 760 });
+  text(c, (d.title || titleFor(s.falls)).toUpperCase(), 252, py + 44, { size: 38, font: 'Baloo 2', weight: '800', fill: '#ffd23f', align: 'left', lw: 8, shadow: 4, maxW: 760 });
 
   // pegatina: veces que ha tirado a Pedro al agua
   const sx = 175, sy = 640;

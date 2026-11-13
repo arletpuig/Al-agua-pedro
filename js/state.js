@@ -9,6 +9,7 @@ export const state = {
   stats: { totalClicks: 0, legacyClicks: 0, legacyTomatoes: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0, tomatoesRefunded: 0, paguitasPesetas: 0 },
   cards: emptyCards(), dailyClaimedOn: null, falconUntil: 0,
   tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null, welcome: false,
+  welcomeOfferedAt: null, welcomeClaimed: false,   // regalo de bienvenida (cofre en paracaídas)
 };
 // Los tomates conseguidos cuando costaban 100 clics se conservan (legacy); desde entonces cuestan CLICKS_PER_TOMATO.
 export function derive() {
@@ -23,7 +24,7 @@ export function load() {
     let raw = localStorage.getItem(KEY), d = raw ? JSON.parse(raw) : null;
     if (!d) { const old = localStorage.getItem(OLD_KEY); if (old) { const o = JSON.parse(old); d = { stats: { totalClicks: o.stats?.totalClicks || 0, tomatoesThrown: o.stats?.tomatoesThrown || 0, hits: o.stats?.hits || 0, falls: o.stats?.falls || 0 }, tutorialSeen: o.tutorialSeen, sound: o.sound }; } }
     if (d) {
-      Object.assign(state, { tutorialSeen: !!d.tutorialSeen, sound: d.sound !== false, music: !!d.music, dailyClaimedOn: d.dailyClaimedOn || null, falconUntil: d.falconUntil || 0 });
+      Object.assign(state, { tutorialSeen: !!d.tutorialSeen, sound: d.sound !== false, music: !!d.music, dailyClaimedOn: d.dailyClaimedOn || null, falconUntil: d.falconUntil || 0, welcomeOfferedAt: d.welcomeOfferedAt || null, welcomeClaimed: !!d.welcomeClaimed });
       Object.assign(state.stats, d.stats || {});
       // partida guardada cuando un tomate costaba 100 clics: se conserva lo ya ganado
       if (d.cpt !== CONFIG.CLICKS_PER_TOMATO && !state.stats.legacyClicks && state.stats.totalClicks > 0) {
@@ -39,7 +40,7 @@ export function load() {
   derive(); return state;
 }
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ cpt: CONFIG.CLICKS_PER_TOMATO, stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ cpt: CONFIG.CLICKS_PER_TOMATO, stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, welcomeOfferedAt: state.welcomeOfferedAt, welcomeClaimed: state.welcomeClaimed, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
 }
 export function onChange(fn) { listeners.add(fn); }
 export function changed(sync = true) { derive(); if (sync) state.dirty = true; save(); listeners.forEach(f => f(state)); }
@@ -84,12 +85,13 @@ export function applyServer(row, sent) {
   let pending = false; COUNTERS.forEach(k => { if (delta[k]) { s[k] += delta[k]; pending = true; } });
   const c = emptyCards(); CARD_IDS.forEach(id => { if (row.cards?.[id]) c[id] = { level: row.cards[id].level | 0, frags: row.cards[id].frags | 0 }; }); state.cards = c;
   state.dailyClaimedOn = row.daily_claimed_on || null; state.falconUntil = row.falcon_until ? Date.parse(row.falcon_until) : 0;
+  if ('welcome_claimed' in row) { state.welcomeClaimed = !!row.welcome_claimed; state.welcomeOfferedAt = row.welcome_offered_at ? Date.parse(row.welcome_offered_at) : null; }
   state.updatedAt = row.updated_at || null; state.dirty = pending;
   derive(); save(); listeners.forEach(f => f(state));
 }
 export function hasProgress() { const s = state.stats; return s.totalClicks > 0 || s.chestsOpened > 0 || s.tomatoesThrown > 0; }
 // Vacía el progreso local (al cerrar sesión: el progreso queda en la cuenta).
 export function resetProgress() {
-  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false;
+  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false; state.welcomeOfferedAt = null; state.welcomeClaimed = false;
   derive(); save(); listeners.forEach(f => f(state));
 }

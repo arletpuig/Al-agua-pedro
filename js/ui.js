@@ -7,7 +7,7 @@ import { CARD_ART } from './cards-art.js';
 import { backend } from './backend.js';
 import { adProvider, PLACEMENTS } from './ads.js';
 import { AVATARS, avatarSVG } from './avatars.js';
-import { titleFor } from './share.js';
+import { DEFAULT_TITLES } from './share.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => n.toLocaleString('es-ES');
 const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
@@ -37,6 +37,8 @@ export function init(handlers) {
   $('#flag-grid').addEventListener('click', e => { const b = e.target.closest('button[data-flag]'); if (b) H.onAvatar?.(b.dataset.flag); });
   $('#prof-av').addEventListener('click', () => $('#flags-title').scrollIntoView({ behavior: 'smooth', block: 'start' }));
   $('#form-name').addEventListener('submit', e => { e.preventDefault(); H.onRename?.($('#name-input').value); });
+  $('#form-title').addEventListener('submit', e => { e.preventDefault(); H.onTitle?.($('#title-input').value); });
+  $('#title-chips').addEventListener('click', e => { const b = e.target.closest('button[data-title]'); if (b) H.onTitle?.(b.dataset.title); });
   $('#btn-share').addEventListener('click', () => H.onShare?.());
   $('#share-close').addEventListener('click', () => hideShare());
   $('#share-go').addEventListener('click', () => H.onShareGo?.());
@@ -144,7 +146,7 @@ export function renderShop() {
     <div><span>Pesetas extra</span><b>${Math.round(d.pesetaChance * 100)}% · ${d.pesetas[0]}–${d.pesetas[1]}</b></div></div>`; };
   const gems = kind => { const p = E.rarityPercents(kind, state.cards); return `<div class="gems">${Object.keys(p).map(r => `<i class="gem" style="background:${E.RARITIES[r].color};opacity:${0.35 + Math.min(1, p[r] / 30) * 0.65}" title="${E.RARITIES[r].name}"></i>`).join('')}</div>`; };
   const card = (kind, ribbon) => { const d = E.CHESTS[kind], ok = state.pesetas >= d.price; return `<div class="chest-card ${kind}">
-      <i class="ribbon">${ribbon}</i>${kind === 'diamond' ? '<i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>' : ''}
+      <i class="ribbon">${ribbon}</i><i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>
       <h3>${d.name.replace(' de ', ' de<br>')}</h3>${icon(kind === 'diamond' ? 'ic-chest-dia' : 'ic-chest', 'c')}
       ${gems(kind)}
       <ul><li>${icon('ic-cards')}<b>${d.cards}</b> carta${d.cards > 1 ? 's' : ''}</li><li>${icon('ic-tomato')}<b>${d.tomatoes[0]}–${d.tomatoes[1]}</b> tomates</li><li>${icon('ic-coin')}<b>${Math.round(d.pesetaChance * 100)}%</b> pesetas extra</li></ul>
@@ -200,7 +202,7 @@ export function renderStats() {
 export function chestOpening(kind, reward) {
   return new Promise(res => {
     const ov = $('#chest-overlay'), art = $('#chest-art'), rw = $('#chest-rewards'), btn = $('#chest-btn');
-    $('#chest-title').textContent = E.CHESTS[kind].name; art.innerHTML = icon(kind === 'diamond' ? 'ic-chest-dia' : 'ic-chest'); art.className = 'chest-art'; rw.innerHTML = ''; btn.textContent = '¡ABRIR!'; btn.disabled = false;
+    $('#chest-title').textContent = E.CHESTS[kind].name; art.innerHTML = icon(kind === 'diamond' ? 'ic-chest-dia' : kind === 'welcome' ? 'ic-chest-gift' : 'ic-chest'); art.className = 'chest-art'; rw.innerHTML = ''; btn.textContent = '¡ABRIR!'; btn.disabled = false;
     ov.classList.add('open'); SFX.ui();
     btn.onclick = () => {
       btn.disabled = true; art.classList.add('shake'); SFX.chestOpen();
@@ -246,7 +248,9 @@ export function renderProfile(p) {
   const s = state.stats, thrown = s.tomatoesThrown;
   $('#prof-av-img').innerHTML = avatarSVG(p.avatar, 92);
   $('#prof-name').textContent = p.name || 'Jugador';
-  $('#prof-title').textContent = titleFor(s.falls);
+  $('#prof-title').textContent = p.title;
+  const ti = $('#title-input'); if (document.activeElement !== ti) ti.value = p.title || '';
+  $('#title-chips').innerHTML = DEFAULT_TITLES.map(t => `<button type="button" data-title="${esc(t)}" class="${t === p.title ? 'on' : ''}">${esc(t)}</button>`).join('');
   $('#prof-mail').textContent = p.email || '';
   const inp = $('#name-input'); if (document.activeElement !== inp) inp.value = p.name || '';
   const stats = [[fmt(s.falls), 'Pedro al agua'], [thrown ? Math.round(100 * s.perfects / thrown) + '%' : '—', 'Puntería'], [fmt(s.tomatoesEarned), 'Tomates'], [p.rank ? '#' + fmt(p.rank) : '—', 'Ranking']];

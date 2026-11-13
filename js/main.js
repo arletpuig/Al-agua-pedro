@@ -9,14 +9,15 @@ import { createArena } from './game/arena.js';
 import { initPlay, throwTomatoes, stopNow, isBusy, testRng } from './play.js';
 import { setEnabled, SFX } from './audio.js';
 import { DEFAULT_AVATAR } from './avatars.js';
-import { renderShareCard, canvasBlob } from './share.js';
+import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
+import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
 
 const $ = s => document.querySelector(s);
 let saveTimer = null, saving = null, falconWas = false, opening = false, shareFile = null, shareURL = null;
 // Hay que jugar con cuenta. Solo las pruebas automáticas pueden jugar sin ella (?debug&guest).
 const GUEST_OK = location.search.includes('debug') && /[?&]guest\b/.test(location.search);
 const PROFILE_KEY = 'alaguapedro.profile';
-const profile = { name: null, avatar: null, email: '', rank: null };
+const profile = { name: null, avatar: null, title: null, email: '', rank: null };
 try { Object.assign(profile, JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}); } catch (e) {}
 
 window.__aapStep?.('Iniciando');
@@ -24,7 +25,7 @@ load();
 setEnabled(state.sound);
 const { scene } = createArena('game', { top: 58, bottom: 252 });
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank,
-  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onShare: share, onShareGo: shareGo, onShareSave: shareSave });
+  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onTitle: saveTitle, onShare: share, onShareGo: shareGo, onShareSave: shareSave });
 ui.setAccountUI(null, null, profile.avatar || DEFAULT_AVATAR);
 ui.setSoundUI(state.sound, state.music); ui.hud();
 // Pedro provocando en la pantalla de acceso (un fotograma real de la escena)
@@ -35,7 +36,8 @@ function gatePedro() {
 }
 const start = () => {
   try { gatePedro(); } catch (e) {}
-  window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: () => pushNow() });
+  window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { pushNow(); if (r?.[0]?.fall) maybeOffer(); } });
+  initGift(ui, e => fail(e)); if (!ui.gated()) restoreGift();
   if (state.welcome && !ui.gated()) setTimeout(() => ui.showToast(`🎁 ¡Regalo de bienvenida! ${CONFIG.WELCOME.tomatoes} tomates y ${CONFIG.WELCOME.pesetas} pesetas para empezar`, 4200), 900);
 };
 scene.ready ? start() : scene.bus.once('ready', start);
@@ -45,7 +47,7 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   const on = falconActive(); if (on && !falconWas) { scene.falconFly?.(); ui.showToast('✈️ ¡El Falcón despega! Clics ×5'); } falconWas = on;
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.renderShop();
 }, 1000);
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
@@ -93,7 +95,7 @@ async function afterLogin(user) {
   try {
     ui.gate(false);
     let row = await sb.getProfile();
-    setProfile({ name: row?.username || user.user_metadata?.username || user.user_metadata?.full_name || null, avatar: row?.avatar || null, email: user.email || '', rank: null }, user);
+    setProfile({ name: row?.username || user.user_metadata?.username || user.user_metadata?.full_name || null, avatar: row?.avatar || null, title: row?.title || null, email: user.email || '', rank: null }, user);
     // la primera vez se invita a elegir bandera y nombre
     const askKey = 'alaguapedro.askedFlag.' + user.id;
     if (row && !row.avatar && !localStorage.getItem(askKey)) { try { localStorage.setItem(askKey, '1'); } catch (e) {} setTimeout(() => { ui.openPanel('#panel-profile'); ui.showToast('🚩 Elige tu bandera y tu nombre de jugador', 3500); }, 700); }
@@ -104,7 +106,7 @@ async function afterLogin(user) {
       row = await sb.importGuest({ totalClicks: s.totalClicks, legacyClicks: s.legacyClicks, legacyTomatoes: s.legacyTomatoes, tomatoesThrown: s.tomatoesThrown, hits: s.hits, perfects: s.perfects, falls: s.falls, pesetasEarned: s.pesetasEarned, tomatoesRefunded: s.tomatoesRefunded || 0, paguitasPesetas: s.paguitasPesetas || 0, chestTomatoes: s.chestTomatoes, chestPesetas: s.chestPesetas, pesetasSpent: s.pesetasSpent, chestsOpened: s.chestsOpened, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn });
       applyServer(row); ui.showToast('☁️ Tu progreso se ha guardado en tu cuenta');
     } else if (row) { applyServer(row); ui.showToast('☁️ Progreso cargado de tu cuenta'); }
-    ui.hud();
+    ui.hud(); restoreGift();
   } catch (e) { ui.showToast('No se pudo cargar tu progreso. Inténtalo más tarde.', 3500, true); }
 }
 
@@ -132,7 +134,7 @@ onForm('#form-recover', async f => { ui.accMsg('Enviando...'); await sb.recover(
 onForm('#form-newpass', async f => { ui.accMsg('Guardando...'); await sb.updatePassword(f.password.value); const u = await sb.fetchUser(); f.reset(); ui.showTab('login'); ui.accMsg('✅ Contraseña cambiada', 'ok'); await afterLogin(u); });
 $('#btn-logout').addEventListener('click', async () => {
   if (state.dirty) await pushNow();
-  await sb.signOut(); resetProgress(); setProfile({ name: null, avatar: null, email: '', rank: null }, null); ui.closeAll(); ui.showTab('login'); ui.hud();
+  await sb.signOut(); resetProgress(); restoreGift(); setProfile({ name: null, avatar: null, title: null, email: '', rank: null }, null); ui.closeAll(); ui.showTab('login'); ui.hud();
   if (!GUEST_OK) ui.gate(true);
   ui.showToast('Sesión cerrada. Tu progreso queda guardado en tu cuenta.');
 });
@@ -140,7 +142,7 @@ function traducir(m = '') {
   const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
   // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
-  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
+  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {
@@ -161,11 +163,11 @@ function traducir(m = '') {
 // ---------- perfil ----------
 function setProfile(p, user = sb.auth.user) {
   Object.assign(profile, p);
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: profile.name, avatar: profile.avatar })); } catch (e) {}
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: profile.name, avatar: profile.avatar, title: profile.title })); } catch (e) {}
   ui.setAccountUI(user, profile.name, profile.avatar || DEFAULT_AVATAR);
   if ($('#panel-profile').classList.contains('open')) ui.renderProfile(view());
 }
-const view = () => ({ ...profile, avatar: profile.avatar || DEFAULT_AVATAR, logged: !!sb.auth.user });
+const view = () => ({ ...profile, avatar: profile.avatar || DEFAULT_AVATAR, title: profile.title || defaultTitle(sb.auth.user?.id || profile.name || ''), logged: !!sb.auth.user });
 async function showProfile() {
   ui.renderProfile(view());
   if (sb.auth.user) try { profile.rank = await sb.myRank(); ui.renderProfile(view()); } catch (e) {}
@@ -184,6 +186,14 @@ async function pickAvatar(id) {
   if (id === profile.avatar) return;
   try { await saveProfile(profile.name || '', id); SFX.upgrade(); ui.showToast('🚩 ¡Bandera puesta!'); } catch (e) { fail(e); }
 }
+async function saveTitle(t) {
+  t = String(t || '').trim().replace(/\s+/g, ' ');
+  try {
+    if (sb.auth.user) { const row = await sb.setTitle(t); setProfile({ title: row.title }); }
+    else { if (t.length < 2 || t.length > 28) throw new Error('El título debe tener entre 2 y 28 caracteres'); setProfile({ title: t }); }
+    ui.renderProfile(view()); SFX.upgrade(); ui.showToast('🎖️ Título puesto'); $('#title-input').blur();
+  } catch (e) { fail(e); }
+}
 async function rename(name) {
   try { await saveProfile(name, profile.avatar); SFX.upgrade(); ui.showToast('✅ Nombre cambiado'); $('#name-input').blur(); } catch (e) { fail(e); }
 }
@@ -192,7 +202,7 @@ async function share() {
   ui.showShare();
   try {
     if (sb.auth.user) try { profile.rank = await sb.myRank(); } catch (e) {}
-    const cv = await renderShareCard(scene, { name: profile.name || 'Jugador', avatar: profile.avatar || DEFAULT_AVATAR, stats: state.stats, rank: profile.rank,
+    const cv = await renderShareCard(scene, { name: profile.name || 'Jugador', avatar: profile.avatar || DEFAULT_AVATAR, title: view().title, stats: state.stats, rank: profile.rank,
       cardsUnlocked: E.CARD_IDS.filter(id => E.level(state.cards, id) > 0).length, cardsTotal: E.CARD_IDS.length });
     const blob = await canvasBlob(cv);
     shareFile = new File([blob], 'al-agua-pedro.png', { type: 'image/png' });

@@ -11,6 +11,7 @@ const throwN = async n => { if (await page.locator(`#throws button[data-n="${n}"
 const shot = n => page.screenshot({ path: `tests/out/${n}.png` });
 
 console.log('1. Carga y regalo de bienvenida'); await open(page);
+await page.evaluate(() => { AAP.giftTest.off = true; });   // el cofre en paracaídas se prueba al final (apartado 24)
 check('el juego carga y la escena está lista', await page.evaluate(() => !!document.querySelector('#game canvas') && AAP.scene.ready));
 let s = await S(page);
 check('jugador nuevo: regalo de 5 tomates y 10 pesetas', s.tomatoes === 5 && s.pesetas === 10 && s.chestTomatoes === 5, `(${s.tomatoes} tomates, ${s.pesetas} pesetas)`);
@@ -236,6 +237,12 @@ await page.fill('#name-input', 'Tomatero Pro'); await page.click('#form-name but
 check('cambiar el nombre', (await txt('#prof-name')) === 'Tomatero Pro');
 await page.fill('#name-input', 'ab'); await page.click('#form-name button'); await page.waitForTimeout(200);
 check('nombre demasiado corto rechazado', (await txt('#prof-name')) === 'Tomatero Pro');
+const t0 = await page.locator('#prof-title').textContent();
+check('título de serie: uno de los cuatro', ['Azote de Ferraz', 'Gran anticomunista', 'Conservador', 'Antisanchista'].includes(t0) && await page.locator('#title-chips button').count() === 4, t0);
+await page.click('#title-chips button[data-title="Gran anticomunista"]'); await page.waitForTimeout(250);
+check('elegir un título de la lista', (await page.locator('#prof-title').textContent()) === 'Gran anticomunista' && await page.locator('#title-chips button.on').count() === 1);
+await page.fill('#title-input', 'Rey de los tomates'); await page.click('#form-title button'); await page.waitForTimeout(250);
+check('escribir tu propio título', (await page.locator('#prof-title').textContent()) === 'Rey de los tomates');
 await shot('12-perfil');
 await page.click('#btn-share'); await page.waitForFunction(() => document.querySelector('#share-img').naturalWidth > 0, null, { timeout: 15000 });
 check('imagen para compartir de 1080×1920', await page.evaluate(() => { const i = document.querySelector('#share-img'); return i.naturalWidth === 1080 && i.naturalHeight === 1920; }));
@@ -259,6 +266,28 @@ check('Google sin activar en Supabase: aviso claro', (await p3.locator('#acc-msg
 googleOn = true; await p3.click('#btn-google'); await p3.waitForURL(/authorize/, { timeout: 5000 }).catch(() => {});
 check('Google activado: va a Supabase con proveedor google y vuelve al juego', authorize?.searchParams.get('provider') === 'google' && /localhost:8080\//.test(authorize?.searchParams.get('redirect_to') || ''), String(authorize));
 await p3.close();
+
+console.log('24. Regalo de bienvenida en paracaídas');
+await page.evaluate(async () => { AAP.giftTest.off = false; AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = null; (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+await give(page, { tomatoes: 2 }); before = await S(page);
+await throwN(1); await stopAt(page, 0, 10); await idle(page);
+check('al tirar a Pedro baja un cofre en paracaídas', await page.evaluate(() => !document.querySelector('#gift-drop').classList.contains('hidden')));
+await page.waitForSelector('#gift-overlay.open', { timeout: 8000 });
+check('pantalla del regalo con cuenta atrás de 10 minutos', /^(10:00|9:5\d)$/.test(await txt('#gift-left')), await txt('#gift-left'));
+await shot('16-regalo');
+await page.click('#gift-later'); await page.waitForTimeout(300);
+check('«Más tarde»: el cofre se queda a la izquierda con su cuenta atrás', await page.locator('#gift-slot').isVisible() && /^\d:\d\d$/.test(await txt('#gift-timer')));
+before = await S(page);
+await page.click('#gift-slot', { force: true }); await page.waitForTimeout(200); await page.click('#gift-watch', { force: true });
+check('para abrirlo hay que ver un vídeo', await page.evaluate(() => document.querySelector('#ad-overlay').classList.contains('open')));
+await page.waitForSelector('#chest-overlay.open', { timeout: 8000 }); await page.click('#chest-btn');
+await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 10000 }); await page.click('#chest-btn'); await page.waitForTimeout(300);
+s = await S(page);
+check('el regalo da 50–60 pesetas, 30–40 tomates y 2 cartas', s.chestPesetas - before.chestPesetas >= 50 && s.chestPesetas - before.chestPesetas <= 60 && s.chestTomatoes - before.chestTomatoes >= 30 && s.chestTomatoes - before.chestTomatoes <= 40 && !(await page.locator('#gift-slot').isVisible()), `(+${s.chestPesetas - before.chestPesetas} pesetas, +${s.chestTomatoes - before.chestTomatoes} tomates)`);
+check('solo se puede abrir una vez', await page.evaluate(() => AAP.backend.claimWelcome().then(() => false, e => /Ya has abierto/.test(e.message))));
+await page.evaluate(async () => { AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = AAP.backend.now() - 11 * 60000; (await import('./js/gift.js')).restoreGift(); });
+check('a los 10 minutos caduca y desaparece', !(await page.locator('#gift-slot').isVisible()) && await page.evaluate(() => AAP.backend.claimWelcome().then(() => false, e => /caducado/.test(e.message))));
+await page.evaluate(() => { AAP.state.welcomeClaimed = true; });
 
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

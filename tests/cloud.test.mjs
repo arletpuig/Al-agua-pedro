@@ -157,11 +157,18 @@ await page.waitForURL(/localhost:8080\/\?debug/, { timeout: 15000 }); await page
 await page.waitForFunction(() => /YA ES TUYO/.test(document.querySelector('#paid-title')?.textContent || ''), null, { timeout: 20000 }).catch(() => {});
 row = db(email); s = await S(page);
 check('la compra se pide al servidor con la sesión del jugador y el pack elegido', payRequests.length === 1 && payRequests[0].pack === 'maletin' && /^http:\/\/localhost:8080\//.test(payRequests[0].returnUrl), JSON.stringify(payRequests));
-check('al volver del pago: +550 pesetas y +220 tomates, en el servidor y en el juego', row.chest_pesetas === before.chest_pesetas + 550 && row.chest_tomatoes === before.chest_tomatoes + 220 && s.pesetas === row.pesetas, `(${before.pesetas} → ${row.pesetas})`);
+check('al volver del pago (Caso Koldo): +750 pesetas y +300 tomates, en el servidor y en el juego', row.chest_pesetas === before.chest_pesetas + 750 && row.chest_tomatoes === before.chest_tomatoes + 300 && s.pesetas === row.pesetas, `(${before.pesetas} → ${row.pesetas})`);
 check('pantalla «¡YA ES TUYO!» y la dirección queda limpia', /YA ES TUYO/.test(await txt('#paid-title')) && !page.url().includes('pago='), page.url());
 check('el pago solo se entrega una vez', psql(`select public.grant_pack('cs_test_e2e', '${row.user_id}', 'maletin', 299, 'eur')`, 'service_role') === 'f' && db(email).chest_pesetas === row.chest_pesetas);
 check('un jugador no puede entregarse pesetas a sí mismo', (() => { try { psql(`select public.grant_pack('cs_trampa', '${row.user_id}', 'camara', 0, 'eur')`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
 await page.click('#paid-ok', { force: true });
+before = db(email);
+psql(`select public.grant_pack('cs_test_psoe', '${row.user_id}', 'camara', 995, 'eur')`, 'service_role');
+row = db(email);
+const premium = JSON.parse(psql(`select reward from public.purchases where stripe_session = 'cs_test_psoe'`));
+const fr = c => Object.values(c).reduce((a, x) => a + x.level * 100 + x.frags, 0);
+check('Financiación ilegal PSOE: +3.000 pesetas, +1.200 tomates y 4 cartas épicas o legendarias', row.chest_tomatoes === before.chest_tomatoes + 1200 && row.chest_pesetas >= before.chest_pesetas + 3000
+  && premium.cards.length === 4 && premium.cards.every(c => ['epic', 'legendary'].includes(c.rarity)) && fr(row.cards) > fr(before.cards), JSON.stringify(premium.cards.map(c => c.id)));
 
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#rank-list');

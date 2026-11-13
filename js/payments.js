@@ -20,7 +20,8 @@ export function initPayments(uiRef, failFn, refreshFn) {
   $('#pay-go').addEventListener('click', go);
   $('#paid-ok').addEventListener('click', () => $('#paid-overlay').classList.remove('open'));
 }
-const list = p => `<li>${icon('ic-coin')}<b>+${fmt(p.pesetas)}</b><span>pesetas</span></li><li>${icon('ic-tomato')}<b>+${fmt(p.tomatoes)}</b><span>tomates</span></li>`;
+const list = p => `<li>${icon('ic-coin')}<b>+${fmt(p.pesetas)}</b><span>pesetas</span></li><li>${icon('ic-tomato')}<b>+${fmt(p.tomatoes)}</b><span>tomates</span></li>`
+  + (p.cards ? `<li>${icon('ic-cards')}<b>+${p.cards}</b><span>cartas top</span></li>` : '');
 
 export function openPack(id) {
   const p = E.PACKS[id]; if (!p) return;
@@ -62,7 +63,10 @@ export async function awaitPurchase(session) {
       try { await refresh(); } catch (e) {}
       $('#paid-art').innerHTML = `<i class="glow"></i>${icon(p.icon)}`;
       $('#paid-title').textContent = '¡YA ES TUYO!'; $('#paid-sub').textContent = p.name;
-      $('#paid-list').innerHTML = list({ pesetas: row.pesetas, tomatoes: row.tomatoes });
+      const won = row.reward?.cards || [];
+      $('#paid-list').innerHTML = list({ pesetas: row.reward?.pesetas ?? row.pesetas, tomatoes: row.tomatoes, cards: won.length })
+        + won.map(c => `<li class="won" style="--rc:${E.RARITIES[E.CARDS[c.id]?.rarity]?.color || '#fff'}"><span>${E.CARDS[c.id]?.name || c.id}</span><em>${c.isNew ? '¡NUEVA!' : c.locked ? `${c.have}/${c.need}` : `+${c.frags} frag.`}</em></li>`).join('');
+      if (won.length) ui.markNewCards?.(won.filter(c => c.isNew).map(c => c.id));
       ok.classList.remove('hidden'); SFX.chestOpen?.(); SFX.coin?.(); ui.hud();
       return true;
     }

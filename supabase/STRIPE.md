@@ -9,9 +9,9 @@
 
 | Pack | Precio (IVA incluido) | Entrega |
 |---|---|---|
-| Calderilla | 0,99 € | 150 pesetas + 60 tomates |
-| Maletín | 2,99 € | 550 pesetas + 220 tomates |
-| Cámara acorazada | 9,95 € | 2.200 pesetas + 900 tomates (más valor) |
+| Organización criminal (`calderilla`) | 0,99 € | 200 pesetas + 80 tomates |
+| Caso Koldo (`maletin`) | 2,99 € | 750 pesetas + 300 tomates |
+| Financiación ilegal PSOE (`camara`) | 9,95 € | 3.000 pesetas + 1.200 tomates + 4 cartas épicas o legendarias (más valor) |
 
 Lo que entrega cada pack está en `fn_pack` (`schema_v11.sql`) y en `PACKS` (`js/economy.js`); el precio, en Stripe.
 
@@ -23,7 +23,7 @@ Lo que entrega cada pack está en `fn_pack` (`schema_v11.sql`) y en `PACKS` (`js
 
 ### 2. Stripe: los tres productos
 *Catálogo de productos → Añadir producto*, tres veces:
-- Nombre: «Calderilla», «Maletín», «Cámara acorazada».
+- Nombre en Stripe descriptivo (sale en la página de pago, el extracto y la factura): «Pack de 200 pesetas – Al Agua Pedro», «Pack de 750 pesetas – Al Agua Pedro», «Pack de 3.000 pesetas y 4 cartas – Al Agua Pedro». Los nombres de broma los pone el juego.
 - Precio: **pago único** en EUR: 0,99 / 2,99 / 9,95.
 - **Incluir impuestos en el precio: sí** (el precio final es el que ve el jugador).
 - **Código fiscal del producto**: elige uno para contenido digital / objetos virtuales de videojuego en la lista de Stripe (https://docs.stripe.com/tax/tax-codes) y confírmalo con tu gestor.

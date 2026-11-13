@@ -162,13 +162,14 @@ function packCard(p) {
   const floor = FLOOR[p.id].map(([x, y, r]) => `<svg class="fc" style="left:${x}%;bottom:${y}px;transform:rotate(${r}deg)"><use href="#ic-coin"/></svg>`).join('')
     + GEMS[p.id].map(([x, y, g]) => `<i class="fg ${g}" style="left:${x}%;bottom:${y}px"></i>`).join('');
   return `<div class="pack ${p.id}${p.best ? ' best' : ''}">
-    <i class="pk-rays"></i><i class="ribbon">${p.best ? '¡MÁS VALOR!' : '¡OFERTA!'}</i>${p.best ? '<i class="pk-x">×2,2</i>' : ''}
+    <i class="pk-rays"></i><i class="ribbon">${p.best ? '¡MÁS VALOR!' : '¡OFERTA!'}</i>${p.best ? `<i class="pk-x">×${String(Math.round(p.pesetas / p.base * 10) / 10).replace('.', ',')}</i>` : ''}
     <i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>
     <div class="pk-art">${icon(p.icon)}</div>
     <div class="pk-info"><h3>${p.name}</h3>
       <div class="pk-amount">${icon('ic-coin')}<b>${fmt(p.pesetas)}</b></div>
       <div class="pk-was"><s>${fmt(p.base)}</s><i>+${bonus}%</i></div>
       <div class="pk-tom">${icon('ic-tomato')}+${fmt(p.tomatoes)} tomates</div>
+      ${p.cards ? `<div class="pk-cards">${icon('ic-cards')}+${p.cards} cartas épicas o legendarias</div>` : ''}
       <button class="pk-buy" data-pack="${p.id}">${p.price} €</button></div>
     <i class="floor">${floor}</i></div>`;
 }

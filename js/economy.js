@@ -50,9 +50,9 @@ export const WELCOME_MINUTES = 10;
 // Packs de pesetas de pago (Stripe). Un jugador normal gana unas 25–40 pesetas al día.
 // «base» es la cantidad normal; la de ahora lleva el bonus de lanzamiento. Deben coincidir con fn_pack (schema_v11.sql).
 export const PACKS = {
-  calderilla: { id: 'calderilla', name: 'Calderilla', price: '0,99', pesetas: 150, base: 100, tomatoes: 60, icon: 'ic-pack-coins' },
-  maletin: { id: 'maletin', name: 'Maletín', price: '2,99', pesetas: 550, base: 300, tomatoes: 220, icon: 'ic-pack-case' },
-  camara: { id: 'camara', name: 'Cámara acorazada', price: '9,95', pesetas: 2200, base: 1000, tomatoes: 900, icon: 'ic-pack-vault', best: true },
+  calderilla: { id: 'calderilla', name: 'Organización criminal', price: '0,99', pesetas: 200, base: 100, tomatoes: 80, cards: 0, icon: 'ic-pack-coins' },
+  maletin: { id: 'maletin', name: 'Caso Koldo', price: '2,99', pesetas: 750, base: 300, tomatoes: 300, cards: 0, icon: 'ic-pack-case' },
+  camara: { id: 'camara', name: 'Financiación ilegal PSOE', price: '9,95', pesetas: 3000, base: 1000, tomatoes: 1200, cards: 4, icon: 'ic-pack-vault', best: true },
 };
 const WELCOME_WEIGHTS = { common: 60, rare: 30, epic: 10, legendary: 0 };
 export const FALCON = { mult: 5, minutes: 10 };

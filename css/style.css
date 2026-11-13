@@ -588,3 +588,12 @@ svg { display: block; }
 .pay-legal a { color: #ffe766; }
 .btn-gold:disabled { filter: grayscale(.8) brightness(.75); animation: none; }
 .pay-secure { margin: 0; font: 700 12px 'Baloo 2'; color: #ffe8c2; }
+
+/* v19: cartas del pack grande */
+.pk-cards { display: flex; align-items: center; gap: 4px; margin-top: 2px; padding: 2px 8px; border-radius: 10px; background: linear-gradient(90deg, #7a3fe0, #c58bff); border: 2px solid var(--ink); width: fit-content;
+  font: 800 12.5px 'Baloo 2'; line-height: 1.15; color: #fff; text-shadow: 0 1px 2px #000a; animation: pkpulse 1.6s ease-in-out infinite; }
+@keyframes pkpulse { 50% { transform: scale(1.05); box-shadow: 0 0 14px #c58bff; } }
+.pk-cards svg { width: 20px; height: 20px; }
+.gift-list li.won { min-width: 0; flex-direction: row; gap: 6px; padding: 4px 10px; background: linear-gradient(#2c0d63, #1a0640); border-color: var(--rc); }
+.gift-list li.won span { color: #fff; font-size: 13px; } .gift-list li.won em { font: 12px 'Titan One'; font-style: normal; color: #ffe766; }
+#paid-list { flex-wrap: wrap; justify-content: center; max-width: 360px; }

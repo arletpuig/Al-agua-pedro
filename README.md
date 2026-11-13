@@ -62,7 +62,7 @@ Tras cambiar la ilustración de referencia: `python3 tools/pedro-parts.py` (nece
 Ver `tests/README.md`.
 
 ## Pagos (Stripe)
-Packs de pesetas en la Tienda: Calderilla 0,99 € (150 pesetas + 60 tomates), Maletín 2,99 € (550 + 220) y Cámara acorazada 9,95 € (2.200 + 900, el de más valor), con bonus de lanzamiento. Pago con Stripe Checkout desde la función `supabase/functions/crear-pago`; las pesetas las entrega solo el webhook `supabase/functions/stripe-webhook` (firma comprobada, una vez por pago). Se encienden con `CONFIG.PAYMENTS` (`js/config.js`). Guía completa: `supabase/STRIPE.md`. Condiciones: `legal/compras.html`.
+Packs de pesetas en la Tienda: Organización criminal 0,99 € (200 pesetas + 80 tomates), Caso Koldo 2,99 € (750 + 300) y Financiación ilegal PSOE 9,95 € (3.000 + 1.200 + 4 cartas épicas o legendarias, el de más valor), con bonus de lanzamiento. Pago con Stripe Checkout desde la función `supabase/functions/crear-pago`; las pesetas las entrega solo el webhook `supabase/functions/stripe-webhook` (firma comprobada, una vez por pago). Se encienden con `CONFIG.PAYMENTS` (`js/config.js`). Guía completa: `supabase/STRIPE.md`. Condiciones: `legal/compras.html`.
 
 ## Anuncios
 - **Interruptor**: los vídeos recompensados están APAGADOS hasta que Google apruebe los anuncios (`CONFIG.REWARDED_ADS` en `js/config.js` y `aap_config.rewarded_ads` en el servidor). Apagados: el regalo de bienvenida se abre sin vídeo, cambiar de bandera es gratis y El Falcón y el Sobre muestran «PRONTO».

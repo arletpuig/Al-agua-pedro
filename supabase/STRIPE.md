@@ -36,7 +36,14 @@ Lo que entrega cada pack está en `fn_pack` (`schema_v11.sql`) y en `PACKS` (`js
 - *Ajustes → Facturación / Facturas*: datos del negocio y numeración. Cada compra genera su factura (la función usa `invoice_creation`) y Stripe la envía por correo si lo activas en *Ajustes → Correos electrónicos de clientes*.
 
 ### 4. Stripe: clave restringida (nunca la pegues en el chat)
-*Desarrolladores → Claves de API → Crear clave restringida* («alaguapedro-supabase»), con **Checkout Sessions: Escritura**. Si al probar sale un error 403, añade el permiso que indique. Se guarda solo en los secretos de Supabase (paso 6).
+1. Abre https://dashboard.stripe.com/apikeys (o *Desarrolladores → Claves de API*), en **modo real** (sin «Modo de prueba» ni «Sandbox» arriba).
+2. En **Claves restringidas** (no la «Clave secreta» `sk_live_…`), pulsa **+ Crear clave restringida**. Si pregunta para qué, elige usarla en tu propia integración.
+3. Nombre: `alaguapedro-supabase`.
+4. Permisos: busca `Checkout` y en **Checkout Sessions** marca **Escritura**. Todo lo demás, **Ninguno**.
+5. **Crear clave** (puede pedir contraseña o código del móvil).
+6. **Revelar clave** y copiarla entera: empieza por `rk_live_` (si empieza por `rk_test_`, estás en modo de prueba). En algunas cuentas solo se ve una vez.
+7. Pégala enseguida en *Supabase → Edge Functions → Secrets → Add new secret*: nombre `STRIPE_API_KEY`.
+8. Si se pierde o se filtra: en Stripe, «…» → **Revocar clave**, crea otra y cambia el secreto. Si los logs de `crear-pago` muestran un error 403 de permisos con otro recurso (p. ej. «Prices»), dale **Lectura** a ese recurso.
 
 ### 5. Supabase: base de datos y funciones
 - Ejecuta `schema_todo.sql` (incluye `schema_v11.sql`: tabla de compras y `grant_pack`).

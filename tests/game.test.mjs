@@ -229,7 +229,7 @@ await ctx2.close();
 
 console.log('22. Perfil: bandera, nombre e imagen para compartir');
 await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400);
-check('el perfil enseña las 31 banderas redondas', await page.locator('#flag-grid .flag').count() === 31 && await page.evaluate(() => getComputedStyle(document.querySelector('#flag-grid .av')).borderRadius === '50%'));
+check('el perfil enseña las 35 banderas redondas', await page.locator('#flag-grid .flag').count() === 35 && await page.evaluate(() => getComputedStyle(document.querySelector('#flag-grid .av')).borderRadius === '50%'));
 await page.click('#flag-grid [data-flag="tercios"]'); await page.waitForTimeout(300);
 check('elegir bandera la marca y la pone en la pestaña', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') === 'tercios' && (await page.locator('#tab-av').innerHTML()).includes('#c8102e'));
 await page.fill('#name-input', 'Tomatero Pro'); await page.click('#form-name button'); await page.waitForTimeout(300);

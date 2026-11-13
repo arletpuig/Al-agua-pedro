@@ -20,7 +20,7 @@ AddType font/woff2 .woff2
     Header set Cache-Control "no-cache"
   </FilesMatch>
   # imágenes y fuentes: una semana
-  <FilesMatch "\.(png|svg|woff2|ico)$">
+  <FilesMatch "\.(png|jpg|svg|woff2|ico)$">
     Header set Cache-Control "public, max-age=604800"
   </FilesMatch>
   Header always set X-Content-Type-Options "nosniff"

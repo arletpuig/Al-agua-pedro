@@ -12,5 +12,5 @@ begin;
 drop view if exists public.leaderboard;
 
 H
-for f in schema schema_v2 schema_v3 schema_v4 schema_v5 schema_v6 schema_v7; do printf '\n-- ===================================================================== %s.sql\n' "$f"; cat $f.sql; done
+for f in schema schema_v2 schema_v3 schema_v4 schema_v5 schema_v6 schema_v7 schema_v8; do printf '\n-- ===================================================================== %s.sql\n' "$f"; cat $f.sql; done
 printf '\ncommit;\n'; } > schema_todo.sql

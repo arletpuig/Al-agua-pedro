@@ -163,7 +163,7 @@ export function renderShop() {
       <div class="offer-info"><h3>El Falcón</h3><p>Cada pulsación vale <b>×5</b> durante <b>10 minutos</b>.</p><div id="falcon-state" class="offer-state ${fal ? 'on' : ''}">${fal ? 'ACTIVO · ' + $('#falcon-time').textContent : 'Con un vídeo'}</div></div>
       <button id="btn-falcon" class="btn-g sm" data-ad="${PLACEMENTS.FALCON}" ${adOk(PLACEMENTS.FALCON) && !fal ? '' : 'disabled'}>${adOk(PLACEMENTS.FALCON) ? 'VER VÍDEO' : 'PRONTO'}</button></div>
     <div class="offer sobre"><i class="ribbon">GRATIS</i><div class="offer-art"><svg><use href="#ic-envelope"/></svg></div>
-      <div class="offer-info"><h3>Sobre de la Moncloa</h3><p><b>5 pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen.</p><div class="offer-state">Con un vídeo</div></div>
+      <div class="offer-info"><h3>Sobre de la Moncloa</h3><p><b>${E.SOBRE.pesetas} pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen.</p><div class="offer-state">Con un vídeo</div></div>
       <button id="btn-sobre" class="btn-g sm" data-ad="${PLACEMENTS.SOBRE}" ${adOk(PLACEMENTS.SOBRE) ? '' : 'disabled'}>${adOk(PLACEMENTS.SOBRE) ? 'VER VÍDEO' : 'PRONTO'}</button></div>
     <div class="wallet">${icon('ic-coin')}<div><b>${fmt(state.pesetas)}</b> pesetas<small>Gana más tirando a Pedro al agua</small></div></div>`;
 }

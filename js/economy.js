@@ -49,7 +49,7 @@ export const CHESTS = {
 export const WELCOME_MINUTES = 10;
 const WELCOME_WEIGHTS = { common: 60, rare: 30, epic: 10, legendary: 0 };
 export const FALCON = { mult: 5, minutes: 10 };
-export const SOBRE = { pesetas: 5 };
+export const SOBRE = { pesetas: 25 };
 
 export const level = (cards, id) => cards?.[id]?.level || 0;
 export const frags = (cards, id) => cards?.[id]?.frags || 0;

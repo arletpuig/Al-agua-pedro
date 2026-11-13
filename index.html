@@ -23,6 +23,9 @@
 <meta name="twitter:image" content="https://alaguapedro.es/assets/og.jpg">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Al Agua Pedro","alternateName":"¡Al agua, Pedro!","url":"https://alaguapedro.es/","image":"https://alaguapedro.es/assets/og.jpg","description":"Juego satírico gratis para navegador: lanza tomates a la diana y tira a Pedro a la pecera de las pirañas. Pesetas, cartas mejorables y ranking.","genre":["Arcade","Humor","Sátira"],"gamePlatform":["Navegador web","Móvil","Ordenador"],"applicationCategory":"Game","operatingSystem":"Cualquiera","inLanguage":"es","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}</script>
 <script>
+// Versión de pruebas (GitHub, o ?prueba en local): siempre empieza desde cero, sin cuenta, para poder probarlo todo como un jugador nuevo.
+window.__AAP_TEST = /github\.io$/.test(location.hostname) || /[?&]prueba\b/.test(location.search);
+if (window.__AAP_TEST) { try { Object.keys(localStorage).filter(function (k) { return k.indexOf('alaguapedro.') === 0; }).forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {} }
 // la versión de pruebas (GitHub) no debe salir en Google: solo alaguapedro.es
 if (/github\.io$/.test(location.hostname)) { var m = document.createElement('meta'); m.name = 'robots'; m.content = 'noindex, nofollow'; document.head.appendChild(m); var r = document.querySelector('meta[name=robots][content^=index]'); if (r) r.remove(); }
 </script>
@@ -30,7 +33,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
 <div id="app">
@@ -228,8 +231,8 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
-  <div id="test-badge" class="test-badge hidden">PRUEBAS</div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 13</small></div>
+  <div id="test-badge" class="test-badge hidden">PRUEBAS · DESDE CERO</div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 14</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -285,12 +288,12 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 13</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 14</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
   // en GitHub (versión de pruebas) se marca para no confundirla con alaguapedro.es
-  if (/github\.io$/.test(location.hostname)) document.addEventListener('DOMContentLoaded', function () { var b = document.getElementById('test-badge'); if (b) b.classList.remove('hidden'); });
+  if (window.__AAP_TEST) document.addEventListener('DOMContentLoaded', function () { var b = document.getElementById('test-badge'); if (b) b.classList.remove('hidden'); });
   window.addEventListener('error', function (e) {
     var t = e.target; if (t && (t.src || t.href)) fail('No se encuentra ' + String(t.src || t.href).split('/').slice(-2).join('/'));
     else fail((e.message || 'Error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
@@ -299,7 +302,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=13"></script>
+<script type="module" src="js/main.js?v=14"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>
 </html>

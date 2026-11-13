@@ -15,7 +15,9 @@ import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
 const $ = s => document.querySelector(s);
 let saveTimer = null, saving = null, falconWas = false, opening = false, shareFile = null, shareURL = null;
 // Hay que jugar con cuenta. Solo las pruebas automáticas pueden jugar sin ella (?debug&guest).
-const GUEST_OK = location.search.includes('debug') && /[?&]guest\b/.test(location.search);
+// La versión de pruebas (GitHub) juega sin cuenta y empieza siempre desde cero (index.html borra el progreso local al cargar).
+const TEST_HOST = !!window.__AAP_TEST;
+const GUEST_OK = TEST_HOST || (location.search.includes('debug') && /[?&]guest\b/.test(location.search));
 const PROFILE_KEY = 'alaguapedro.profile';
 const profile = { name: null, avatar: null, title: null, email: '', rank: null };
 try { Object.assign(profile, JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}); } catch (e) {}
@@ -146,7 +148,7 @@ function traducir(m = '') {
 }
 // ---------- arranque de sesión ----------
 (async () => {
-  if (!hasBackend) return;
+  if (!hasBackend || TEST_HOST) return;          // pruebas: nunca entra en una cuenta real
   if (!GUEST_OK) ui.gate(true);                 // sin sesión no se juega
   let back = false;
   try { back = sb.consumeAuthHash(); } catch (e) { ui.accMsg('❌ ' + traducir(e.message), 'err'); }

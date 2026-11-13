@@ -289,5 +289,13 @@ await page.evaluate(async () => { AAP.state.welcomeClaimed = false; AAP.state.we
 check('a los 10 minutos caduca y desaparece', !(await page.locator('#gift-slot').isVisible()) && await page.evaluate(() => AAP.backend.claimWelcome().then(() => false, e => /caducado/.test(e.message))));
 await page.evaluate(() => { AAP.state.welcomeClaimed = true; });
 
+console.log('25. Versión de pruebas: siempre desde cero');
+const p4 = await ctx.newPage(); await mockTime(p4);
+await open(p4, URL_LOGIN.replace('?debug', '?debug&prueba')); await p4.waitForTimeout(300);
+const fresh = await p4.evaluate(() => ({ clicks: AAP.state.stats.totalClicks, falls: AAP.state.stats.falls, gate: document.querySelector('#panel-account').classList.contains('open'), badge: !document.querySelector('#test-badge').classList.contains('hidden'), tom: AAP.state.tomatoes }));
+check('la versión de pruebas empieza de cero, sin pedir cuenta y con la marca PRUEBAS', fresh.clicks === 0 && fresh.falls === 0 && !fresh.gate && fresh.badge && fresh.tom === 5, JSON.stringify(fresh));
+await p4.close();
+check('Sobre de la Moncloa: 25 pesetas', await page.evaluate(() => AAP.E.SOBRE.pesetas === 25));
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

@@ -51,7 +51,7 @@ export const WELCOME_MINUTES = 10;
 // «base» es la cantidad normal; la de ahora lleva el bonus de lanzamiento. Deben coincidir con fn_pack (schema_v11.sql).
 export const PACKS = {
   calderilla: { id: 'calderilla', name: 'Organización criminal', price: '1,99', pesetas: 750, base: 400, tomatoes: 300, cards: 0, icon: 'ic-pack-coins' },
-  maletin: { id: 'maletin', name: 'Caso Koldo', price: '2,99', pesetas: 1300, base: 600, tomatoes: 520, cards: 0, icon: 'ic-pack-case' },
+  maletin: { id: 'maletin', name: 'Caso Koldo', price: '3,99', pesetas: 1750, base: 800, tomatoes: 700, cards: 0, icon: 'ic-pack-case' },
   camara: { id: 'camara', name: 'Financiación ilegal PSOE', price: '9,95', pesetas: 5000, base: 2000, tomatoes: 2000, cards: 4, icon: 'ic-pack-vault', best: true },
 };
 const WELCOME_WEIGHTS = { common: 60, rare: 30, epic: 10, legendary: 0 };

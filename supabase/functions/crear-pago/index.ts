@@ -5,7 +5,7 @@
 // Secretos (Supabase → Edge Functions → Secrets):
 //   STRIPE_API_KEY            clave restringida de Stripe (rk_...) con permiso «Checkout Sessions: Write»
 //   STRIPE_PRICE_CALDERILLA   id del precio de 1,99 € (price_...)
-//   STRIPE_PRICE_MALETIN      id del precio de 2,99 €
+//   STRIPE_PRICE_MALETIN      id del precio de 3,99 €
 //   STRIPE_PRICE_CAMARA       id del precio de 9,95 €
 //   STRIPE_AUTOMATIC_TAX      «true» solo cuando tengas un registro de impuestos activo en Stripe Tax
 // SUPABASE_URL y SUPABASE_ANON_KEY los pone Supabase solo.

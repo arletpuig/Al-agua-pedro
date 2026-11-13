@@ -3,7 +3,7 @@
 --  · Las pesetas SOLO las entrega el webhook de Stripe (función supabase/functions/stripe-webhook), con la clave de servicio.
 --  · Cada pago (sesión de Stripe) se entrega una sola vez aunque Stripe repita el aviso.
 --  · El jugador puede ver sus propias compras (para que el juego sepa cuándo han llegado).
---  · Organización criminal 1,99 € (750 pesetas + 300 tomates), Caso Koldo 2,99 € (1.300 + 520) y
+--  · Organización criminal 1,99 € (750 pesetas + 300 tomates), Caso Koldo 3,99 € (1.750 + 700) y
 --    Financiación ilegal PSOE 9,95 € (5.000 + 2.000 + 4 cartas épicas o legendarias).
 -- Conserva todos los jugadores y su progreso. Se puede ejecutar más de una vez.
 
@@ -29,7 +29,7 @@ grant select on public.purchases to authenticated;
 create or replace function public.fn_pack(p text) returns jsonb language sql immutable as $$
   select case p
     when 'calderilla' then '{"pesetas": 750, "tomatoes": 300, "cards": 0}'::jsonb
-    when 'maletin'    then '{"pesetas": 1300, "tomatoes": 520, "cards": 0}'::jsonb
+    when 'maletin'    then '{"pesetas": 1750, "tomatoes": 700, "cards": 0}'::jsonb
     when 'camara'     then '{"pesetas": 5000, "tomatoes": 2000, "cards": 4}'::jsonb
   end $$;
 

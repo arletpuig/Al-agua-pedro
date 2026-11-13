@@ -62,7 +62,7 @@ Tras cambiar la ilustración de referencia: `python3 tools/pedro-parts.py` (nece
 Ver `tests/README.md`.
 
 ## Pagos (Stripe)
-Packs de pesetas en la Tienda: Organización criminal 1,99 € (750 pesetas + 300 tomates), Caso Koldo 2,99 € (1.300 + 520) y Financiación ilegal PSOE 9,95 € (5.000 + 2.000 + 4 cartas épicas o legendarias, el de más valor), con bonus de lanzamiento. Pago con Stripe Checkout desde la función `supabase/functions/crear-pago`; las pesetas las entrega solo el webhook `supabase/functions/stripe-webhook` (firma comprobada, una vez por pago). Se encienden con `CONFIG.PAYMENTS` (`js/config.js`). Guía completa: `supabase/STRIPE.md`. Condiciones: `legal/compras.html`.
+Packs de pesetas en la Tienda: Organización criminal 1,99 € (750 pesetas + 300 tomates), Caso Koldo 3,99 € (1.750 + 700) y Financiación ilegal PSOE 9,95 € (5.000 + 2.000 + 4 cartas épicas o legendarias, el de más valor), con bonus de lanzamiento. Pago con Stripe Checkout desde la función `supabase/functions/crear-pago`; las pesetas las entrega solo el webhook `supabase/functions/stripe-webhook` (firma comprobada, una vez por pago). Se encienden con `CONFIG.PAYMENTS` (`js/config.js`). Guía completa: `supabase/STRIPE.md`. Condiciones: `legal/compras.html`.
 
 ## Anuncios
 - **Interruptor**: los vídeos recompensados están APAGADOS hasta que Google apruebe los anuncios (`CONFIG.REWARDED_ADS` en `js/config.js` y `aap_config.rewarded_ads` en el servidor). Apagados: el regalo de bienvenida se abre sin vídeo, cambiar de bandera es gratis y El Falcón y el Sobre muestran «PRONTO».

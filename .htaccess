@@ -16,7 +16,7 @@ AddType font/woff2 .woff2
 
 <IfModule mod_headers.c>
   # el código cambia con cada versión: el navegador pregunta siempre si hay algo nuevo (con ETag, sin volver a descargar si no ha cambiado)
-  <FilesMatch "\.(html|js|mjs|css|json)$">
+  <FilesMatch "\.(html|js|mjs|css|json|txt)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
   # imágenes y fuentes: una semana

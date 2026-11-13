@@ -31,9 +31,11 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 </script>
 <meta name="theme-color" content="#04071a">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<!-- Google AdSense (verificación de la web y anuncios). Si un bloqueador lo impide, el juego funciona igual. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7829705078320776" crossorigin="anonymous"></script>
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 <div id="app">
@@ -232,7 +234,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
   <div id="test-badge" class="test-badge hidden">PRUEBAS · DESDE CERO</div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 14</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 15</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -288,21 +290,22 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 14</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 15</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
   // en GitHub (versión de pruebas) se marca para no confundirla con alaguapedro.es
   if (window.__AAP_TEST) document.addEventListener('DOMContentLoaded', function () { var b = document.getElementById('test-badge'); if (b) b.classList.remove('hidden'); });
   window.addEventListener('error', function (e) {
-    var t = e.target; if (t && (t.src || t.href)) fail('No se encuentra ' + String(t.src || t.href).split('/').slice(-2).join('/'));
+    var t = e.target;
+    if (t && (t.src || t.href)) { var u = String(t.src || t.href); if (u.indexOf(location.origin) !== 0) return; fail('No se encuentra ' + u.split('/').slice(-2).join('/')); }
     else fail((e.message || 'Error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
   }, true);
   window.addEventListener('unhandledrejection', function (e) { fail(String(e.reason && e.reason.message || e.reason)); });
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=14"></script>
+<script type="module" src="js/main.js?v=15"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>
 </html>

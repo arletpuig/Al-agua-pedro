@@ -24,7 +24,7 @@ jobs:
       - name: Preparar solo lo necesario para jugar
         run: |
           mkdir -p dist/assets
-          cp -r index.html .htaccess robots.txt sitemap.xml css js legal dist/
+          cp -r index.html .htaccess robots.txt sitemap.xml ads.txt css js legal dist/
           cp -r assets/pedro assets/fonts assets/favicon.svg assets/og.jpg dist/assets/
           echo "Archivos a publicar:"; find dist -type f | sort
           grep -o 'versión [0-9]*' dist/index.html | head -1

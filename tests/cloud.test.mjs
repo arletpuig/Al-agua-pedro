@@ -1,7 +1,7 @@
 // Prueba de extremo a extremo de la parte online: el juego real contra las funciones SQL reales (supabase/schema*.sql)
 // en un PostgreSQL local que hace de Supabase. Preparación: sh tests/pg-reset.sh   Ejecución: node tests/cloud.test.mjs
 import { execFileSync } from 'node:child_process';
-import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid, noCombo, URL_LOGIN } from './helpers.mjs';
+import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid, noCombo, URL_LOGIN, blockAds } from './helpers.mjs';
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
@@ -146,7 +146,7 @@ console.log('H. Entrar con Google');
 const gid = psql(`insert into auth.users (email, raw_user_meta_data) values ('pepe${Date.now()}@gmail.com', '{"full_name":"Pepe Google","name":"Pepe Google"}') returning id`);
 users.set('tok-google', { id: gid, email: 'pepe@gmail.com', user_metadata: { full_name: 'Pepe Google' } });
 const ctx3 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p3 = await ctx3.newPage(); const errors3 = watchErrors(p3); await bridge(p3);
-await p3.goto(URL_LOGIN + '#access_token=tok-google&refresh_token=ref&expires_in=3600&token_type=bearer');
+await blockAds(p3); await p3.goto(URL_LOGIN + '#access_token=tok-google&refresh_token=ref&expires_in=3600&token_type=bearer');
 await p3.waitForFunction(() => window.AAP?.scene?.ready && document.querySelector('#acc-short').textContent === 'Pepe Google', null, { timeout: 15000 }).catch(() => {});
 check('vuelta de Google: entra con el nombre de su cuenta de Google', (await p3.locator('#acc-short').textContent()) === 'Pepe Google' && !(await p3.evaluate(() => document.querySelector('#panel-account').classList.contains('open'))) && !p3.url().includes('access_token'));
 await p3.waitForSelector('#panel-profile.open', { timeout: 3000 }).catch(() => {});

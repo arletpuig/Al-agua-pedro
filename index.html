@@ -9,7 +9,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
 <div id="app">
@@ -98,6 +98,7 @@
       <button class="row-btn" id="btn-stats"><svg><use href="#ic-stats"/></svg><span>Estadísticas</span><i class="go">›</i></button>
       <button class="row-btn" id="btn-account"><svg><use href="#ic-user"/></svg><span>Perfil y cuenta <small id="acc-short">Invitado</small></span><i class="go">›</i></button>
       <button class="row-btn" id="btn-help"><svg><use href="#ic-help"/></svg><span>Cómo se juega</span><i class="go">›</i></button>
+      <p class="legal-links"><a href="legal/aviso-legal.html" target="_blank" rel="noopener">Aviso legal</a><a href="legal/privacidad.html" target="_blank" rel="noopener">Privacidad</a><a href="legal/cookies.html" target="_blank" rel="noopener">Cookies</a></p>
     </div>
   </div></div>
 
@@ -131,6 +132,7 @@
         </form>
       </div>
       <p id="acc-msg" class="acc-msg"></p>
+      <p class="legal-ok">Al entrar o crear tu cuenta aceptas el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">Aviso legal</a> y la <a href="legal/privacidad.html" target="_blank" rel="noopener">Política de privacidad</a>. Debes tener al menos 14 años.</p>
     </div>
   </div></div>
 
@@ -170,7 +172,8 @@
   <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 10</small></div>
+  <div id="test-badge" class="test-badge hidden">PRUEBAS</div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 11</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -219,10 +222,12 @@
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 10</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 11</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
+  // en GitHub (versión de pruebas) se marca para no confundirla con alaguapedro.es
+  if (/github\.io$/.test(location.hostname)) document.addEventListener('DOMContentLoaded', function () { var b = document.getElementById('test-badge'); if (b) b.classList.remove('hidden'); });
   window.addEventListener('error', function (e) {
     var t = e.target; if (t && (t.src || t.href)) fail('No se encuentra ' + String(t.src || t.href).split('/').slice(-2).join('/'));
     else fail((e.message || 'Error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
@@ -231,6 +236,6 @@
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=10"></script>
+<script type="module" src="js/main.js?v=11"></script>
 </body>
 </html>

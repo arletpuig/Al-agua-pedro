@@ -1,0 +1,69 @@
+# Publica el juego en alaguapedro.es (hosting de Ionos) por SFTP.
+# Se lanza al subir a la rama «produccion» (o a mano desde la pestaña Actions).
+# GitHub Pages (rama main) sigue siendo la versión de pruebas.
+# Secretos necesarios (Settings → Secrets and variables → Actions):
+#   IONOS_SFTP_HOST, IONOS_SFTP_USER, IONOS_SFTP_PASSWORD, IONOS_SFTP_DIR
+name: Publicar en alaguapedro.es
+
+on:
+  push:
+    branches: [produccion]
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-ionos
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar solo lo necesario para jugar
+        run: |
+          mkdir -p dist/assets
+          cp -r index.html .htaccess css js legal dist/
+          cp -r assets/pedro assets/fonts assets/favicon.svg dist/assets/
+          echo "Archivos a publicar:"; find dist -type f | sort
+          grep -o 'versión [0-9]*' dist/index.html | head -1
+
+      - name: Comprobar los datos de acceso
+        env:
+          HOST: ${{ secrets.IONOS_SFTP_HOST }}
+          USER: ${{ secrets.IONOS_SFTP_USER }}
+          PASS: ${{ secrets.IONOS_SFTP_PASSWORD }}
+          DIR: ${{ secrets.IONOS_SFTP_DIR }}
+        run: |
+          for v in HOST USER PASS DIR; do if [ -z "${!v}" ]; then echo "::error::Falta el secreto IONOS_SFTP_$v (o IONOS_SFTP_PASSWORD) en Settings → Secrets and variables → Actions"; exit 1; fi; done
+          case "$DIR" in /|.|""|/.) echo "::error::IONOS_SFTP_DIR no puede ser la raíz del webspace: usa la carpeta del juego, por ejemplo /alaguapedro"; exit 1;; esac
+
+      - name: Instalar lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Subir a Ionos por SFTP
+        env:
+          HOST: ${{ secrets.IONOS_SFTP_HOST }}
+          USER: ${{ secrets.IONOS_SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+          DIR: ${{ secrets.IONOS_SFTP_DIR }}
+        run: |
+          HOST="${HOST#sftp://}"; HOST="${HOST%%/*}"
+          # sin --delete: nunca se borra nada del servidor, solo se suben y sustituyen archivos
+          lftp -u "$USER" --env-password "sftp://$HOST" -e "
+            set sftp:auto-confirm yes; set net:max-retries 3; set net:timeout 30; set net:reconnect-interval-base 5;
+            mkdir -p -f '$DIR';
+            mirror --reverse --verbose --parallel=4 --no-perms dist/ '$DIR';
+            bye"
+
+      - name: Comprobar que la web responde con la versión nueva
+        run: |
+          want=$(grep -o 'versión [0-9]*' dist/index.html | head -1)
+          for i in 1 2 3 4 5 6; do
+            got=$(curl -fsSL -H 'Cache-Control: no-cache' "https://alaguapedro.es/?c=$GITHUB_RUN_ID" | grep -o 'versión [0-9]*' | head -1 || true)
+            echo "intento $i: alaguapedro.es responde «$got» (esperada «$want»)"
+            [ "$got" = "$want" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::Los archivos se han subido, pero alaguapedro.es todavía no muestra «$want». Revisa que el dominio apunte a la carpeta IONOS_SFTP_DIR y que el SSL esté activo."

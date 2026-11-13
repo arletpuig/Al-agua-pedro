@@ -1,0 +1,33 @@
+# AL AGUA PEDRO · configuración del servidor (Ionos, Apache)
+RewriteEngine On
+# siempre https y sin www
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteRule ^ https://alaguapedro.es%{REQUEST_URI} [L,R=301]
+
+# no se sirven archivos de configuración ni ocultos
+RewriteRule (^|/)\.(?!well-known/) - [F]
+
+Options -Indexes
+AddDefaultCharset UTF-8
+AddType text/javascript .js .mjs
+AddType image/svg+xml .svg
+AddType font/woff2 .woff2
+
+<IfModule mod_headers.c>
+  # el código cambia con cada versión: el navegador pregunta siempre si hay algo nuevo (con ETag, sin volver a descargar si no ha cambiado)
+  <FilesMatch "\.(html|js|mjs|css|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  # imágenes y fuentes: una semana
+  <FilesMatch "\.(png|svg|woff2|ico)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Strict-Transport-Security "max-age=31536000"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>

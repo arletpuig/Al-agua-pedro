@@ -442,3 +442,10 @@ svg { display: block; }
 .share-wait { margin: 0; font: 18px 'Titan One'; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); }
 .share-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .share-btns button { height: 46px; padding: 0 14px; font-size: 16px; }
+
+/* ---------- v11: enlaces legales y marca de la versión de pruebas ---------- */
+.legal-ok { margin: 4px 0 0; font: 600 12px/1.4 'Baloo 2'; color: #b9c6ff; text-align: center; }
+.legal-ok a, .legal-links a { color: #ffe766; }
+.legal-links { display: flex; justify-content: center; gap: 16px; margin: 4px 0 0; font: 700 13px 'Baloo 2'; }
+.test-badge { position: absolute; left: 50%; top: calc(58px + var(--safe-top)); transform: translateX(-50%) rotate(-2deg); z-index: 7; padding: 1px 10px 2px; border-radius: 8px;
+  border: 2.5px solid var(--ink); background: linear-gradient(#ff9a3c, #e8560f); font: 12px/16px 'Titan One'; letter-spacing: .08em; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); pointer-events: none; box-shadow: 0 3px 0 #0008; }

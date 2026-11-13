@@ -67,3 +67,23 @@ jobs:
             sleep 10
           done
           echo "::warning::Los archivos se han subido, pero alaguapedro.es todavía no muestra «$want». Revisa que el dominio apunte a la carpeta IONOS_SFTP_DIR y que el SSL esté activo."
+          echo "need_diag=1" >> "$GITHUB_ENV"
+
+      - name: Diagnóstico (solo lectura) si la web no responde
+        if: env.need_diag == '1'
+        env:
+          HOST: ${{ secrets.IONOS_SFTP_HOST }}
+          USER: ${{ secrets.IONOS_SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+          DIR: ${{ secrets.IONOS_SFTP_DIR }}
+        run: |
+          HOST="${HOST#sftp://}"; HOST="${HOST%%/*}"
+          # el nombre de la carpeta no es secreto: se escribe con espacios entre letras para que GitHub no lo oculte
+          echo "== Carpeta donde se sube el juego (IONOS_SFTP_DIR), letra a letra: $(printf '%s' "$DIR" | sed 's/./& /g')"
+          echo "== Carpetas y archivos en la raíz del webspace:"
+          lftp -u "$USER" --env-password "sftp://$HOST" -e "set sftp:auto-confirm yes; cls -1 --sort=name -F /; bye" || true
+          echo "== Contenido de la carpeta del juego:"
+          lftp -u "$USER" --env-password "sftp://$HOST" -e "set sftp:auto-confirm yes; cls -1 --sort=name -F '$DIR'; bye" || true
+          for u in https://alaguapedro.es/ https://www.alaguapedro.es/ http://alaguapedro.es/; do
+            echo "== Respuesta de $u"; curl -sS -o /tmp/r.html -D - -m 20 "$u" | head -12 || true; echo "-- inicio de la página:"; head -c 600 /tmp/r.html 2>/dev/null | tr -s ' \n' ' '; echo
+          done

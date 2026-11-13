@@ -9,11 +9,12 @@ export class NoAdProvider {
 }
 export let adProvider = new NoAdProvider();
 export function setAdProvider(p) { adProvider = p; }
-export const PLACEMENTS = { FALCON: 'falcon', SOBRE: 'sobre', WELCOME: 'welcome' };
+export const PLACEMENTS = { FALCON: 'falcon', SOBRE: 'sobre', WELCOME: 'welcome', FLAG: 'flag' };
 
-// Mientras no haya proveedor: vídeo de muestra de unos segundos (solo para el regalo de bienvenida).
+// Mientras no haya proveedor: vídeo de muestra de unos segundos (regalo de bienvenida, El Falcón, Sobre de la Moncloa y cambiar de bandera).
 // Cuando se integre un proveedor real, showVideo usará ese proveedor.
 export const DEMO_AD = { seconds: 5 };
+export const canShowVideo = placement => true;     // con proveedor real: adProvider.isAvailable(placement)
 export async function showVideo(placement) {
   if (adProvider.isAvailable(placement)) return adProvider.showRewarded(placement);
   const ov = document.querySelector('#ad-overlay'), cnt = document.querySelector('#ad-count');

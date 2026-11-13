@@ -103,13 +103,19 @@ s = await S(page);
 check('los tomates históricos no bajan al lanzar', s.tomatoesEarned === Math.floor(s.totalClicks / 200) + s.chestTomatoes && s.tomatoes === s.tomatoesEarned - s.tomatoesThrown, `(históricos ${s.tomatoesEarned}, disponibles ${s.tomatoes})`);
 check('las estadísticas lo muestran', await page.evaluate(n => { AAP.ui.renderStats(); return document.querySelector('#stats-list').innerText.includes(n.toLocaleString('es-ES')); }, s.tomatoesEarned));
 
-console.log('18. Anuncios no integrados');
+console.log('18. Vídeos recompensados de la tienda (vídeo de muestra)');
+await page.evaluate(async () => { (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
 await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(300); await shot('06-tienda');
-check('botones de vídeo desactivados y "PRONTO"', await page.locator('#btn-falcon').isDisabled() && await page.locator('#btn-sobre').isDisabled() && (await txt('#btn-falcon')).includes('PRONTO'));
+check('botones de vídeo activos', !(await page.locator('#btn-sobre').isDisabled()) && (await txt('#btn-sobre')).includes('VÍDEO'));
 before = await S(page);
-const adErr = await page.evaluate(async () => { const out = []; for (const p of ['falcon', 'sobre']) { try { await AAP.backend.watchAd(p); out.push('CONCEDIDO'); } catch (e) { out.push(e.message); } } return out; });
-s = await S(page);
-check('los anuncios no conceden recompensas', adErr.every(m => m.includes('no están disponibles')) && s.pesetas === before.pesetas && s.falcon === 0, adErr[0]);
+await page.click('#btn-sobre'); await page.waitForTimeout(300);
+check('el Sobre pone un vídeo', await page.evaluate(() => document.querySelector('#ad-overlay').classList.contains('open')));
+await page.waitForTimeout(1500); s = await S(page);
+check('Sobre de la Moncloa: +25 pesetas tras el vídeo', s.pesetas === before.pesetas + 25, `(${before.pesetas} → ${s.pesetas})`);
+await page.evaluate(async () => { AAP.state.stats.chestPesetas -= 25; (await import('./js/state.js')).changed(false); });   // se devuelven para no alterar las pruebas siguientes
+await page.click('#btn-falcon'); await page.waitForTimeout(1700); s = await S(page);
+check('El Falcón se activa tras el vídeo', s.falcon > Date.now() && await page.locator('#btn-falcon').isDisabled());
+await page.evaluate(() => { AAP.state.falconUntil = 0; });
 await page.click('#panel-shop [data-close]');
 
 console.log('El Falcón: indicador y multiplicador (estado simulado, sin anuncio)');
@@ -233,6 +239,11 @@ await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400)
 check('el perfil enseña las 35 banderas redondas', await page.locator('#flag-grid .flag').count() === 35 && await page.evaluate(() => getComputedStyle(document.querySelector('#flag-grid .av')).borderRadius === '50%'));
 await page.click('#flag-grid [data-flag="tercios"]'); await page.waitForTimeout(300);
 check('elegir bandera la marca y la pone en la pestaña', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') === 'tercios' && (await page.locator('#tab-av').innerHTML()).includes('#c8102e'));
+await page.evaluate(async () => { (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+await page.click('#flag-grid [data-flag="vox"]'); await page.waitForTimeout(300);
+check('cambiar de bandera pide ver un vídeo', await page.evaluate(() => document.querySelector('#ad-overlay').classList.contains('open')) && await page.locator('#flag-note').isVisible());
+await page.waitForTimeout(1500);
+check('después del vídeo se pone la bandera nueva', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') === 'vox', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') + ' · ' + await page.locator('#toast').innerText());
 await page.fill('#name-input', 'Tomatero Pro'); await page.click('#form-name button'); await page.waitForTimeout(300);
 check('cambiar el nombre', (await txt('#prof-name')) === 'Tomatero Pro');
 await page.fill('#name-input', 'ab'); await page.click('#form-name button'); await page.waitForTimeout(200);

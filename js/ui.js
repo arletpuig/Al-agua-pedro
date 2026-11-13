@@ -5,7 +5,7 @@ import { SFX, setEnabled, setMusic, unlock } from './audio.js';
 import * as E from './economy.js';
 import { CARD_ART } from './cards-art.js';
 import { backend } from './backend.js';
-import { adProvider, PLACEMENTS } from './ads.js';
+import { canShowVideo, PLACEMENTS } from './ads.js';
 import { AVATARS, avatarSVG } from './avatars.js';
 import { DEFAULT_TITLES } from './share.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -118,10 +118,24 @@ export function flyTomato(n = 1) {
 }
 
 // ---------- paneles ----------
+// Anuncios fijos de AdSense: se colocan una sola vez, la primera vez que se abre el panel (nunca se recargan solos).
+const TEST_HOST = !!window.__AAP_TEST;
+function fillBanner(where) {
+  const box = document.getElementById('ad-' + where); if (!box || box.dataset.done) return;
+  const A = CONFIG.ADSENSE, slot = A?.slots?.[where];
+  if (slot) {
+    box.dataset.done = '1'; box.classList.remove('hidden');
+    box.innerHTML = `<span class="ad-lbl">Publicidad</span><ins class="adsbygoogle" style="display:block" data-ad-client="${A.client}" data-ad-slot="${slot}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  } else if (TEST_HOST) {            // versión de pruebas: se ve dónde irá el anuncio
+    box.dataset.done = '1'; box.classList.remove('hidden');
+    box.innerHTML = '<span class="ad-lbl">Publicidad</span><div class="ad-ph">Aquí irá un anuncio de AdSense</div>';
+  }
+}
 export function openPanel(id) {
   if (id === '#panel-chests') id = '#panel-shop';
   const p = $(id); if (!p) return;
-  if (id === '#panel-shop') renderShop(); if (id === '#panel-cards') renderCards(); if (id === '#panel-rank') H.onRank?.(); if (id === '#panel-profile') H.onProfile?.(); if (id === '#panel-settings') setSoundUI(state.sound, state.music, false);
+  if (id === '#panel-shop') renderShop(); const bw = { '#panel-shop': 'shop', '#panel-cards': 'cards', '#panel-profile': 'profile' }[id]; if (bw) setTimeout(() => fillBanner(bw), 350); if (id === '#panel-cards') renderCards(); if (id === '#panel-rank') H.onRank?.(); if (id === '#panel-profile') H.onProfile?.(); if (id === '#panel-settings') setSoundUI(state.sound, state.music, false);
   p.classList.add('open'); SFX.ui();
 }
 export function closePanel(el) { if (!el) return; el.classList.remove('open'); if (el.id === 'panel-tutorial') { setTutorialSeen(); if (tutorialCb) { const cb = tutorialCb; tutorialCb = null; cb(); } } }
@@ -152,7 +166,7 @@ export function renderShop() {
       <ul><li>${icon('ic-cards')}<b>${d.cards}</b> carta${d.cards > 1 ? 's' : ''}</li><li>${icon('ic-tomato')}<b>${d.tomatoes[0]}–${d.tomatoes[1]}</b> tomates</li><li>${icon('ic-coin')}<b>${Math.round(d.pesetaChance * 100)}%</b> pesetas extra</li></ul>
       <button class="price" data-buy="${kind}" ${ok ? '' : 'disabled'}>${icon('ic-coin')}<b>${d.price}</b></button>
       <button class="probs-btn" data-probs>Probabilidades</button>${probs(kind)}</div>`; };
-  const adOk = p => adProvider.isAvailable(p), fal = falconActive();
+  const adOk = p => canShowVideo(p), fal = falconActive();
   $('#shop-body').innerHTML = `
     <div class="free ${daily ? '' : 'off'}"><i class="rays"></i><span class="tag">COFRE DIARIO</span><span class="sub">${daily ? '¡Gratis! Uno cada día' : `Vuelve en ${h} h ${String(m).padStart(2, '0')} min`}</span>
       ${icon('ic-chest', 'big')}<button class="btn-g" data-daily ${daily ? '' : 'disabled'}>${daily ? 'ABRIR GRATIS' : 'MAÑANA'}</button></div>
@@ -160,10 +174,10 @@ export function renderShop() {
     <div class="grid2">${card('wood', 'POPULAR')}${card('diamond', 'MEJOR VALOR')}</div>
     <h4 class="sec"><span>OFERTAS ESPECIALES</span></h4>
     <div class="offer falcon"><i class="ribbon">GRATIS</i><div class="offer-art"><svg><use href="#ic-plane"/></svg></div>
-      <div class="offer-info"><h3>El Falcón</h3><p>Cada pulsación vale <b>×5</b> durante <b>10 minutos</b>.</p><div id="falcon-state" class="offer-state ${fal ? 'on' : ''}">${fal ? 'ACTIVO · ' + $('#falcon-time').textContent : 'Con un vídeo'}</div></div>
+      <div class="offer-info"><h3>El Falcón</h3><p>Cada pulsación vale <b>×5</b> durante <b>10 minutos</b>. Hasta 6 al día.</p><div id="falcon-state" class="offer-state ${fal ? 'on' : ''}">${fal ? 'ACTIVO · ' + $('#falcon-time').textContent : 'Con un vídeo'}</div></div>
       <button id="btn-falcon" class="btn-g sm" data-ad="${PLACEMENTS.FALCON}" ${adOk(PLACEMENTS.FALCON) && !fal ? '' : 'disabled'}>${adOk(PLACEMENTS.FALCON) ? 'VER VÍDEO' : 'PRONTO'}</button></div>
     <div class="offer sobre"><i class="ribbon">GRATIS</i><div class="offer-art"><svg><use href="#ic-envelope"/></svg></div>
-      <div class="offer-info"><h3>Sobre de la Moncloa</h3><p><b>${E.SOBRE.pesetas} pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen.</p><div class="offer-state">Con un vídeo</div></div>
+      <div class="offer-info"><h3>Sobre de la Moncloa</h3><p><b>${E.SOBRE.pesetas} pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen. Hasta 10 al día.</p><div class="offer-state">Con un vídeo</div></div>
       <button id="btn-sobre" class="btn-g sm" data-ad="${PLACEMENTS.SOBRE}" ${adOk(PLACEMENTS.SOBRE) ? '' : 'disabled'}>${adOk(PLACEMENTS.SOBRE) ? 'VER VÍDEO' : 'PRONTO'}</button></div>
     <div class="wallet">${icon('ic-coin')}<div><b>${fmt(state.pesetas)}</b> pesetas<small>Gana más tirando a Pedro al agua</small></div></div>`;
 }
@@ -258,6 +272,7 @@ export function renderProfile(p) {
   const grid = g => AVATARS.filter(a => a.group === g).map(a => `<button class="flag ${a.id === p.avatar ? 'on' : ''}" data-flag="${a.id}" aria-label="${esc(a.name)}"><span class="av">${avatarSVG(a.id, 54)}</span><em>${esc(a.name)}</em></button>`).join('');
   $('#flag-grid').innerHTML = grid('p') + `<h3 class="sec sub" style="grid-column:1/-1">Comunidades y ciudades autónomas</h3>` + grid('c');
   $('#btn-logout').classList.toggle('hidden', !p.logged);
+  $('#flag-note').classList.toggle('hidden', !p.hasAvatar);
 }
 // Vista previa de la imagen para compartir
 export function showShare() {

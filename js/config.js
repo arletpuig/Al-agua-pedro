@@ -17,6 +17,9 @@ export const CONFIG = {
   WELCOME: { tomatoes: 5, pesetas: 10 },
   THROW_OPTIONS: [1, 3, 5, 10],   // con 10-19 tomates; con menos o con más se adaptan (ver throwOptions en ui.js)
   AUTOSAVE_MS: 4000,
+  // Anuncios fijos de AdSense en los paneles (Perfil, Cartas, Tienda; nunca en la pantalla de juego).
+  // Pon aquí el «data-ad-slot» de cada bloque que crees en AdSense (Anuncios → Por bloque de anuncios → Display).
+  ADSENSE: { client: 'ca-pub-7829705078320776', slots: { profile: '', cards: '', shop: '' } },
   SUPABASE_URL: 'https://xfsvruccotcymcvxzymy.supabase.co',
   SUPABASE_KEY: 'sb_publishable_pjACLB15yr95O19i3NC8mQ_IOv0bQpP', // clave pública (anon), segura en el navegador
 };

@@ -11,6 +11,7 @@ import { setEnabled, SFX } from './audio.js';
 import { DEFAULT_AVATAR } from './avatars.js';
 import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
 import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
+import { showVideo, PLACEMENTS } from './ads.js';
 
 const $ = s => document.querySelector(s);
 let saveTimer = null, saving = null, falconWas = false, opening = false, shareFile = null, shareURL = null;
@@ -72,7 +73,13 @@ async function upgrade(id) {
   } catch (e) { fail(e); ui.renderCards(); }
   opening = false;
 }
-async function watchAd(placement) { try { await backend.watchAd(placement); ui.renderShop(); } catch (e) { fail(e); } }
+let watching = false;
+async function watchAd(placement) {
+  if (watching) return; watching = true;
+  try { await backend.watchAd(placement); ui.renderShop(); if (placement === 'sobre') { SFX.coin(); ui.showToast(`💌 +${E.SOBRE.pesetas} pesetas del Sobre de la Moncloa`); } }
+  catch (e) { fail(e); ui.renderShop(); }
+  watching = false;
+}
 async function showRank() {
   ui.renderRank([], 'Cargando...');
   try { ui.renderRank(await sb.leaderboard(), null, profile.name); } catch (e) { ui.renderRank([], 'No se pudo cargar el ranking. Inténtalo más tarde.'); }
@@ -144,7 +151,7 @@ function traducir(m = '') {
   const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
   // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
-  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
+  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {
@@ -169,7 +176,7 @@ function setProfile(p, user = sb.auth.user) {
   ui.setAccountUI(user, profile.name, profile.avatar || DEFAULT_AVATAR);
   if ($('#panel-profile').classList.contains('open')) ui.renderProfile(view());
 }
-const view = () => ({ ...profile, avatar: profile.avatar || DEFAULT_AVATAR, title: profile.title || defaultTitle(sb.auth.user?.id || profile.name || ''), logged: !!sb.auth.user });
+const view = () => ({ ...profile, hasAvatar: !!profile.avatar, avatar: profile.avatar || DEFAULT_AVATAR, title: profile.title || defaultTitle(sb.auth.user?.id || profile.name || ''), logged: !!sb.auth.user });
 async function showProfile() {
   ui.renderProfile(view());
   if (sb.auth.user) try { profile.rank = await sb.myRank(); ui.renderProfile(view()); } catch (e) {}
@@ -186,6 +193,8 @@ async function saveProfile(name, avatar) {
 }
 async function pickAvatar(id) {
   if (id === profile.avatar) return;
+  // la primera bandera es gratis; para cambiarla después hay que ver un vídeo
+  if (profile.avatar) { try { const v = await showVideo(PLACEMENTS.FLAG); if (!v.completed) throw new Error('No has completado el vídeo'); } catch (e) { fail(e); return; } }
   try { await saveProfile(profile.name || '', id); SFX.upgrade(); ui.showToast('🚩 ¡Bandera puesta!'); } catch (e) { fail(e); }
 }
 async function saveTitle(t) {

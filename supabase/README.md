@@ -24,6 +24,9 @@ El botón «Entrar con Google» ya está en el juego; solo hay que activarlo (un
 
 Mientras no esté activado, el botón avisa de que Google todavía no está disponible y se puede entrar con el correo.
 
+## Si ya tenías la versión 9
+Solo ejecuta `schema_v10.sql` (o `schema_todo.sql`): vídeos de El Falcón y del Sobre de la Moncloa con límite diario.
+
 ## Si ya tenías la versión 8
 Solo ejecuta `schema_v9.sql` (o `schema_todo.sql`): título del perfil y regalo de bienvenida.
 

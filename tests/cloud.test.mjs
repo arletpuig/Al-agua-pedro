@@ -108,7 +108,14 @@ await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(700); 
 check('mejora validada: nivel +1, precio con descuento de Mariscada idéntico en cliente y servidor', row.cards.inflacion.level === before.cards.inflacion.level + 1 && row.pesetas_spent === before.pesetas_spent + cost && s.pesetas === row.pesetas, `(coste ${cost})`);
 check('mejora imposible rechazada', await page.evaluate(() => AAP.backend.upgradeCard('amnistia').then(() => AAP.state.cards.amnistia.level === 0 ? false : 'ok', e => true)));
 await page.click('#panel-cards .close');
-check('anuncio: el servidor no concede nada', (() => { try { psql(`select public.claim_ad_reward('falcon', 'x')`, 'authenticated', row.user_id); return false; } catch (e) { return /no están disponibles/.test(String(e.stderr)); } })() && db(email).falcon_until === null);
+await page.evaluate(async () => { (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+before = db(email); await page.evaluate(() => AAP.backend.watchAd('sobre')); await page.waitForTimeout(400); row = db(email); s = await S(page);
+check('Sobre de la Moncloa en el servidor: +25 pesetas', row.chest_pesetas === before.chest_pesetas + 25 && s.pesetas === row.pesetas, `(${before.pesetas} → ${row.pesetas})`);
+await page.evaluate(() => AAP.backend.watchAd('falcon')); await page.waitForTimeout(400);
+check('El Falcón en el servidor (y no se puede repetir mientras dura)', !!db(email).falcon_until && await page.evaluate(() => AAP.backend.watchAd('falcon').then(() => false, e => /ya está en marcha/.test(e.message))));
+psql(`update public.profiles set ad_claims = jsonb_build_object('day', ((now() at time zone 'Europe/Madrid')::date)::text, 'sobre', 10), falcon_until = null where user_id = '${row.user_id}'`);
+check('límite diario de sobres', (() => { try { psql(`select public.claim_ad_reward('sobre', 'x')`, 'authenticated', row.user_id); return false; } catch (e) { return /Vuelve mañana/.test(String(e.stderr)); } })());
+await page.evaluate(() => { AAP.state.falconUntil = 0; });
 
 console.log('I. Título del perfil y regalo de bienvenida en el servidor');
 await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400);

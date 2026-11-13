@@ -61,5 +61,6 @@ Tras cambiar la ilustración de referencia: `python3 tools/pedro-parts.py` (nece
 ## Pruebas
 Ver `tests/README.md`.
 
-## Anuncios recompensados
-Todavía no hay proveedor. El Falcón y el Sobre de la Moncloa están preparados pero desactivados. Para integrarlo: implementar la interfaz de `js/ads.js` y completar la función `claim_ad_reward` de `supabase/schema_v2.sql` con la verificación del proveedor.
+## Anuncios
+- **Vídeos recompensados** (`js/ads.js`): regalo de bienvenida, El Falcón (hasta 6 al día), Sobre de la Moncloa (25 pesetas, hasta 10 al día) y cambiar de bandera (la primera es gratis). Mientras no haya proveedor se usa un vídeo de muestra de 5 segundos. Para el proveedor real: implementar `isAvailable`/`showRewarded` y usar `setAdProvider`. El servidor (`claim_ad_reward`, schema_v10) aplica los límites diarios.
+- **Anuncios fijos de AdSense** solo dentro de los paneles de Perfil, Cartas y Tienda (nunca en la pantalla de juego). Se activan poniendo el `data-ad-slot` de cada bloque en `CONFIG.ADSENSE.slots` (`js/config.js`). En la versión de pruebas se ve un recuadro donde irán.

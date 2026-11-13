@@ -1,8 +1,8 @@
 // Operaciones de economía: en local (invitado) o en el servidor (usuario con cuenta). Misma interfaz.
 import * as sb from './supabase.js';
 import * as E from './economy.js';
-import { state, applyServer, applyChestLocal, changed, snapshot } from './state.js';
-import { adProvider } from './ads.js';
+import { state, applyServer, applyChestLocal, changed, snapshot, falconActive } from './state.js';
+import { showVideo } from './ads.js';
 
 let timeOffset = 0, nextMidnight = null, serverChecked = false, flush = async () => {};
 // Antes de una operación en la nube se envía el progreso pendiente, para que el servidor conozca las pesetas ganadas.
@@ -70,12 +70,14 @@ export const backend = {
     if (!this.welcomeLeftMs()) throw new Error('El regalo de bienvenida ha caducado');
     const reward = E.rollChest('welcome', state.cards); E.applyChestCards(state.cards, reward.cards); state.welcomeClaimed = true; applyChestLocal(reward, 0); return reward;
   },
-  // Anuncio recompensado: solo da recompensa con verificación real del proveedor y del servidor.
+  // Vídeo recompensado de la tienda (El Falcón o Sobre de la Moncloa). Con cuenta lo concede el servidor, con límite diario.
   async watchAd(placement) {
-    if (!adProvider.isAvailable(placement)) throw new Error('Los anuncios todavía no están disponibles');
-    const r = await adProvider.showRewarded(placement);
-    if (!r.completed) throw new Error('No has completado el vídeo');
-    if (!this.cloud) throw new Error('Necesitas una cuenta para recibir recompensas de vídeo');
-    const { r: row, sent } = await cloudOp(() => sb.claimAdReward(placement, r.token)); applyServer(row, sent);
+    if (placement === 'falcon' && falconActive()) throw new Error('El Falcón ya está en marcha');
+    const v = await showVideo(placement);
+    if (!v.completed) throw new Error('No has completado el vídeo');
+    if (this.cloud) { const { r: row, sent } = await cloudOp(() => sb.claimAdReward(placement, v.token || 'demo')); applyServer(row, sent); return; }
+    if (placement === 'falcon') state.falconUntil = Date.now() + E.FALCON.minutes * 60000;
+    else state.stats.chestPesetas += E.SOBRE.pesetas;
+    changed(false);
   },
 };

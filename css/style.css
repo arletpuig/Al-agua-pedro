@@ -516,3 +516,10 @@ svg { display: block; }
 .chest-card .ribbon { position: absolute; }
 .chest-card svg.c { width: 116px; height: 100px; filter: drop-shadow(0 5px 0 #0008) drop-shadow(0 0 14px #ffe76699); }
 .chest-card.wood .sparkle { background: #ffe766; }
+
+/* ---------- v16: anuncios fijos en los paneles ---------- */
+.shop-body { display: flex; flex-direction: column; gap: 12px; }
+.ad-banner { margin-top: 18px; padding: 6px 6px 8px; border-radius: 14px; background: #0a1442; border: 2px solid #ffffff1f; min-height: 60px; }
+.ad-lbl { display: block; margin: 0 0 4px 4px; font: 700 10px 'Baloo 2'; letter-spacing: .08em; text-transform: uppercase; color: #8e9bd0; }
+.ad-ph { display: grid; place-items: center; height: 90px; border-radius: 10px; border: 2px dashed #ffffff33; font: 700 13px 'Baloo 2'; color: #8e9bd0; }
+#flag-note { margin-top: -6px; }

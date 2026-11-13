@@ -1,11 +1,11 @@
 // Prueba de extremo a extremo de la parte online: el juego real contra las funciones SQL reales (supabase/schema*.sql)
 // en un PostgreSQL local que hace de Supabase. Preparación: sh tests/pg-reset.sh   Ejecución: node tests/cloud.test.mjs
 import { execFileSync } from 'node:child_process';
-import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid, noCombo } from './helpers.mjs';
+import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid, noCombo, URL_LOGIN } from './helpers.mjs';
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
-const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward']);
+const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile']);
 const users = new Map(); // token -> usuario
 const calls = [];
 // Puente PostgREST/GoTrue mínimo sobre PostgreSQL
@@ -26,6 +26,8 @@ async function bridge(page) {
         return id ? json(200, session({ id, email: body.email, user_metadata: {} })) : json(400, { msg: 'Invalid login credentials' });
       }
       if (p === '/auth/v1/logout') return json(204, {});
+      if (p === '/auth/v1/user') return me ? json(200, me) : json(401, { msg: 'invalid token' });
+      if (p === '/auth/v1/settings') return json(200, { external: { google: true, email: true } });
       if (p === '/rest/v1/profiles') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(p)), '[]') from public.profiles p`, 'authenticated', me?.id)));
       if (p === '/rest/v1/leaderboard') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(l)), '[]') from public.leaderboard l`, 'anon')));
       if (p.startsWith('/rest/v1/rpc/')) {
@@ -40,22 +42,30 @@ async function bridge(page) {
 const db = email => JSON.parse(psql(`select to_jsonb(p) from public.profiles p join auth.users u on u.id = p.user_id where u.email = ${lit(email)}`));
 const browser = await launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
-const page = await ctx.newPage(); const errors = watchErrors(page); await bridge(page); await open(page);
+const page = await ctx.newPage(); const errors = watchErrors(page); await bridge(page); await open(page, URL_LOGIN);
 const txt = s => page.locator(s).innerText();
 const email = `arlet${Date.now()}@test.com`;
 const openChestUI = async sel => { await page.click(sel); await page.waitForSelector('#chest-overlay.open'); await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await page.click('#chest-btn'); await page.waitForTimeout(400); };
 
-console.log('A. Invitado juega y luego crea cuenta');
+console.log('A. Acceso obligatorio: un jugador de antes (con partida en el navegador) crea su cuenta');
+check('sin sesión no se puede jugar: pantalla de cuenta obligatoria', await page.evaluate(() => document.querySelector('#panel-account').classList.contains('forced') && document.querySelector('#panel-account').classList.contains('open')));
+// partida guardada en el navegador de una versión anterior (sin cuenta)
 await page.evaluate(() => { AAP.state.tutorialSeen = true; }); await noCombo(page);
-await tap(page, 400); await page.click('#throws button[data-n="1"]'); await stopAt(page, 0, 10); await idle(page);
-let s = await S(page); check('invitado: 400 clics, 1 caída, 1 peseta (+10 del regalo)', s.totalClicks === 400 && s.falls === 1 && s.pesetas === 11);
-const openAccount = async pg => { await pg.click('#btn-settings'); await pg.waitForTimeout(250); await pg.click('#btn-account'); await pg.waitForTimeout(250); };
-await openAccount(page); await page.click('.tab-s[data-tab="register"]');
+await tap(page, 400); await page.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(page, 0, 10); await idle(page);
+let s = await S(page); check('partida local: 400 clics, 1 caída, 1 peseta (+10 del regalo)', s.totalClicks === 400 && s.falls === 1 && s.pesetas === 11);
+await page.click('.tab-s[data-tab="register"]');
 await page.fill('#form-register [name=username]', 'Arlet'); await page.fill('#form-register [name=email]', email); await page.fill('#form-register [name=password]', 'secreto1'); await page.click('#form-register button'); await page.waitForTimeout(1200);
 let row = db(email);
-check('registro crea el perfil con el nombre', row.username === 'Arlet' && (await txt('#acc-name')) === 'Arlet');
+check('registro crea el perfil con el nombre y abre el juego', row.username === 'Arlet' && (await page.locator('#acc-short').textContent()) === 'Arlet' && !(await page.evaluate(() => document.querySelector('#panel-account').classList.contains('open'))));
 check('el progreso de invitado (con el regalo) se importa a la cuenta', +row.total_clicks === 400 && row.falls === 1 && row.pesetas === 11 && row.tomatoes === 6, JSON.stringify({ c: row.total_clicks, f: row.falls, p: row.pesetas, t: row.tomatoes }));
-await page.click('#panel-account .close');
+await page.waitForSelector('#panel-profile.open', { timeout: 3000 }).catch(() => {});
+check('la primera vez se invita a elegir bandera', await page.evaluate(() => document.querySelector('#panel-profile').classList.contains('open')));
+await page.click('#flag-grid [data-flag="vox"]'); await page.waitForTimeout(600);
+check('la bandera se guarda en el servidor y se ve en la pestaña', db(email).avatar === 'vox' && (await page.locator('#tab-av').innerHTML()).includes('#63be21') && !(await page.locator('#toast').innerText()).includes('No se ha podido'));
+psql(`insert into auth.users (email, raw_user_meta_data) values ('rival${Date.now()}@test.com', '{"username":"Rival Fuerte"}')`);
+await page.fill('#name-input', 'rival fuerte'); await page.click('#form-name button'); await page.waitForTimeout(600);
+check('nombre ya cogido: rechazado con aviso', db(email).username === 'Arlet' && (await page.locator('#toast').innerText()).includes('ya lo tiene otro'));
+await page.fill('#name-input', 'Arlet'); await page.click('#panel-profile [data-close]'); await page.waitForTimeout(200);
 
 console.log('B. Guardado automático validado');
 await tap(page, 400); await page.waitForTimeout(5200); row = db(email); s = await S(page);
@@ -106,12 +116,26 @@ await page.screenshot({ path: 'tests/out/12-ranking.png' }); await page.click('#
 
 console.log('G. Cerrar sesión y entrar desde otro dispositivo');
 const final = db(email);
-await openAccount(page); await page.click('#btn-logout'); await page.waitForTimeout(600); s = await S(page);
-check('al cerrar sesión el progreso local queda a cero', s.totalClicks === 0 && s.pesetas === 0 && (await page.locator('#acc-short').textContent()) === 'Invitado');
-const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 800 } }); const p2 = await ctx2.newPage(); const errors2 = watchErrors(p2); await bridge(p2); await open(p2);
-await openAccount(p2); await p2.fill('#form-login [name=email]', email); await p2.fill('#form-login [name=password]', 'mal'); await p2.click('#form-login button'); await p2.waitForTimeout(500);
+await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400); await page.click('#btn-logout'); await page.waitForTimeout(600); s = await S(page);
+check('al cerrar sesión el progreso local queda a cero y vuelve la pantalla de cuenta', s.totalClicks === 0 && s.pesetas === 0 && (await page.locator('#acc-short').textContent()) === 'Invitado' && await page.evaluate(() => document.querySelector('#panel-account').classList.contains('forced')));
+const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 800 } }); const p2 = await ctx2.newPage(); const errors2 = watchErrors(p2); await bridge(p2); await open(p2, URL_LOGIN);
+await p2.fill('#form-login [name=email]', email); await p2.fill('#form-login [name=password]', 'mal'); await p2.click('#form-login button'); await p2.waitForTimeout(500);
 check('contraseña incorrecta: mensaje claro', (await p2.locator('#acc-msg').innerText()).includes('incorrectos'));
 await p2.fill('#form-login [name=password]', 'secreto1'); await p2.click('#form-login button'); await p2.waitForTimeout(1200); s = await S(p2);
 check('otro dispositivo: mismo progreso (tomates, pesetas, cartas)', s.totalClicks === +final.total_clicks && s.pesetas === final.pesetas && s.tomatoes === final.tomatoes && s.cards.inflacion.level === final.cards.inflacion.level, JSON.stringify({ c: [s.totalClicks, final.total_clicks], p: [s.pesetas, final.pesetas], t: [s.tomatoes, final.tomatoes], l: [s.cards.inflacion.level, final.cards.inflacion.level] }));
+console.log('H. Entrar con Google');
+const gid = psql(`insert into auth.users (email, raw_user_meta_data) values ('pepe${Date.now()}@gmail.com', '{"full_name":"Pepe Google","name":"Pepe Google"}') returning id`);
+users.set('tok-google', { id: gid, email: 'pepe@gmail.com', user_metadata: { full_name: 'Pepe Google' } });
+const ctx3 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p3 = await ctx3.newPage(); const errors3 = watchErrors(p3); await bridge(p3);
+await p3.goto(URL_LOGIN + '#access_token=tok-google&refresh_token=ref&expires_in=3600&token_type=bearer');
+await p3.waitForFunction(() => window.AAP?.scene?.ready && document.querySelector('#acc-short').textContent === 'Pepe Google', null, { timeout: 15000 }).catch(() => {});
+check('vuelta de Google: entra con el nombre de su cuenta de Google', (await p3.locator('#acc-short').textContent()) === 'Pepe Google' && !(await p3.evaluate(() => document.querySelector('#panel-account').classList.contains('open'))) && !p3.url().includes('access_token'));
+await p3.waitForSelector('#panel-profile.open', { timeout: 3000 }).catch(() => {});
+check('y se le invita a elegir bandera', await p3.evaluate(() => document.querySelector('#panel-profile').classList.contains('open')));
+await p3.click('#flag-grid [data-flag="gadsden"]'); await p3.waitForTimeout(500); await p3.click('#panel-profile [data-close]');
+await p3.click('#tabs [data-panel="rank"]'); await p3.waitForTimeout(700);
+check('el ranking enseña la bandera de cada jugador', await p3.locator('#rank-list li .av').count() >= 2);
+await p3.screenshot({ path: 'tests/out/15-ranking-banderas.png' }); await ctx3.close();
+errors.push(...errors3);
 check('sin errores de consola (salvo los 400 esperados)', [...errors, ...errors2].every(e => /status of 400/.test(e)), [...errors, ...errors2].filter(e => !/status of 400/.test(e)).join('|'));
 await browser.close(); process.exit(summary() ? 1 : 0);

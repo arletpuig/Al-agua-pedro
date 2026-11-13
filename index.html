@@ -9,7 +9,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=9">
+<link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
 <div id="app">
@@ -44,9 +44,10 @@
   <!-- navegación -->
   <nav class="tabs" id="tabs">
     <button class="tab" data-panel="shop"><svg><use href="#ic-shop"/></svg><em>Tienda</em><i id="chest-dot" class="badge hidden">1</i></button>
-    <button class="tab play on" data-panel="play"><svg><use href="#ic-target"/></svg><em>JUGAR</em></button>
     <button class="tab" data-panel="cards"><svg><use href="#ic-cards"/></svg><em>Cartas</em><i id="cards-dot" class="dot hidden"></i></button>
+    <button class="tab play on" data-panel="play"><svg><use href="#ic-target"/></svg><em>JUGAR</em></button>
     <button class="tab" data-panel="rank"><svg><use href="#ic-trophy"/></svg><em>Ranking</em></button>
+    <button class="tab" data-panel="profile"><span class="av tab-av" id="tab-av"></span><em>Perfil</em></button>
   </nav>
 
   <!-- PANELES -->
@@ -65,6 +66,25 @@
     <div class="sheet-body"><p class="note top">Tomates conseguidos por los jugadores con cuenta.</p><ol id="rank-list" class="rank"></ol></div>
   </div></div>
 
+  <div id="panel-profile" class="panel"><div class="sheet">
+    <div class="title">PERFIL</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body">
+      <div class="prof-head">
+        <button class="prof-av" id="prof-av" aria-label="Elegir bandera"><span class="av" id="prof-av-img"></span></button>
+        <div class="prof-id"><b id="prof-name">Jugador</b><small id="prof-title">Recién llegado</small><small id="prof-mail" class="mail"></small></div>
+      </div>
+      <form id="form-name" class="name-row" autocomplete="off">
+        <input id="name-input" name="name" type="text" placeholder="Tu nombre de jugador" maxlength="20" autocomplete="nickname" aria-label="Nombre de jugador">
+        <button class="btn-g" type="submit">CAMBIAR</button>
+      </form>
+      <div class="prof-stats" id="prof-stats"></div>
+      <button id="btn-share" class="btn-share"><svg><use href="#ic-camera"/></svg><span>PRESUME DE ESTADÍSTICAS<small>Crea una imagen para compartir</small></span></button>
+      <h3 class="sec" id="flags-title">Elige tu bandera</h3>
+      <div class="flag-grid" id="flag-grid"></div>
+      <button id="btn-logout" class="btn-r">CERRAR SESIÓN</button>
+    </div>
+  </div></div>
+
   <div id="panel-stats" class="panel"><div class="sheet">
     <div class="title">ESTADÍSTICAS</div><button class="close" data-close aria-label="Cerrar">✕</button>
     <div class="sheet-body"><ul id="stats-list" class="stats"></ul></div>
@@ -76,7 +96,7 @@
       <button class="row-btn" id="btn-sound"><svg><use href="#ic-sound"/></svg><span>Efectos de sonido</span><i class="switch" id="sw-sound"></i></button>
       <button class="row-btn" id="btn-music"><svg><use href="#ic-music"/></svg><span>Música de feria</span><i class="switch" id="sw-music"></i></button>
       <button class="row-btn" id="btn-stats"><svg><use href="#ic-stats"/></svg><span>Estadísticas</span><i class="go">›</i></button>
-      <button class="row-btn" id="btn-account"><svg><use href="#ic-user"/></svg><span>Cuenta <small id="acc-short">Invitado</small></span><i class="go">›</i></button>
+      <button class="row-btn" id="btn-account"><svg><use href="#ic-user"/></svg><span>Perfil y cuenta <small id="acc-short">Invitado</small></span><i class="go">›</i></button>
       <button class="row-btn" id="btn-help"><svg><use href="#ic-help"/></svg><span>Cómo se juega</span><i class="go">›</i></button>
     </div>
   </div></div>
@@ -84,11 +104,10 @@
   <div id="panel-account" class="panel"><div class="sheet">
     <div class="title">CUENTA</div><button class="close" data-close aria-label="Cerrar">✕</button>
     <div class="sheet-body">
-      <div id="acc-logged" class="hidden">
-        <p class="lead">Hola, <b id="acc-name"></b>. Tu progreso se guarda en la nube y cuenta para el ranking.</p>
-        <button id="btn-logout" class="btn-r">CERRAR SESIÓN</button>
-      </div>
+      <div class="gate-hero"><canvas id="gate-pedro" width="300" height="380" aria-hidden="true"></canvas><div><h2>¡AL AGUA PEDRO!</h2><p>Entra o crea tu cuenta para jugar. Tu progreso se guarda en la nube y compites en el ranking.</p></div></div>
       <div id="acc-forms">
+        <button class="btn-google" id="btn-google" type="button"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.9 6.1C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.2 5.6c4.2-3.9 7.1-9.6 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.2-5.6c-2 1.4-4.7 2.3-8.7 2.3-6.3 0-11.6-4.2-13.5-10l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Entrar con Google</button>
+        <p class="or"><span>o con tu correo</span></p>
         <div class="tabsw"><button class="tab-s active" data-tab="login">Entrar</button><button class="tab-s" data-tab="register">Registro</button><button class="tab-s" data-tab="recover">Recuperar</button></div>
         <form id="form-login" class="tabpane active" autocomplete="on">
           <input name="email" type="email" placeholder="Correo electrónico" required autocomplete="email">
@@ -96,7 +115,7 @@
           <button class="btn-g" type="submit">ENTRAR</button>
         </form>
         <form id="form-register" class="tabpane" autocomplete="on">
-          <input name="username" type="text" placeholder="Nombre de jugador" required minlength="2" maxlength="20" autocomplete="nickname">
+          <input name="username" type="text" placeholder="Nombre de jugador" required minlength="3" maxlength="20" autocomplete="nickname">
           <input name="email" type="email" placeholder="Correo electrónico" required autocomplete="email">
           <input name="password" type="password" placeholder="Contraseña (mín. 6)" required minlength="6" autocomplete="new-password">
           <button class="btn-g" type="submit">CREAR CUENTA</button>
@@ -110,7 +129,6 @@
           <input name="password" type="password" placeholder="Nueva contraseña (mín. 6)" required minlength="6" autocomplete="new-password">
           <button class="btn-g" type="submit">GUARDAR</button>
         </form>
-        <p class="note">Sin cuenta, el progreso se guarda solo en este navegador y no aparece en el ranking.</p>
       </div>
       <p id="acc-msg" class="acc-msg"></p>
     </div>
@@ -120,7 +138,7 @@
     <div class="title">CÓMO SE JUEGA</div>
     <div class="sheet-body">
       <ol class="howto">
-        <li><i>1</i><span>Pulsa <b>¡DALE!</b> para llenar el anillo: cada 100 consigues un <b>tomate</b>.</span></li>
+        <li><i>1</i><span>Pulsa <b>¡DALE!</b> para llenar la barra: cada 200 consigues un <b>tomate</b>.</span></li>
         <li><i>2</i><span>Elige cuántos tomates lanzar (<b>×1, ×3, ×5, ×10</b>): sale un solo tomate que vale por todos y va de lado a lado por delante de la diana.</span></li>
         <li><i>3</i><span>Pulsa el <b>botón grande</b> (o la pantalla) cuando esté sobre el <b>centro</b>. ¡Pedro irá al agua y ganarás <b>pesetas</b>!</span></li>
         <li><i>4</i><span>Si pulsas <b>¡DALE!</b> seguido sube la <b>racha</b> y cada toque vale ×2 o ×3. Si fallas, Pedro se burlará de ti.</span></li>
@@ -140,10 +158,19 @@
     </div>
   </div>
 
+  <!-- imagen para compartir estadísticas -->
+  <div id="share-overlay" class="overlay share-ov">
+    <div class="share-box">
+      <img id="share-img" alt="Tus estadísticas de AL AGUA PEDRO">
+      <p class="share-wait" id="share-wait">Preparando tu imagen...</p>
+      <div class="share-btns"><button class="btn-g" id="share-go">COMPARTIR</button><button class="btn-b" id="share-save">GUARDAR</button><button class="btn-r" id="share-close">CERRAR</button></div>
+    </div>
+  </div>
+
   <div id="summary" class="summary hidden"></div>
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 9</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 10</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -169,6 +196,7 @@
 <symbol id="ic-music" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6" stroke-linejoin="round"><path d="M18 34 V11 L38 7 V30" fill="none" stroke="#ffffff" stroke-width="4"/><ellipse cx="13" cy="34" rx="6.5" ry="5" fill="#ffd23f"/><ellipse cx="33" cy="30" rx="6.5" ry="5" fill="#ffd23f"/></g></symbol>
 <symbol id="ic-stats" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><rect x="7" y="26" width="9" height="15" rx="2" fill="#3fa9f5"/><rect x="19.5" y="15" width="9" height="26" rx="2" fill="#ffd23f"/><rect x="32" y="7" width="9" height="34" rx="2" fill="#2fc43c"/></g></symbol>
 <symbol id="ic-user" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><circle cx="24" cy="16" r="9" fill="#ffd2ad"/><path d="M7 42 Q7 27 24 27 Q41 27 41 42Z" fill="#3567f0"/></g></symbol>
+<symbol id="ic-camera" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6" stroke-linejoin="round"><path d="M6 15 Q6 12 9 12 H15 L18 7 H30 L33 12 H39 Q42 12 42 15 V37 Q42 40 39 40 H9 Q6 40 6 37Z" fill="#ffffff"/><circle cx="24" cy="25" r="9" fill="#3567f0"/><circle cx="24" cy="25" r="4.5" fill="#bfe3ff"/><circle cx="36" cy="17" r="2" fill="#ff5a4f"/></g></symbol>
 <symbol id="ic-help" viewBox="0 0 48 48"><g stroke="#0a0b18" stroke-width="2.6"><circle cx="24" cy="24" r="18" fill="#ffd23f"/><path d="M18 19 Q18 12 24 12 Q30 12 30 18 Q30 22 25 24 L24 29" fill="none" stroke-width="4" stroke-linecap="round"/><circle cx="24" cy="35" r="2.6" fill="#0a0b18"/></g></symbol>
 </defs></svg>
 <script>
@@ -191,7 +219,7 @@
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 9</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 10</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -203,6 +231,6 @@
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=9"></script>
+<script type="module" src="js/main.js?v=10"></script>
 </body>
 </html>

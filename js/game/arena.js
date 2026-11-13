@@ -317,6 +317,15 @@ export class Arena {
     this.rig.draw(c, P, t);
     c.restore();
   }
+  // Escena completa (1080×1920) con Pedro en una pose fija: para la imagen de compartir estadísticas.
+  poster(c, clip = 'peineta', t = 2.6) {
+    const P = sample(CLIPS[clip] || CLIPS.peineta, t), pose = this.pose; this.pose = null;
+    drawStageBack(c, t, PED.x, { fishT: t });
+    pedroShadow(c, PED.x);
+    this.drawPedro(c, { ...P, px: 0, walkAmt: 0, blink: 0 }, t);
+    drawStageFront(c, t, PED.x);
+    this.pose = pose;
+  }
   label(c, text, x, y) {
     c.save(); c.font = '54px "Titan One", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
     c.strokeStyle = '#0a0b18'; c.lineWidth = 14; c.strokeText(text, x, y); c.fillStyle = '#ffe766'; c.fillText(text, x, y); c.restore();

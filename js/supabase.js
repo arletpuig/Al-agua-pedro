@@ -40,16 +40,20 @@ export async function restoreSession() {
   }
   return auth.user;
 }
-// Enlace de recuperación de contraseña: llega como #access_token=...&type=recovery
-export function consumeRecoveryHash() {
+// Vuelta de un enlace de Supabase con la sesión en el hash: recuperación de contraseña (#...&type=recovery) o entrada con Google.
+// Devuelve 'recovery', 'oauth' o false.
+export function consumeAuthHash() {
   const h = new URLSearchParams(location.hash.slice(1));
-  if (h.get('type') === 'recovery' && h.get('access_token')) {
+  if (h.get('access_token')) {
     setSession({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: Math.floor(Date.now() / 1000) + Number(h.get('expires_in') || 3600), user: null });
-    history.replaceState(null, '', location.pathname); return true;
+    history.replaceState(null, '', location.pathname + location.search); return h.get('type') === 'recovery' ? 'recovery' : 'oauth';
   }
-  if (h.get('error_description')) { history.replaceState(null, '', location.pathname); throw new Error(decodeURIComponent(h.get('error_description').replace(/\+/g, ' '))); }
+  if (h.get('error_description')) { history.replaceState(null, '', location.pathname + location.search); throw new Error(decodeURIComponent(h.get('error_description').replace(/\+/g, ' '))); }
   return false;
 }
+// Entrar con Google: Supabase redirige a Google y vuelve a esta misma página con la sesión en el hash.
+export const authSettings = () => req('/auth/v1/settings', { auth: false });
+export function googleURL() { return `${URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(location.origin + location.pathname + location.search)}`; }
 export async function signUp(email, password, username) {
   const d = await req('/auth/v1/signup', { method: 'POST', body: { email, password, data: { username } }, auth: false });
   if (d?.access_token) { setSession(d); return { user: d.user, needsConfirm: false }; }
@@ -70,4 +74,6 @@ export const upgradeCard = id => rpc('upgrade_card', { p_card: id });          /
 export const importGuest = payload => rpc('import_guest', { p: payload });     // -> profile
 export const claimAdReward = (placement, token) => rpc('claim_ad_reward', { p_placement: placement, p_token: token });
 export const serverNow = () => rpc('server_now', {}, { auth: false });         // -> { date, now, next_midnight }
+export const updateProfile = (username, avatar) => rpc('update_profile', { p_username: username, p_avatar: avatar });   // -> profile
+export const myRank = () => rpc('my_rank', {});
 export const leaderboard = () => req('/rest/v1/leaderboard?select=*&order=tomatoes_earned.desc,falls.desc&limit=20', { auth: false });

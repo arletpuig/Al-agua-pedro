@@ -3,12 +3,29 @@
 ## Primera vez
 1. Entra en https://supabase.com/dashboard y abre tu proyecto.
 2. Menú izquierdo → **SQL Editor** → **New query**. Pega TODO el contenido de `schema.sql` y pulsa **Run**.
-3. Repite con `schema_v2.sql` (pesetas, cofres, cartas, ranking por tomates) después con `schema_v3.sql` (cofres más baratos, racha de pulsaciones, regalo de bienvenida) `schema_v4.sql` (200 clics por tomate conservando lo ya ganado, cartas con desbloqueo por fragmentos) `schema_v5.sql` (muchos más niveles de cartas, rendimiento decreciente, cartas al máximo fuera de los cofres) y por último `schema_v6.sql` (cartas Plus Ultra, Hacienda Inversa, Puerta Giratoria y Paguitas).
+3. Repite con `schema_v2.sql` (pesetas, cofres, cartas, ranking por tomates) después con `schema_v3.sql` (cofres más baratos, racha de pulsaciones, regalo de bienvenida) `schema_v4.sql` (200 clics por tomate conservando lo ya ganado, cartas con desbloqueo por fragmentos) `schema_v5.sql` (muchos más niveles de cartas, rendimiento decreciente, cartas al máximo fuera de los cofres) `schema_v6.sql` (cartas Plus Ultra, Hacienda Inversa, Puerta Giratoria y Paguitas) y por último `schema_v7.sql` (perfil con bandera, cambio de nombre, entrar con Google, Hacienda Inversa más moderada). O, más fácil, solo `schema_todo.sql`.
 4. **Authentication → URL Configuration**: pon la dirección del juego en **Site URL** y en **Redirect URLs** (por ejemplo `https://arletpuig.github.io/Al-agua-pedro/`).
 5. (Opcional) **Authentication → Providers → Email**: desactiva "Confirm email" para entrar sin confirmar el correo.
 
 ## Lo más fácil: todo en uno
 Ejecuta solo `schema_todo.sql`. Sirve desde cualquier versión (o desde cero), conserva el progreso y se puede repetir sin problema.
+
+Cuando cambie el esquema, se regenera con `sh supabase/make-todo.sh`.
+
+## Entrar con Google
+El botón «Entrar con Google» ya está en el juego; solo hay que activarlo (una vez):
+1. **Google Cloud Console** (https://console.cloud.google.com) → crea un proyecto (o usa uno) → **APIs y servicios → Pantalla de consentimiento OAuth**: tipo *Externo*, nombre «AL AGUA PEDRO», tu correo de soporte → guardar.
+2. **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth** → tipo *Aplicación web*.
+   - **Orígenes de JavaScript autorizados**: `https://arletpuig.github.io`
+   - **URI de redireccionamiento autorizados**: `https://xfsvruccotcymcvxzymy.supabase.co/auth/v1/callback`
+   - Crear → copia el **ID de cliente** y el **Secreto del cliente**.
+3. **Supabase → Authentication → Sign In / Providers → Google**: actívalo, pega el ID de cliente y el secreto → **Save**.
+4. **Supabase → Authentication → URL Configuration**: **Site URL** `https://arletpuig.github.io/Al-agua-pedro/` y en **Redirect URLs** añade `https://arletpuig.github.io/Al-agua-pedro/**`.
+
+Mientras no esté activado, el botón avisa de que Google todavía no está disponible y se puede entrar con el correo.
+
+## Si ya tenías la versión 6
+Solo ejecuta `schema_v7.sql` (o `schema_todo.sql`).
 
 ## Si ya tenías la versión 5
 Solo ejecuta `schema_v6.sql`.

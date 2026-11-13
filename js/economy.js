@@ -28,7 +28,7 @@ export const CARDS = {
     effect: L => `${pct(CARDS.plusultra.value(L))} de recuperar los tomates al fallar`, value: dimin(0.5, 10) },
   hacienda: { id: 'hacienda', name: 'Hacienda Inversa', rarity: 'rare', max: 20, icon: 'hacienda',
     desc: 'Cada vez que gastas pesetas (cofres o mejoras), Hacienda te devuelve una parte.',
-    effect: L => `te devuelve el ${pct(CARDS.hacienda.value(L))} de lo que gastas`, value: dimin(0.30, 8) },
+    effect: L => `te devuelve el ${pct(CARDS.hacienda.value(L))} de lo que gastas`, value: dimin(0.12, 8) },
   puerta: { id: 'puerta', name: 'Puerta Giratoria', rarity: 'epic', max: 20, icon: 'puerta',
     desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
     effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },

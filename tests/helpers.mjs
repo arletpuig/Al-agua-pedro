@@ -1,7 +1,8 @@
 // Utilidades comunes de las pruebas Playwright.
 import { createRequire } from 'node:module';
 export const { chromium, devices } = createRequire(import.meta.url)('playwright');
-export const URL = process.env.GAME_URL || 'http://localhost:8080/?debug';
+export const URL = process.env.GAME_URL || 'http://localhost:8080/?debug&guest';
+export const URL_LOGIN = URL.replace('&guest', '');   // con acceso obligatorio (pruebas online)
 export const SB = 'https://xfsvruccotcymcvxzymy.supabase.co/**';
 export const launch = () => chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
 let pass = 0, failN = 0;
@@ -23,7 +24,7 @@ export async function mockTime(page, nowFn = () => new Date()) {
 }
 const URL_ = globalThis.URL;
 export const madrid = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-export async function open(page) { await page.goto(URL); await page.waitForFunction(() => window.AAP?.scene?.ready && document.querySelector('#loading.off'), null, { timeout: 20000 }); await page.waitForTimeout(300); }
+export async function open(page, url = URL) { await page.goto(url); await page.waitForFunction(() => window.AAP?.scene?.ready && document.querySelector('#loading.off'), null, { timeout: 20000 }); await page.waitForTimeout(300); }
 export const tap = (page, n) => page.evaluate(n => { const b = document.querySelector('#btn-click'); for (let i = 0; i < n; i++) b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 500 })); }, n);
 export const S = page => page.evaluate(() => ({ ...AAP.state.stats, clicks: AAP.state.clicks, tomatoes: AAP.state.tomatoes, pesetas: AAP.state.pesetas, cards: JSON.parse(JSON.stringify(AAP.state.cards)), daily: AAP.state.dailyClaimedOn, falcon: AAP.state.falconUntil }));
 // Espera a que el tomate esté apuntando y lo detiene cuando su distancia horizontal al centro de la diana (x = 880) está en [lo, hi].

@@ -6,6 +6,8 @@ import * as E from './economy.js';
 import { CARD_ART } from './cards-art.js';
 import { backend } from './backend.js';
 import { adProvider, PLACEMENTS } from './ads.js';
+import { AVATARS, avatarSVG } from './avatars.js';
+import { titleFor } from './share.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => n.toLocaleString('es-ES');
 const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
@@ -14,7 +16,7 @@ let H = {}, busy = false, aiming = false, toastTimer = null, tutorialCb = null;
 export function init(handlers) {
   H = handlers;
   $$('[data-close]').forEach(b => b.addEventListener('click', () => closePanel(b.closest('.panel'))));
-  $$('.panel').forEach(m => m.addEventListener('click', e => { if (e.target === m && m.id !== 'panel-tutorial') closePanel(m); }));
+  $$('.panel').forEach(m => m.addEventListener('click', e => { if (e.target === m && m.id !== 'panel-tutorial' && !m.classList.contains('forced')) closePanel(m); }));
   $$('.tab-s').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
   $$('#tabs .tab').forEach(b => b.addEventListener('click', () => { unlock(); if (b.dataset.panel === 'play') { closeAll(); SFX.ui(); } else { closeAll(); openPanel('#panel-' + b.dataset.panel); } }));
   $$('[data-goto]').forEach(b => b.addEventListener('click', () => { closePanel(b.closest('.panel')); openPanel('#panel-' + b.dataset.goto); }));
@@ -31,6 +33,14 @@ export function init(handlers) {
     if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
     else if ('probs' in b.dataset) b.parentElement.querySelector('.probs').classList.toggle('open');
   });
+  // perfil: bandera, nombre e imagen para compartir
+  $('#flag-grid').addEventListener('click', e => { const b = e.target.closest('button[data-flag]'); if (b) H.onAvatar?.(b.dataset.flag); });
+  $('#prof-av').addEventListener('click', () => $('#flags-title').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  $('#form-name').addEventListener('submit', e => { e.preventDefault(); H.onRename?.($('#name-input').value); });
+  $('#btn-share').addEventListener('click', () => H.onShare?.());
+  $('#share-close').addEventListener('click', () => hideShare());
+  $('#share-go').addEventListener('click', () => H.onShareGo?.());
+  $('#share-save').addEventListener('click', () => H.onShareSave?.());
   $('#cards-grid').addEventListener('click', e => {
     const b = e.target.closest('button[data-upgrade]'); if (b) { H.onUpgrade(b.dataset.upgrade); return; }
     const card = e.target.closest('.card[data-id]'); if (card && isNewCard(card.dataset.id)) { seenCard(card.dataset.id); renderCards(); hud(); }
@@ -109,11 +119,11 @@ export function flyTomato(n = 1) {
 export function openPanel(id) {
   if (id === '#panel-chests') id = '#panel-shop';
   const p = $(id); if (!p) return;
-  if (id === '#panel-shop') renderShop(); if (id === '#panel-cards') renderCards(); if (id === '#panel-rank') H.onRank?.(); if (id === '#panel-settings') setSoundUI(state.sound, state.music, false);
+  if (id === '#panel-shop') renderShop(); if (id === '#panel-cards') renderCards(); if (id === '#panel-rank') H.onRank?.(); if (id === '#panel-profile') H.onProfile?.(); if (id === '#panel-settings') setSoundUI(state.sound, state.music, false);
   p.classList.add('open'); SFX.ui();
 }
 export function closePanel(el) { if (!el) return; el.classList.remove('open'); if (el.id === 'panel-tutorial') { setTutorialSeen(); if (tutorialCb) { const cb = tutorialCb; tutorialCb = null; cb(); } } }
-export function closeAll() { $$('.panel.open').forEach(p => p.classList.remove('open')); }
+export function closeAll() { $$('.panel.open:not(.forced)').forEach(p => p.classList.remove('open')); }
 export function showTutorial(cb) { tutorialCb = cb || null; openPanel('#panel-tutorial'); }
 export function showToast(msg, ms = 2400, err = false) { const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), ms); }
 
@@ -178,11 +188,11 @@ export function renderCards(upgradedId) {
 export function renderRank(rows, err, myName) {
   const list = $('#rank-list');
   if (err) { list.innerHTML = `<li class="empty">${err}</li>`; return; }
-  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.username === myName ? 'me' : ''}"><span class="nm">${esc(r.username || 'Anónimo')}</span><span class="sc">${fmt(r.tomatoes_earned)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}</li>`).join('') : '<li class="empty">Todavía no hay nadie. ¡Sé el primero!</li>';
+  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.username === myName ? 'me' : ''}"><span class="av">${avatarSVG(r.avatar, 30)}</span><span class="nm">${esc(r.username || 'Anónimo')}</span><span class="sc">${fmt(r.tomatoes_earned)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}</li>`).join('') : '<li class="empty">Todavía no hay nadie. ¡Sé el primero!</li>';
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export function renderStats() {
-  const s = state.stats, rows = [['Tomates conseguidos', s.tomatoesEarned], ['Tomates disponibles', state.tomatoes], ['Pulsaciones totales', s.totalClicks], ['Lanzamientos', s.tomatoesThrown], ['Impactos perfectos', s.perfects], ['Impactos en la diana', s.hits], ['Pedro al agua', s.falls], ['Pesetas ganadas', s.pesetasEarned + s.chestPesetas], ['Pesetas disponibles', state.pesetas], ['Cofres abiertos', s.chestsOpened], ['Cartas desbloqueadas', E.CARD_IDS.filter(id => E.level(state.cards, id) > 0).length + ' / 5']];
+  const s = state.stats, rows = [['Tomates conseguidos', s.tomatoesEarned], ['Tomates disponibles', state.tomatoes], ['Pulsaciones totales', s.totalClicks], ['Lanzamientos', s.tomatoesThrown], ['Impactos perfectos', s.perfects], ['Impactos en la diana', s.hits], ['Pedro al agua', s.falls], ['Pesetas ganadas', s.pesetasEarned + s.chestPesetas], ['Pesetas disponibles', state.pesetas], ['Cofres abiertos', s.chestsOpened], ['Cartas desbloqueadas', E.CARD_IDS.filter(id => E.level(state.cards, id) > 0).length + ' / ' + E.CARD_IDS.length]];
   $('#stats-list').innerHTML = rows.map(([k, v]) => `<li><span>${k}</span><b>${typeof v === 'number' ? fmt(v) : v}</b></li>`).join('') + E.CARD_IDS.map(id => `<li class="sub"><span>${E.CARDS[id].name}</span><span>Nivel ${E.level(state.cards, id)}</span></li>`).join('');
 }
 
@@ -221,11 +231,37 @@ export function setSoundUI(on, music = state.music, apply = true) {
   $('#sw-sound').classList.toggle('on', on); $('#sw-music').classList.toggle('on', music);
   if (apply) { setEnabled(on); setMusic(music); setSound(on, music); }
 }
-export function setAccountUI(user, username) {
-  const logged = !!user; $('#acc-logged').classList.toggle('hidden', !logged); $('#acc-forms').classList.toggle('hidden', logged);
-  if (logged) $('#acc-name').textContent = username || user.email;
-  $('#acc-short').textContent = logged ? (username || user.email) : 'Invitado';
+export function setAccountUI(user, username, avatar) {
+  $('#acc-short').textContent = user ? (username || user.email) : 'Invitado';
+  $('#tab-av').innerHTML = avatarSVG(avatar, 36);
 }
+// Acceso obligatorio: la pantalla de cuenta no se puede cerrar hasta entrar.
+export function gate(on) {
+  const p = $('#panel-account'); p.classList.toggle('forced', on);
+  if (on) { closeAll(); p.classList.add('open'); } else p.classList.remove('open');
+}
+export const gated = () => $('#panel-account').classList.contains('forced');
+// p = { name, avatar, email, rank, logged }
+export function renderProfile(p) {
+  const s = state.stats, thrown = s.tomatoesThrown;
+  $('#prof-av-img').innerHTML = avatarSVG(p.avatar, 92);
+  $('#prof-name').textContent = p.name || 'Jugador';
+  $('#prof-title').textContent = titleFor(s.falls);
+  $('#prof-mail').textContent = p.email || '';
+  const inp = $('#name-input'); if (document.activeElement !== inp) inp.value = p.name || '';
+  const stats = [[fmt(s.falls), 'Pedro al agua'], [thrown ? Math.round(100 * s.perfects / thrown) + '%' : '—', 'Puntería'], [fmt(s.tomatoesEarned), 'Tomates'], [p.rank ? '#' + fmt(p.rank) : '—', 'Ranking']];
+  $('#prof-stats').innerHTML = stats.map(([v, k]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
+  const grid = g => AVATARS.filter(a => a.group === g).map(a => `<button class="flag ${a.id === p.avatar ? 'on' : ''}" data-flag="${a.id}" aria-label="${esc(a.name)}"><span class="av">${avatarSVG(a.id, 54)}</span><em>${esc(a.name)}</em></button>`).join('');
+  $('#flag-grid').innerHTML = grid('p') + `<h3 class="sec sub" style="grid-column:1/-1">Comunidades y ciudades autónomas</h3>` + grid('c');
+  $('#btn-logout').classList.toggle('hidden', !p.logged);
+}
+// Vista previa de la imagen para compartir
+export function showShare() {
+  const img = $('#share-img'); img.removeAttribute('src'); $('#share-wait').classList.remove('hidden');
+  $$('.share-btns button:not(#share-close)').forEach(b => b.disabled = true); $('#share-overlay').classList.add('open');
+}
+export function setShareImage(url, canShare) { $('#share-img').src = url; $('#share-wait').classList.add('hidden'); $('#share-save').disabled = false; const g = $('#share-go'); g.disabled = false; g.classList.toggle('hidden', !canShare); }
+export function hideShare() { $('#share-overlay').classList.remove('open'); }
 export function accMsg(msg, type = '') { const el = $('#acc-msg'); el.textContent = msg; el.className = 'acc-msg ' + type; }
 export function showTab(name) { $$('.tab-s').forEach(t => t.classList.toggle('active', t.dataset.tab === name)); $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'form-' + name)); accMsg(''); }
 export function saveStatus(msg) { $('#save-status').textContent = msg; }

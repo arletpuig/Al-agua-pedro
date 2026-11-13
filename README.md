@@ -17,6 +17,8 @@ y abre http://localhost:8080
 - Mientras apuntas, el mismo botón grande se vuelve **¡LANZA!**: púlsalo (o toca la pantalla) cuando el tomate esté sobre el centro. Pedro cae a la pecera y ganas pesetas (por cada tomate del lanzamiento).
 - Los tomates se quedan pegados un momento en la diana. Si fallas, Pedro te provoca (peineta, burla, carcajada) y dice «¡Le tienes que dar al centro, eh! ¡Jajajaja!». En el resto de momentos suelta sus frases típicas al azar. Si fallas por la izquierda, Pedro atrapa el tomate y se lo pone de nariz.
 - **Jugadores nuevos**: regalo de bienvenida (5 tomates y 10 pesetas) y los primeros lanzamientos van más despacio.
+- **Cuenta obligatoria**: para jugar hay que entrar con Google o con correo y contraseña (el progreso se guarda en la nube). Quien tenía partida en el navegador de antes la conserva al crear su cuenta.
+- **Perfil** (pestaña con tu bandera): nombre de jugador (único), foto de perfil a elegir entre 31 banderas redondas (España, España con escudo, Tercios, Cruz cristiana, Cruz de Santiago, Castilla, Castilla y Aragón, León, España con toro, Falange, VOX, Don't Tread On Me y las comunidades autónomas con Ceuta y Melilla), tus números y el botón **Presume de estadísticas**, que crea una imagen 1080×1920 con la escena del juego, Pedro haciendo la peineta, tu bandera, tus estadísticas y la dirección del juego, para compartir o guardar.
 
 ## Tecnología
 - **Canvas 2D** sin motor ni dependencias: escenario, Pedro animado, puntería y efectos (`js/game/`).
@@ -34,6 +36,8 @@ y abre http://localhost:8080
 | `js/ui.js`, `css/style.css` | Interfaz |
 | `js/play.js` | Pulsaciones con racha, lanzamientos (un tiro que vale por N tomates) y decisión de caída |
 | `js/economy.js` | Reglas de la economía: cartas, cofres, precios, probabilidades |
+| `js/avatars.js` | Banderas redondas para la foto de perfil (SVG) |
+| `js/share.js` | Imagen para presumir de estadísticas |
 | `js/backend.js` | Cofres, cofre diario y mejoras: en local (invitado) o en el servidor (con cuenta) |
 | `js/config.js` | Ajustes rápidos (pulsaciones por tomate, velocidad de puntería, tamaño de la zona de acierto) |
 | `assets/src/pedro-ref.png` | Ilustración de referencia de Pedro |
@@ -48,7 +52,7 @@ Tras cambiar la ilustración de referencia: `python3 tools/pedro-parts.py` (nece
 - 200 clics = 1 tomate (antes 100: los tomates ya conseguidos se conservan). Con racha, cada toque vale hasta ×3. Los tomates son munición, nunca moneda.
 - Impacto perfecto (centro amarillo) = Pedro cae = 1 peseta. Impacto cercano: solo cae con la carta Apagón.
 - Cofre de madera: 8 pesetas (uno gratis al día). Cofre de diamante: 40 pesetas.
-- Cartas: Inflación y Plus Ultra (comunes), Joyas de Zapatero, Apagón y Hacienda Inversa (raras), Mariscada Sindical y Puerta Giratoria (épicas), Amnistía y Paguitas (legendarias). Para desbloquear una carta hacen falta fragmentos (común 2, rara 3, épica 5, legendaria 6; cada aparición da 1). Ya desbloqueada, cada aparición da más (común y rara 3, épica y legendaria 2). Mejorar cuesta fragmentos y pesetas (precio = base × nivel^1,5). Niveles máximos: Inflación 30, Joyas 25, Mariscada 25, Apagón 25, Amnistía 20, Plus Ultra 25, Hacienda 20, Puerta 20, Paguitas 15. Plus Ultra a veces devuelve los tomates de un fallo; Hacienda Inversa devuelve parte de cada gasto; Puerta Giratoria da 2 tomates por nivel en cada mejora; Paguitas hace llover 3 pesetas cada 120·0,88^(nivel−1) s (de 120 s a 20 s). Joyas y Mariscada dan cada vez menos por nivel. Apagón agranda el centro de la diana; Amnistía perdona fallos (Pedro cae igual). Las cartas al máximo ya no salen en los cofres (con todo al máximo, cada carta se cambia por 3 pesetas). Las cartas nuevas se marcan con un punto hasta que las miras.
+- Cartas: Inflación y Plus Ultra (comunes), Joyas de Zapatero, Apagón y Hacienda Inversa (raras), Mariscada Sindical y Puerta Giratoria (épicas), Amnistía y Paguitas (legendarias). Para desbloquear una carta hacen falta fragmentos (común 2, rara 3, épica 5, legendaria 6; cada aparición da 1). Ya desbloqueada, cada aparición da más (común y rara 3, épica y legendaria 2). Mejorar cuesta fragmentos y pesetas (precio = base × nivel^1,5). Niveles máximos: Inflación 30, Joyas 25, Mariscada 25, Apagón 25, Amnistía 20, Plus Ultra 25, Hacienda 20, Puerta 20, Paguitas 15. Plus Ultra a veces devuelve los tomates de un fallo; Hacienda Inversa devuelve parte de cada gasto (del 1,4 % a nivel 1 al 11 % a nivel 20, nunca más del 12 %); Puerta Giratoria da 2 tomates por nivel en cada mejora; Paguitas hace llover 3 pesetas cada 120·0,88^(nivel−1) s (de 120 s a 20 s). Joyas y Mariscada dan cada vez menos por nivel. Apagón agranda el centro de la diana; Amnistía perdona fallos (Pedro cae igual). Las cartas al máximo ya no salen en los cofres (con todo al máximo, cada carta se cambia por 3 pesetas). Las cartas nuevas se marcan con un punto hasta que las miras.
 - Tienda: cofre diario, cofres de madera y diamante, y ofertas con vídeo (pendientes de proveedor).
 - Simulación de progresión: `node tests/sim-economy.mjs`.
 

@@ -1,6 +1,6 @@
 // Prueba completa del juego como invitado (guardado local). Ejecutar con el juego servido en http://localhost:8080:
 //   node tests/game.test.mjs
-import { launch, devices, check, summary, watchErrors, mockTime, open, tap, S, stopAt, idle, give, madrid, noCombo } from './helpers.mjs';
+import { launch, devices, check, summary, watchErrors, mockTime, open, tap, S, stopAt, idle, give, madrid, noCombo, URL_LOGIN, SB } from './helpers.mjs';
 const browser = await launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 });
 const page = await ctx.newPage(); const errors = watchErrors(page); await mockTime(page);
@@ -226,6 +226,39 @@ await ctx2.addInitScript(() => { const real = Date.now; Date.now = () => real() 
 const p2 = await ctx2.newPage(); await mockTime(p2); await open(p2); await p2.waitForTimeout(600);
 check('adelantar el reloj no desbloquea el cofre diario', await p2.evaluate(() => AAP.backend.dailyAvailable() === false && AAP.backend.claimDaily().then(() => false, () => true)));
 await ctx2.close();
+
+console.log('22. Perfil: bandera, nombre e imagen para compartir');
+await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400);
+check('el perfil enseña las 31 banderas redondas', await page.locator('#flag-grid .flag').count() === 31 && await page.evaluate(() => getComputedStyle(document.querySelector('#flag-grid .av')).borderRadius === '50%'));
+await page.click('#flag-grid [data-flag="tercios"]'); await page.waitForTimeout(300);
+check('elegir bandera la marca y la pone en la pestaña', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') === 'tercios' && (await page.locator('#tab-av').innerHTML()).includes('#c8102e'));
+await page.fill('#name-input', 'Tomatero Pro'); await page.click('#form-name button'); await page.waitForTimeout(300);
+check('cambiar el nombre', (await txt('#prof-name')) === 'Tomatero Pro');
+await page.fill('#name-input', 'ab'); await page.click('#form-name button'); await page.waitForTimeout(200);
+check('nombre demasiado corto rechazado', (await txt('#prof-name')) === 'Tomatero Pro');
+await shot('12-perfil');
+await page.click('#btn-share'); await page.waitForFunction(() => document.querySelector('#share-img').naturalWidth > 0, null, { timeout: 15000 });
+check('imagen para compartir de 1080×1920', await page.evaluate(() => { const i = document.querySelector('#share-img'); return i.naturalWidth === 1080 && i.naturalHeight === 1920; }));
+await shot('13-compartir'); await page.click('#share-close'); await page.click('#panel-profile [data-close]');
+check('Hacienda Inversa más moderada: como mucho un 12 %', await page.evaluate(() => { const v = AAP.E.CARDS.hacienda.value; return v(20) <= 0.12 && v(20) > 0.10 && v(1) < 0.02; }));
+
+console.log('23. Acceso obligatorio y Google');
+const p3 = await ctx.newPage(); let authorize = null, googleOn = false;
+await p3.route(SB, route => { const u = new URL(route.request().url());
+  if (u.pathname.endsWith('/auth/v1/settings')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ external: { google: googleOn, email: true } }) });
+  if (u.pathname.endsWith('/auth/v1/authorize')) { authorize = u; return route.fulfill({ status: 200, contentType: 'text/html', body: '<p>google</p>' }); }
+  if (u.pathname.endsWith('/rpc/server_now')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ date: madrid(new Date()), now: new Date().toISOString(), next_midnight: new Date(Date.now() + 6 * 3600e3).toISOString() }) });
+  return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' }); });
+await open(p3, URL_LOGIN); await p3.waitForTimeout(300);
+check('sin sesión aparece la pantalla de cuenta y no se puede cerrar', await p3.evaluate(() => { const p = document.querySelector('#panel-account'); return p.classList.contains('open') && p.classList.contains('forced') && getComputedStyle(p.querySelector('.close')).display === 'none'; }));
+await p3.mouse.click(5, 5); await p3.waitForTimeout(200);
+check('tocar fuera no la cierra', await p3.evaluate(() => document.querySelector('#panel-account').classList.contains('open')));
+await p3.screenshot({ path: 'tests/out/14-acceso.png' });
+await p3.click('#btn-google'); await p3.waitForTimeout(400);
+check('Google sin activar en Supabase: aviso claro', (await p3.locator('#acc-msg').innerText()).includes('Google todavía no está activado'));
+googleOn = true; await p3.click('#btn-google'); await p3.waitForURL(/authorize/, { timeout: 5000 }).catch(() => {});
+check('Google activado: va a Supabase con proveedor google y vuelve al juego', authorize?.searchParams.get('provider') === 'google' && /localhost:8080\//.test(authorize?.searchParams.get('redirect_to') || ''), String(authorize));
+await p3.close();
 
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

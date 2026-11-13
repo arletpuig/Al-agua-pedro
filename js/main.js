@@ -11,7 +11,7 @@ import { setEnabled, SFX } from './audio.js';
 import { DEFAULT_AVATAR } from './avatars.js';
 import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
 import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
-import { showVideo, PLACEMENTS } from './ads.js';
+import { showVideo, PLACEMENTS, videosOn } from './ads.js';
 
 const $ = s => document.querySelector(s);
 let saveTimer = null, saving = null, falconWas = false, opening = false, shareFile = null, shareURL = null;
@@ -50,6 +50,7 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   const on = falconActive(); if (on && !falconWas) { scene.falconFly?.(); ui.showToast('✈️ ¡El Falcón despega! Clics ×5'); } falconWas = on;
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.renderShop();
 }, 1000);
+if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
 if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest };
 
 // ---------- economía ----------
@@ -176,7 +177,7 @@ function setProfile(p, user = sb.auth.user) {
   ui.setAccountUI(user, profile.name, profile.avatar || DEFAULT_AVATAR);
   if ($('#panel-profile').classList.contains('open')) ui.renderProfile(view());
 }
-const view = () => ({ ...profile, hasAvatar: !!profile.avatar, avatar: profile.avatar || DEFAULT_AVATAR, title: profile.title || defaultTitle(sb.auth.user?.id || profile.name || ''), logged: !!sb.auth.user });
+const view = () => ({ ...profile, hasAvatar: !!profile.avatar, flagVideo: !!profile.avatar && videosOn(), avatar: profile.avatar || DEFAULT_AVATAR, title: profile.title || defaultTitle(sb.auth.user?.id || profile.name || ''), logged: !!sb.auth.user });
 async function showProfile() {
   ui.renderProfile(view());
   if (sb.auth.user) try { profile.rank = await sb.myRank(); ui.renderProfile(view()); } catch (e) {}

@@ -3,7 +3,7 @@
 // El servidor guarda cuándo se ofreció y solo deja abrirlo una vez y antes de que caduque (schema_v9.sql).
 import { state } from './state.js';
 import { backend } from './backend.js';
-import { showVideo, PLACEMENTS } from './ads.js';
+import { showVideo, PLACEMENTS, videosOn } from './ads.js';
 import { SFX } from './audio.js';
 
 const $ = s => document.querySelector(s);
@@ -37,7 +37,9 @@ function drop() {
   SFX.near?.();
   setTimeout(() => { d.classList.add('landed'); SFX.chestOpen?.(); setTimeout(() => { d.classList.add('hidden'); openModal(); }, 450); }, 3000);
 }
-function openModal() { if (!backend.welcomeLeftMs()) return; $('#gift-slot').classList.add('hidden'); $('#gift-overlay').classList.add('open'); SFX.ui(); tick(); }
+// sin anuncios todavía, el regalo se abre directamente
+function watchLabel() { $('#gift-watch-lbl').textContent = videosOn() ? 'VER VÍDEO Y ABRIR' : '¡ABRIR REGALO!'; $('#gift-watch').classList.toggle('novideo', !videosOn()); }
+function openModal() { if (!backend.welcomeLeftMs()) return; watchLabel(); $('#gift-slot').classList.add('hidden'); $('#gift-overlay').classList.add('open'); SFX.ui(); tick(); }
 function later() { $('#gift-overlay').classList.remove('open'); park(); SFX.ui(); }
 function park() { $('#gift-slot').classList.remove('hidden'); tick(); }
 async function watch() {

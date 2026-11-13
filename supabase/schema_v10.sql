@@ -7,11 +7,18 @@
 
 alter table public.profiles add column if not exists ad_claims jsonb not null default '{}'::jsonb;
 
+-- Interruptor: los vídeos recompensados están APAGADOS hasta que Google apruebe los anuncios.
+-- Para encenderlos:  update public.aap_config set value = 'true' where key = 'rewarded_ads';
+create table if not exists public.aap_config (key text primary key, value text not null);
+revoke all on public.aap_config from public, anon, authenticated;
+insert into public.aap_config (key, value) values ('rewarded_ads', 'false') on conflict (key) do nothing;
+
 create or replace function public.claim_ad_reward(p_placement text, p_token text) returns public.profiles
 language plpgsql security definer set search_path = public as $$
 declare cur public.profiles; today text := ((now() at time zone 'Europe/Madrid')::date)::text; claims jsonb; n integer; lim integer; row_out public.profiles;
 begin
   if auth.uid() is null then raise exception 'Necesitas iniciar sesión'; end if;
+  if coalesce((select value from public.aap_config where key = 'rewarded_ads'), 'false') <> 'true' then raise exception 'Los anuncios todavía no están disponibles'; end if;
   if p_placement not in ('falcon', 'sobre') then raise exception 'Esa oferta no existe'; end if;
   select * into cur from public.profiles where user_id = auth.uid() for update;
   if not found then raise exception 'El perfil no existe'; end if;

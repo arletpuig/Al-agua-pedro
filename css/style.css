@@ -523,3 +523,6 @@ svg { display: block; }
 .ad-lbl { display: block; margin: 0 0 4px 4px; font: 700 10px 'Baloo 2'; letter-spacing: .08em; text-transform: uppercase; color: #8e9bd0; }
 .ad-ph { display: grid; place-items: center; height: 90px; border-radius: 10px; border: 2px dashed #ffffff33; font: 700 13px 'Baloo 2'; color: #8e9bd0; }
 #flag-note { margin-top: -6px; }
+
+/* v17: sin vídeo (anuncios aún no aprobados) */
+.btn-gold.novideo svg { display: none; }

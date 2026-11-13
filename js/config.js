@@ -19,6 +19,9 @@ export const CONFIG = {
   AUTOSAVE_MS: 4000,
   // Anuncios fijos de AdSense en los paneles (Perfil, Cartas, Tienda; nunca en la pantalla de juego).
   // Pon aquí el «data-ad-slot» de cada bloque que crees en AdSense (Anuncios → Por bloque de anuncios → Display).
+  // Vídeos recompensados: APAGADOS hasta que Google apruebe los anuncios (AdSense / H5 Games Ads).
+  // Apagados: el regalo de bienvenida se abre sin vídeo, cambiar de bandera es gratis y El Falcón y el Sobre muestran «PRONTO».
+  REWARDED_ADS: false,
   ADSENSE: { client: 'ca-pub-7829705078320776', slots: { profile: '', cards: '', shop: '' } },
   SUPABASE_URL: 'https://xfsvruccotcymcvxzymy.supabase.co',
   SUPABASE_KEY: 'sb_publishable_pjACLB15yr95O19i3NC8mQ_IOv0bQpP', // clave pública (anon), segura en el navegador

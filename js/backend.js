@@ -2,7 +2,7 @@
 import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { state, applyServer, applyChestLocal, changed, snapshot, falconActive } from './state.js';
-import { showVideo } from './ads.js';
+import { showVideo, videosOn } from './ads.js';
 
 let timeOffset = 0, nextMidnight = null, serverChecked = false, flush = async () => {};
 // Antes de una operación en la nube se envía el progreso pendiente, para que el servidor conozca las pesetas ganadas.
@@ -72,6 +72,7 @@ export const backend = {
   },
   // Vídeo recompensado de la tienda (El Falcón o Sobre de la Moncloa). Con cuenta lo concede el servidor, con límite diario.
   async watchAd(placement) {
+    if (!videosOn()) throw new Error('Los anuncios todavía no están disponibles');
     if (placement === 'falcon' && falconActive()) throw new Error('El Falcón ya está en marcha');
     const v = await showVideo(placement);
     if (!v.completed) throw new Error('No has completado el vídeo');

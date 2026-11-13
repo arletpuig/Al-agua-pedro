@@ -272,7 +272,7 @@ export function renderProfile(p) {
   const grid = g => AVATARS.filter(a => a.group === g).map(a => `<button class="flag ${a.id === p.avatar ? 'on' : ''}" data-flag="${a.id}" aria-label="${esc(a.name)}"><span class="av">${avatarSVG(a.id, 54)}</span><em>${esc(a.name)}</em></button>`).join('');
   $('#flag-grid').innerHTML = grid('p') + `<h3 class="sec sub" style="grid-column:1/-1">Comunidades y ciudades autónomas</h3>` + grid('c');
   $('#btn-logout').classList.toggle('hidden', !p.logged);
-  $('#flag-note').classList.toggle('hidden', !p.hasAvatar);
+  $('#flag-note').classList.toggle('hidden', !p.flagVideo);
 }
 // Vista previa de la imagen para compartir
 export function showShare() {

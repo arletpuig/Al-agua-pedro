@@ -103,9 +103,14 @@ s = await S(page);
 check('los tomates históricos no bajan al lanzar', s.tomatoesEarned === Math.floor(s.totalClicks / 200) + s.chestTomatoes && s.tomatoes === s.tomatoesEarned - s.tomatoesThrown, `(históricos ${s.tomatoesEarned}, disponibles ${s.tomatoes})`);
 check('las estadísticas lo muestran', await page.evaluate(n => { AAP.ui.renderStats(); return document.querySelector('#stats-list').innerText.includes(n.toLocaleString('es-ES')); }, s.tomatoesEarned));
 
-console.log('18. Vídeos recompensados de la tienda (vídeo de muestra)');
-await page.evaluate(async () => { (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+console.log('18. Vídeos recompensados de la tienda');
 await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(300); await shot('06-tienda');
+check('sin anuncios aprobados: El Falcón y el Sobre en «PRONTO»', await page.locator('#btn-falcon').isDisabled() && await page.locator('#btn-sobre').isDisabled() && (await txt('#btn-sobre')).includes('PRONTO'));
+check('y no conceden nada', await page.evaluate(() => AAP.backend.watchAd('sobre').then(() => false, e => /no están disponibles/.test(e.message))));
+await page.click('#panel-shop [data-close]');
+// con los vídeos encendidos (vídeo de muestra), como cuando Google apruebe los anuncios
+await page.evaluate(async () => { const m = await import('./js/ads.js'); m.DEMO_AD.seconds = 1; m.adsTest.on = true; });
+await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(300);
 check('botones de vídeo activos', !(await page.locator('#btn-sobre').isDisabled()) && (await txt('#btn-sobre')).includes('VÍDEO'));
 before = await S(page);
 await page.click('#btn-sobre'); await page.waitForTimeout(300);
@@ -115,7 +120,7 @@ check('Sobre de la Moncloa: +25 pesetas tras el vídeo', s.pesetas === before.pe
 await page.evaluate(async () => { AAP.state.stats.chestPesetas -= 25; (await import('./js/state.js')).changed(false); });   // se devuelven para no alterar las pruebas siguientes
 await page.click('#btn-falcon'); await page.waitForTimeout(1700); s = await S(page);
 check('El Falcón se activa tras el vídeo', s.falcon > Date.now() && await page.locator('#btn-falcon').isDisabled());
-await page.evaluate(() => { AAP.state.falconUntil = 0; });
+await page.evaluate(async () => { AAP.state.falconUntil = 0; (await import('./js/ads.js')).adsTest.on = false; });
 await page.click('#panel-shop [data-close]');
 
 console.log('El Falcón: indicador y multiplicador (estado simulado, sin anuncio)');
@@ -239,10 +244,14 @@ await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400)
 check('el perfil enseña las 35 banderas redondas', await page.locator('#flag-grid .flag').count() === 35 && await page.evaluate(() => getComputedStyle(document.querySelector('#flag-grid .av')).borderRadius === '50%'));
 await page.click('#flag-grid [data-flag="tercios"]'); await page.waitForTimeout(300);
 check('elegir bandera la marca y la pone en la pestaña', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') === 'tercios' && (await page.locator('#tab-av').innerHTML()).includes('#c8102e'));
-await page.evaluate(async () => { (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+await page.click('#flag-grid [data-flag="cruz"]'); await page.waitForTimeout(300);
+check('sin anuncios aprobados, cambiar de bandera es gratis', !(await page.evaluate(() => document.querySelector('#ad-overlay').classList.contains('open'))) && await page.locator('#flag-grid .flag.on').getAttribute('data-flag') === 'cruz' && !(await page.locator('#flag-note').isVisible()));
+await page.evaluate(async () => { const m = await import('./js/ads.js'); m.DEMO_AD.seconds = 1; m.adsTest.on = true; });
+await page.click('#flag-grid [data-flag="tercios"]'); await page.waitForTimeout(1600);
 await page.click('#flag-grid [data-flag="vox"]'); await page.waitForTimeout(300);
 check('cambiar de bandera pide ver un vídeo', await page.evaluate(() => document.querySelector('#ad-overlay').classList.contains('open')) && await page.locator('#flag-note').isVisible());
 await page.waitForTimeout(1500);
+await page.evaluate(async () => { (await import('./js/ads.js')).adsTest.on = false; });
 check('después del vídeo se pone la bandera nueva', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') === 'vox', await page.locator('#flag-grid .flag.on').getAttribute('data-flag') + ' · ' + await page.locator('#toast').innerText());
 await page.fill('#name-input', 'Tomatero Pro'); await page.click('#form-name button'); await page.waitForTimeout(300);
 check('cambiar el nombre', (await txt('#prof-name')) === 'Tomatero Pro');
@@ -279,7 +288,7 @@ check('Google activado: va a Supabase con proveedor google y vuelve al juego', a
 await p3.close();
 
 console.log('24. Regalo de bienvenida en paracaídas');
-await page.evaluate(async () => { AAP.giftTest.off = false; AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = null; (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+await page.evaluate(async () => { AAP.giftTest.off = false; AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = null; const m = await import('./js/ads.js'); m.DEMO_AD.seconds = 1; m.adsTest.on = true; });
 await give(page, { tomatoes: 2 }); before = await S(page);
 await throwN(1); await stopAt(page, 0, 10); await idle(page);
 check('al tirar a Pedro baja un cofre en paracaídas', await page.evaluate(() => !document.querySelector('#gift-drop').classList.contains('hidden')));
@@ -298,7 +307,13 @@ check('el regalo da 50–60 pesetas, 30–40 tomates y 2 cartas', s.chestPesetas
 check('solo se puede abrir una vez', await page.evaluate(() => AAP.backend.claimWelcome().then(() => false, e => /Ya has abierto/.test(e.message))));
 await page.evaluate(async () => { AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = AAP.backend.now() - 11 * 60000; (await import('./js/gift.js')).restoreGift(); });
 check('a los 10 minutos caduca y desaparece', !(await page.locator('#gift-slot').isVisible()) && await page.evaluate(() => AAP.backend.claimWelcome().then(() => false, e => /caducado/.test(e.message))));
-await page.evaluate(() => { AAP.state.welcomeClaimed = true; });
+// sin anuncios aprobados: el regalo se abre directamente, sin vídeo
+await page.evaluate(async () => { (await import('./js/ads.js')).adsTest.on = false; AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = AAP.backend.now(); (await import('./js/gift.js')).restoreGift(); });
+await page.click('#gift-slot', { force: true }); await page.waitForTimeout(300);
+check('sin anuncios aprobados: botón «¡ABRIR REGALO!» sin vídeo', (await txt('#gift-watch')).includes('ABRIR REGALO'));
+await page.click('#gift-watch', { force: true }); await page.waitForTimeout(300);
+check('y se abre directamente', !(await page.evaluate(() => document.querySelector('#ad-overlay').classList.contains('open'))) && await page.evaluate(() => document.querySelector('#chest-overlay').classList.contains('open')));
+await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 10000 }); await page.click('#chest-btn'); await page.waitForTimeout(300);
 
 console.log('25. Versión de pruebas: siempre desde cero');
 const p4 = await ctx.newPage(); await mockTime(p4);

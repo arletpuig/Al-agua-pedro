@@ -62,5 +62,6 @@ Tras cambiar la ilustración de referencia: `python3 tools/pedro-parts.py` (nece
 Ver `tests/README.md`.
 
 ## Anuncios
+- **Interruptor**: los vídeos recompensados están APAGADOS hasta que Google apruebe los anuncios (`CONFIG.REWARDED_ADS` en `js/config.js` y `aap_config.rewarded_ads` en el servidor). Apagados: el regalo de bienvenida se abre sin vídeo, cambiar de bandera es gratis y El Falcón y el Sobre muestran «PRONTO».
 - **Vídeos recompensados** (`js/ads.js`): regalo de bienvenida, El Falcón (hasta 6 al día), Sobre de la Moncloa (25 pesetas, hasta 10 al día) y cambiar de bandera (la primera es gratis). Mientras no haya proveedor se usa un vídeo de muestra de 5 segundos. Para el proveedor real: implementar `isAvailable`/`showRewarded` y usar `setAdProvider`. El servidor (`claim_ad_reward`, schema_v10) aplica los límites diarios.
 - **Anuncios fijos de AdSense** solo dentro de los paneles de Perfil, Cartas y Tienda (nunca en la pantalla de juego). Se activan poniendo el `data-ad-slot` de cada bloque en `CONFIG.ADSENSE.slots` (`js/config.js`). En la versión de pruebas se ve un recuadro donde irán.

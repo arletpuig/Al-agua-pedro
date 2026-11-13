@@ -108,14 +108,17 @@ await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(700); 
 check('mejora validada: nivel +1, precio con descuento de Mariscada idéntico en cliente y servidor', row.cards.inflacion.level === before.cards.inflacion.level + 1 && row.pesetas_spent === before.pesetas_spent + cost && s.pesetas === row.pesetas, `(coste ${cost})`);
 check('mejora imposible rechazada', await page.evaluate(() => AAP.backend.upgradeCard('amnistia').then(() => AAP.state.cards.amnistia.level === 0 ? false : 'ok', e => true)));
 await page.click('#panel-cards .close');
-await page.evaluate(async () => { (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+check('sin anuncios aprobados, el servidor no concede vídeos', (() => { try { psql(`select public.claim_ad_reward('sobre', 'x')`, 'authenticated', row.user_id); return false; } catch (e) { return /no están disponibles/.test(String(e.stderr)); } })());
+psql(`update public.aap_config set value = 'true' where key = 'rewarded_ads'`);   // como cuando Google apruebe los anuncios
+await page.evaluate(async () => { const m = await import('./js/ads.js'); m.DEMO_AD.seconds = 1; m.adsTest.on = true; });
 before = db(email); await page.evaluate(() => AAP.backend.watchAd('sobre')); await page.waitForTimeout(400); row = db(email); s = await S(page);
 check('Sobre de la Moncloa en el servidor: +25 pesetas', row.chest_pesetas === before.chest_pesetas + 25 && s.pesetas === row.pesetas, `(${before.pesetas} → ${row.pesetas})`);
 await page.evaluate(() => AAP.backend.watchAd('falcon')); await page.waitForTimeout(400);
 check('El Falcón en el servidor (y no se puede repetir mientras dura)', !!db(email).falcon_until && await page.evaluate(() => AAP.backend.watchAd('falcon').then(() => false, e => /ya está en marcha/.test(e.message))));
 psql(`update public.profiles set ad_claims = jsonb_build_object('day', ((now() at time zone 'Europe/Madrid')::date)::text, 'sobre', 10), falcon_until = null where user_id = '${row.user_id}'`);
 check('límite diario de sobres', (() => { try { psql(`select public.claim_ad_reward('sobre', 'x')`, 'authenticated', row.user_id); return false; } catch (e) { return /Vuelve mañana/.test(String(e.stderr)); } })());
-await page.evaluate(() => { AAP.state.falconUntil = 0; });
+await page.evaluate(async () => { AAP.state.falconUntil = 0; (await import('./js/ads.js')).adsTest.on = false; });
+psql(`update public.aap_config set value = 'false' where key = 'rewarded_ads'`);
 
 console.log('I. Título del perfil y regalo de bienvenida en el servidor');
 await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400);
@@ -123,7 +126,7 @@ await page.fill('#title-input', 'Azote de Ferraz'); await page.click('#form-titl
 check('el título se guarda en el servidor', db(email).title === 'Azote de Ferraz' && (await page.locator('#prof-title').textContent()) === 'Azote de Ferraz');
 await page.click('#panel-profile [data-close]');
 psql(`update public.profiles set welcome_offered_at = null, welcome_claimed = false where user_id = '${row.user_id}'`);
-await page.evaluate(async () => { AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = null; AAP.giftTest.off = false; (await import('./js/ads.js')).DEMO_AD.seconds = 1; });
+await page.evaluate(async () => { AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = null; AAP.giftTest.off = false; });
 await page.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(page, 0, 10); await idle(page);
 await page.waitForSelector('#gift-overlay.open', { timeout: 10000 }).catch(() => {});
 check('tras tirar a Pedro, el servidor ofrece el regalo y empieza la cuenta atrás', !!db(email).welcome_offered_at && await page.evaluate(() => document.querySelector('#gift-overlay').classList.contains('open')));

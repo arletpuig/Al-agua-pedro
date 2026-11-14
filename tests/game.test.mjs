@@ -348,5 +348,45 @@ await page.click('.pack.maletin .pk-buy', { force: true }); await page.waitForTi
 check('sin cuenta no se puede comprar: avisa y no abre nada', /iniciar sesión|muy pronto/.test(await txt('#toast')) && !(await page.evaluate(() => document.querySelector('#pay-overlay').classList.contains('open'))));
 await page.click('#panel-shop [data-close]');
 
+console.log('27. Guía de bienvenida para jugadores nuevos');
+{
+  const c5 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p5 = await c5.newPage(); const e5 = watchErrors(p5); await mockTime(p5);
+  await open(p5, undefined, { tour: true }); await p5.evaluate(() => { AAP.giftTest.off = true; });
+  await p5.waitForSelector('#tour', { timeout: 6000 }).catch(() => {});
+  check('jugador nuevo: aparece la guía sola', await p5.locator('#tour').count() === 1);
+  const n = await p5.locator('.tour-dots i').count(); check('la guía tiene 8 pasos', n === 8, `(${n})`);
+  await p5.screenshot({ path: 'tests/out/27-guia-1.png' });
+  const inside = sel => p5.evaluate(sel => { const h = document.querySelector('.tour-hole').getBoundingClientRect(), t = document.querySelector(sel).getBoundingClientRect(); return t.left >= h.left - 1 && t.right <= h.right + 1 && t.top >= h.top - 1 && t.bottom <= h.bottom + 1; }, sel);
+  const bubbleOk = () => p5.evaluate(() => { const b = document.querySelector('.tour-bubble').getBoundingClientRect(), a = document.querySelector('#app').getBoundingClientRect(); return b.top >= a.top && b.bottom <= a.bottom && b.left >= a.left && b.right <= a.right; });
+  let okAll = true, ok2;
+  for (let k = 1; k < n; k++) { await p5.click('.tour-next'); await p5.waitForTimeout(900); okAll = okAll && await bubbleOk();
+    if (k === 1) { ok2 = await inside('#btn-click'); await p5.screenshot({ path: 'tests/out/27-guia-2.png' }); }
+    if (k === 5) await p5.screenshot({ path: 'tests/out/27-guia-6.png' }); }
+  check('señala el botón ¡DALE!', ok2);
+  check('el bocadillo siempre cabe en la pantalla', okAll);
+  check('el último paso es «¡A POR ÉL!» y señala el Ranking', (await p5.locator('.tour-next').textContent()) === '¡A POR ÉL!' && await inside('#tabs [data-panel="rank"]'));
+  const blocked = await p5.evaluate(() => { const b = AAP.state.stats.totalClicks; document.querySelector('#tour').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); return AAP.state.stats.totalClicks === b; });
+  check('mientras está la guía no se juega sin querer', blocked);
+  await p5.click('.tour-next'); await p5.waitForTimeout(300);
+  check('al terminar desaparece y una mano invita a pulsar ¡DALE!', await p5.locator('#tour').count() === 0 && await p5.locator('.tap-hint').count() === 1);
+  await tap(p5, 1); await p5.waitForTimeout(100);
+  check('la mano se va al primer toque', await p5.locator('.tap-hint').count() === 0);
+  await p5.reload(); await p5.waitForFunction(() => window.AAP?.scene?.ready); await p5.waitForTimeout(2500);
+  check('no vuelve a salir al volver a entrar', await p5.locator('#tour').count() === 0);
+  await p5.click('#btn-settings'); await p5.waitForTimeout(300); await p5.click('#btn-help'); await p5.waitForTimeout(400);
+  check('se puede volver a ver desde Ajustes → Cómo se juega', await p5.locator('#tour').count() === 1 && !(await p5.locator('#panel-settings.open').count()));
+  await p5.click('.tour-skip'); await p5.waitForTimeout(200);
+  check('«Saltar» la cierra', await p5.locator('#tour').count() === 0);
+  check('guía: sin errores en consola', e5.length === 0, e5.join(' | '));
+  await c5.close();
+  // un jugador que ya ha jugado (en otro dispositivo, por ejemplo) no la ve
+  const c6 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p6a = await c6.newPage(); await mockTime(p6a); await open(p6a);
+  await tap(p6a, 30); await p6a.waitForTimeout(600); await p6a.close();
+  const p6 = await c6.newPage(); await mockTime(p6);
+  await open(p6, undefined, { tour: true }); await p6.waitForTimeout(2500);
+  check('quien ya ha jugado no ve la guía', await p6.locator('#tour').count() === 0);
+  await c6.close();
+}
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

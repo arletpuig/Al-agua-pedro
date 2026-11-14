@@ -24,7 +24,7 @@ export function init(handlers) {
   $('#btn-sound').addEventListener('click', () => { unlock(); setSoundUI(!state.sound, state.music); SFX.ui(); });
   $('#btn-music').addEventListener('click', () => { unlock(); setSoundUI(state.music ? state.sound : true, !state.music); });
   $('#btn-stats').addEventListener('click', () => { renderStats(); closePanel($('#panel-settings')); openPanel('#panel-stats'); });
-  $('#btn-help').addEventListener('click', () => { closePanel($('#panel-settings')); showTutorial(null); });
+  $('#btn-help').addEventListener('click', () => { closePanel($('#panel-settings')); H.onHelp ? H.onHelp() : showTutorial(null); });
   $('#pill-pesetas').addEventListener('click', () => openPanel('#panel-shop'));
   $('#throws').addEventListener('click', e => { const b = e.target.closest('button[data-n]'); if (b && !b.disabled) { unlock(); H.onThrow(+b.dataset.n); } });
   $('#btn-daily').addEventListener('click', () => { unlock(); backend.dailyAvailable() ? H.onClaimDaily() : openPanel('#panel-shop'); });

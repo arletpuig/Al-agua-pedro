@@ -13,6 +13,7 @@ import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
 import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
 import { showVideo, PLACEMENTS, videosOn } from './ads.js';
 import { initPayments, openPack, consumeReturn, awaitPurchase } from './payments.js';
+import { maybeTour, startTour, tourTest } from './tour.js';
 const payReturn = consumeReturn();   // vuelta de la página de pago de Stripe
 
 const $ = s => document.querySelector(s);
@@ -30,7 +31,7 @@ load();
 setEnabled(state.sound);
 const { scene } = createArena('game', { top: 58, bottom: 252 });
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank,
-  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onTitle: saveTitle, onPack: id => openPack(id), onShare: share, onShareGo: shareGo, onShareSave: shareSave });
+  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onTitle: saveTitle, onPack: id => openPack(id), onHelp: () => startTour(), onShare: share, onShareGo: shareGo, onShareSave: shareSave });
 ui.setAccountUI(null, null, profile.avatar || DEFAULT_AVATAR);
 // con un panel o una ventana delante, el escenario se dibuja más despacio
 new MutationObserver(() => { scene.covered = !!document.querySelector('.panel.open, .overlay.open'); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
@@ -44,7 +45,7 @@ function gatePedro() {
 const start = () => {
   try { gatePedro(); } catch (e) {}
   window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { pushNow(); if (r?.[0]?.fall) maybeOffer(); } });
-  initGift(ui, e => fail(e)); if (!ui.gated()) restoreGift();
+  initGift(ui, e => fail(e)); if (!ui.gated()) { restoreGift(); maybeTour(); }
   initPayments(ui, e => fail(e), async () => { const row = await sb.getProfile(); state.updatedAt = null; applyServer(row); ui.hud(); });
   if (state.welcome && !ui.gated()) setTimeout(() => ui.showToast(`🎁 ¡Regalo de bienvenida! ${CONFIG.WELCOME.tomatoes} tomates y ${CONFIG.WELCOME.pesetas} pesetas para empezar`, 4200), 900);
 };
@@ -56,7 +57,7 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
@@ -121,7 +122,7 @@ async function afterLogin(user) {
       row = await sb.importGuest({ totalClicks: s.totalClicks, legacyClicks: s.legacyClicks, legacyTomatoes: s.legacyTomatoes, tomatoesThrown: s.tomatoesThrown, hits: s.hits, perfects: s.perfects, falls: s.falls, pesetasEarned: s.pesetasEarned, tomatoesRefunded: s.tomatoesRefunded || 0, paguitasPesetas: s.paguitasPesetas || 0, chestTomatoes: s.chestTomatoes, chestPesetas: s.chestPesetas, pesetasSpent: s.pesetasSpent, chestsOpened: s.chestsOpened, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn });
       applyServer(row); ui.showToast('☁️ Tu progreso se ha guardado en tu cuenta');
     } else if (row) { applyServer(row); ui.showToast('☁️ Progreso cargado de tu cuenta'); }
-    ui.hud(); restoreGift();
+    ui.hud(); restoreGift(); maybeTour();   // jugador nuevo: guía de bienvenida
     if (payReturn && !payReturn.done) { payReturn.done = true;
       if (payReturn.status === 'ok') awaitPurchase(payReturn.session);
       else ui.showToast('Pago cancelado: no se te ha cobrado nada', 2800); }

@@ -12,7 +12,7 @@ async function shot(name, svg) {
   await page.locator('#o').screenshot({ path: `${OUT}/${name}.png`, omitBackground: true });
 }
 // ---------- piezas vectoriales: 4 px por unidad (el atlas las reduce a la mitad) ----------
-for (const dir of ['assets/parts', 'assets/img']) for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.svg'))) {
+for (const dir of ['assets/parts', 'assets/img', 'assets/shop']) for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.svg'))) {
   const svg = fs.readFileSync(`${dir}/${f}`, 'utf8'); const [, w, h] = /width="([\d.]+)" height="([\d.]+)"/.exec(svg);
   await shot(f.replace('.svg', ''), `<img id="o" src="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}" width="${w * 4}" height="${h * 4}">`);
 }
@@ -53,6 +53,11 @@ const HEADS = {
   headShock: P.brows + P.mouth + `<ellipse cx="640" cy="434" rx="58" ry="38" fill="#fff" stroke="${INK}" stroke-width="8"/><ellipse cx="840" cy="450" rx="46" ry="32" fill="#fff" stroke="${INK}" stroke-width="8"/>${pupil(650, 438, 15)}${pupil(846, 452, 13)}
     <path d="M548,356 Q640,298 742,358 L738,384 Q640,330 556,382Z" fill="${BROW}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M806,378 Q850,334 896,352 L897,378 Q850,362 812,402Z" fill="${BROW}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>
     <ellipse cx="724" cy="652" rx="50" ry="58" fill="#5a0f18" stroke="${INK}" stroke-width="9"/><ellipse cx="724" cy="688" rx="28" ry="16" fill="#f26a72"/>`,
+  // mareado (Besugo, Pollo de goma): ojos en espiral y boca torcida con la lengua fuera
+  headDizzy: P.eyes + P.mouth + ['M638,436', 'M838,452'].map((m, i) => { const [cx, cy] = m.slice(1).split(',').map(Number), k = i ? .85 : 1;
+    return `<path d="M${cx},${cy} m-4,0 a4,4 0 1 1 8,0 a9,9 0 1 1 -18,0 a14,14 0 1 1 28,0 a20,20 0 1 1 -40,2" transform="translate(${cx} ${cy}) scale(${k * 1.4}) translate(${-cx} ${-cy})" stroke="${INK}" stroke-width="5" fill="#fff"/>`; }).join('')
+    + `<path d="M600,612 Q640,590 680,618 Q720,642 760,610 Q800,590 836,620 Q800,676 730,672 Q650,670 600,612Z" fill="#5a0f18" stroke="${INK}" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M700,652 Q712,700 744,706 Q776,700 772,650Z" fill="#f26a72" stroke="${INK}" stroke-width="6"/><path d="M738,660 v30" stroke="#c4404c" stroke-width="5"/>`,
   headAngry: P.brows + P.mouth + `<path d="M545,384 L602,360 L756,420 L750,448 L598,400 L556,406Z" fill="${BROW}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M802,416 L892,366 L899,394 L808,446Z" fill="${BROW}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>
     <path d="M606,646 Q720,586 838,646 Q842,676 724,672 Q604,680 606,646Z" fill="#fff" stroke="${INK}" stroke-width="9" stroke-linejoin="round"/>
     <path d="M610,650 Q720,626 834,650 M660,618 v52 M720,606 v64 M780,616 v54" stroke="${INK}" stroke-width="4" fill="none"/>
@@ -65,5 +70,5 @@ await shot('bust', wrap(BUST_BOX, `<polygon points="486,718 495,782 680,882 745,
   <defs><clipPath id="bc"><path clip-rule="evenodd" d="M0,0 H1312 V1199 H0Z M${HEAD_POLY.split(' ').join(' L')}Z"/></clipPath></defs>`));
 // fondo del escenario a 1440x1920 (el atlas builder lo convierte a JPG)
 await page.setViewportSize({ width: 1440, height: 1920 });
-await shot('../bg', `<img id="o" src="data:image/svg+xml;base64,${fs.readFileSync('assets/src/bg.svg').toString('base64')}" width="1440" height="1920">`);
+for (const n of ['bg', 'bg-shop', 'fg-shop']) await shot(`../${n}`, `<img id="o" src="data:image/svg+xml;base64,${fs.readFileSync(`assets/src/${n}.svg`).toString('base64')}" width="1440" height="1920">`);
 await browser.close(); console.log('render ok ->', OUT, fs.readdirSync(OUT).length, 'imágenes');

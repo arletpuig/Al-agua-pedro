@@ -20,7 +20,7 @@ const PARTS = {
 };
 const HEAD_PARTS = ['head', 'noseTomato', 'sweat'];
 const GESTURES = ['armUp', 'armNose', 'armPoint'];
-const HEAD_FRAME = { smile: 'head', smug: 'head', laugh: 'headLaugh', shock: 'headShock', angry: 'headAngry' };
+const HEAD_FRAME = { smile: 'head', smug: 'head', laugh: 'headLaugh', shock: 'headShock', angry: 'headAngry', dizzy: 'headDizzy' };
 const rnd = (a, b) => a + Math.random() * (b - a);
 const REST_L = -52, REST_R = 51;
 
@@ -106,6 +106,13 @@ export class Pedro extends Phaser.GameObjects.Container {
   setMood(m) { this.locked = m !== 'smile'; if (this.locked) this.stopBeat(); this.mood = m; this.p.head.setFrame(HEAD_FRAME[m] || 'head'); this.p.sweat.setVisible(m === 'shock'); }
   setGesture(g) { GESTURES.forEach(k => this.p[k].setVisible(k === g)); this.p.armR.setVisible(!g); this.p.noseTomato.setVisible(g === 'armNose'); }
   setWet(v) { this.wet = v; const tint = v ? 0xdcecfa : 0xffffff; ['head', 'bust', 'hips', 'shinL', 'shinR', 'armL', 'armR', 'armUp', 'armNose', 'armPoint'].forEach(k => this.p[k].setTint(tint)); v ? this.drips.start() : this.drips.stop(); }
+  // capas que se pegan a la cara y giran con la cabeza (nata, marca de chancla...): coordenadas locales de la cabeza
+  overlay(frame, x, y, scale = 1) {
+    const sp = this.scene.add.image(x, y, 'atlas', frame).setScale(scale / TEX_SCALE); sp.base = { x, y, angle: 0 };
+    this.add(sp); this.headParts.push(sp); this.applyHead(); return sp;
+  }
+  dropOverlay(sp) { this.headParts = this.headParts.filter(s => s !== sp); sp.destroy(); }
+  setTintAll(c) { ['head', 'bust', 'hips', 'shinL', 'shinR', 'armL', 'armR', 'armUp', 'armNose', 'armPoint'].forEach(k => this.p[k].setTint(c)); }
   tween(cfg) { return new Promise(r => this.scene.tweens.add({ ...cfg, onComplete: r })); }
   wait(ms) { return new Promise(r => this.scene.time.delayedCall(ms, r)); }
   // --- reacciones ---

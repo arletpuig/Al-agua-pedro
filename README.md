@@ -20,6 +20,8 @@ y abre http://localhost:8080
 | Carpeta | Contenido |
 |---|---|
 | `js/game/` | Escena Phaser: `scene.js` (lanzamiento y efectos), `pedro.js` (personaje por capas), `scenery.js` (feria) |
+| `js/game/shop-scene.js`, `abascal.js`, `arsenal.js` | La Trastienda: puesto de Abascal y animaciones de los objetos (ver `docs/trastienda.md`) |
+| `js/shop.js` | Objetos de La Trastienda, precios y compra |
 | `js/economy.js` | Reglas de la economía: cartas, cofres, precios, probabilidades |
 | `js/play.js` | Clics, lanzamientos múltiples, decisión de caída |
 | `js/backend.js` | Cofres, cofre diario y mejoras: en local (invitado) o en el servidor (con cuenta) |
@@ -34,8 +36,9 @@ y abre http://localhost:8080
 ## Regenerar los gráficos
 Tras cambiar la ilustración de referencia o alguna pieza SVG:
 ```
-node tools/render.mjs && python3 tools/build-atlas.py
+python3 tools/art-shop.py && node tools/render.mjs && python3 tools/build-atlas.py
 ```
+`tools/art-shop.py` dibuja a Abascal, los objetos y el puesto de La Trastienda.
 `tools/render.mjs` recorta la cabeza y el busto de la ilustración, compone las 5 expresiones (normal, parpadeo, risa, susto, enfado) y rasteriza las piezas vectoriales.
 
 ## Economía (resumen)
@@ -43,6 +46,7 @@ node tools/render.mjs && python3 tools/build-atlas.py
 - Impacto perfecto (centro amarillo) = Pedro cae = 1 peseta. Impacto cercano: solo cae con la carta Apagón.
 - Cofre de madera: 15 ₧ (uno gratis al día). Cofre de diamante: 80 ₧.
 - Cartas: Inflación (común), Joyas de Zapatero y Apagón (raras), Mariscada Sindical (épica), Amnistía (legendaria). Las repetidas dan fragmentos; mejorar cuesta fragmentos y pesetas.
+- La Trastienda (tras 300 caídas): seis objetos permanentes para lanzar a Pedro, de 120 a 700 ₧, y uno de pago. Ver `docs/trastienda.md`.
 - Simulación de progresión: `node tests/sim-economy.mjs`.
 
 ## Pruebas

@@ -5,6 +5,7 @@ Necesitan Node y Playwright (`npm i -D playwright`) y el juego servido en http:/
 | Comando | Qué comprueba |
 |---|---|
 | `node tests/game.test.mjs` | Juego completo como invitado: clics, tomates, ×1/×3/×5/×10, precisión, caídas, pesetas, cofres, cofre diario, cartas, potenciadores, anuncios desactivados, persistencia |
+| `node tests/shop.test.mjs` | La Trastienda: puerta cerrada y desbloqueo, entrada al puesto, compra, falta de pesetas, objeto de pago bloqueado, las seis animaciones (Pedro vuelve a su sitio), arsenal y persistencia |
 | `node tests/layout.test.mjs` | Interfaz en 10 tamaños (móviles, tabletas, escritorio; vertical y apaisado) |
 | `sh tests/pg-reset.sh && node tests/cloud.test.mjs` | Parte online de extremo a extremo contra el SQL real en un PostgreSQL local (puerto 5433) |
 | `sh tests/pg-reset.sh && psql -h /tmp -p 5433 -U postgres -d aap -f tests/sql-test.sql` | Funciones SQL y permisos |

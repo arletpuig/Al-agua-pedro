@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960" width="720" height="960"><defs>
+<radialGradient id="skin" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#f6c39c"/><stop offset=".6" stop-color="#e8a479"/><stop offset="1" stop-color="#c27a52"/></radialGradient>
+<linearGradient id="skinH" x1="0" x2="1"><stop offset="0" stop-color="#c27a52"/><stop offset=".45" stop-color="#f6c39c"/><stop offset="1" stop-color="#c27a52"/></linearGradient>
+<linearGradient id="beard" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4d372b"/><stop offset=".5" stop-color="#2b1d17"/><stop offset="1" stop-color="#160e0b"/></linearGradient>
+<linearGradient id="vest" x1="0" x2="1"><stop offset="0" stop-color="#1f3324"/><stop offset=".4" stop-color="#4a6e50"/><stop offset=".7" stop-color="#33503a"/><stop offset="1" stop-color="#1f3324"/></linearGradient>
+<linearGradient id="shirt" x1="0" x2="1"><stop offset="0" stop-color="#cfc8ba"/><stop offset=".45" stop-color="#fff"/><stop offset="1" stop-color="#cfc8ba"/></linearGradient>
+<linearGradient id="gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff4b0"/><stop offset=".35" stop-color="#ffd23f"/><stop offset=".7" stop-color="#e09a12"/><stop offset="1" stop-color="#9c5f00"/></linearGradient>
+<linearGradient id="goldH" x1="0" x2="1"><stop offset="0" stop-color="#9c5f00"/><stop offset=".3" stop-color="#ffe680"/><stop offset=".6" stop-color="#f0b020"/><stop offset="1" stop-color="#8a5200"/></linearGradient>
+<linearGradient id="steelV" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e3eaf5"/><stop offset=".45" stop-color="#9aa8c0"/><stop offset="1" stop-color="#4a5670"/></linearGradient>
+<linearGradient id="steelH" x1="0" x2="1"><stop offset="0" stop-color="#4a5670"/><stop offset=".3" stop-color="#e3eaf5"/><stop offset=".6" stop-color="#9aa8c0"/><stop offset="1" stop-color="#3a4560"/></linearGradient>
+<linearGradient id="woodV" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#c98a4b"/><stop offset=".5" stop-color="#9c6431"/><stop offset="1" stop-color="#5e3815"/></linearGradient>
+<linearGradient id="woodH" x1="0" x2="1"><stop offset="0" stop-color="#6e4118"/><stop offset=".4" stop-color="#b57a40"/><stop offset="1" stop-color="#6e4118"/></linearGradient>
+<filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.42" numOctaves="3" seed="7"/><feColorMatrix values="0 0 0 0 .25  0 0 0 0 .12  0 0 0 0 .03  0 0 0 -1.5 1.02"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+<filter id="soft"><feGaussianBlur stdDeviation="2"/></filter><filter id="soft6"><feGaussianBlur stdDeviation="6"/></filter>
+
+<filter id="ds"><feGaussianBlur stdDeviation="5"/></filter></defs>
+<g stroke="#0a0605" stroke-width="2.6" stroke-linejoin="round"><path d="M42,150 L97,150 L85,250 Q57.5,290 30,250Z" fill="#1d5b3a"/><path d="M97,150 L152,150 L140,250 Q112.5,290 85,250Z" fill="#efe4c8"/><path d="M152,150 L207,150 L195,250 Q167.5,290 140,250Z" fill="#1d5b3a"/><path d="M207,150 L262,150 L250,250 Q222.5,290 195,250Z" fill="#efe4c8"/><path d="M262,150 L317,150 L305,250 Q277.5,290 250,250Z" fill="#1d5b3a"/><path d="M317,150 L372,150 L360,250 Q332.5,290 305,250Z" fill="#efe4c8"/><path d="M372,150 L427,150 L415,250 Q387.5,290 360,250Z" fill="#1d5b3a"/><path d="M427,150 L482,150 L470,250 Q442.5,290 415,250Z" fill="#efe4c8"/><path d="M482,150 L537,150 L525,250 Q497.5,290 470,250Z" fill="#1d5b3a"/><path d="M537,150 L592,150 L580,250 Q552.5,290 525,250Z" fill="#efe4c8"/><path d="M592,150 L647,150 L635,250 Q607.5,290 580,250Z" fill="#1d5b3a"/><path d="M647,150 L702,150 L690,250 Q662.5,290 635,250Z" fill="#efe4c8"/><path d="MM30,250 Q57.5,290 85,250 Q112.5,290 140,250 Q167.5,290 195,250 Q222.5,290 250,250 Q277.5,290 305,250 Q332.5,290 360,250 Q387.5,290 415,250 Q442.5,290 470,250 Q497.5,290 525,250 Q552.5,290 580,250 Q607.5,290 635,250 Q662.5,290 690,250  L690,250" fill="none" stroke-width="3"/><rect x="30" y="140" width="680" height="16" rx="4" fill="url(#woodV)"/></g><path d="M42,160 L702,160 L690,190 L36,190Z" fill="#000" opacity=".18"/>
+<rect x="36" y="664" width="648" height="40" fill="#000" opacity=".3" filter="url(#ds)"/>
+<g stroke="#0a0605" stroke-width="3" stroke-linejoin="round">
+<path d="M40,676 L680,676 L672,880 L48,880Z" fill="url(#woodV)"/><path d="M40,676 L680,676 L672,880 L48,880Z" fill="#fff" stroke="none" filter="url(#grain)"/>
+<path d="M44,736 L676,736 M46,800 L674,800" stroke-width="2" opacity=".55"/>
+<path d="M24,648 L696,648 L700,680 L20,680Z" fill="url(#woodH)"/><path d="M24,648 L696,648 L700,680 L20,680Z" fill="#fff" stroke="none" filter="url(#grain)"/>
+<path d="M28,652 H692" stroke="#e8b06a" stroke-width="2.4" opacity=".7"/>
+</g>
+<g transform="rotate(-2 360 760)" stroke="#0a0605" stroke-width="2.6"><rect x="150" y="712" width="420" height="96" rx="6" fill="#f2e3c2"/>
+<text x="360" y="750" text-anchor="middle" font-family="Arial Black,Arial" font-size="27" font-weight="900" fill="#c60b1e" stroke="none">GÉNERO DE PRIMERA</text>
+<text x="360" y="784" text-anchor="middle" font-family="Arial" font-size="17" font-weight="700" fill="#2a1a10" stroke="none">Pago al contado · No se hacen facturas</text>
+<circle cx="164" cy="726" r="4" fill="#9aa8c0" stroke-width="1.4"/><circle cx="556" cy="726" r="4" fill="#9aa8c0" stroke-width="1.4"/></g>
+<g stroke="#0a0605" stroke-width="2.6" stroke-linejoin="round"><path d="M560,648 Q560,630 580,628 L652,628 Q672,630 672,648Z" fill="#7a1222"/><path d="M572,640 Q614,630 660,640" stroke="#c84a5c" stroke-width="2" fill="none"/>
+<rect x="556" y="644" width="120" height="8" rx="3" fill="url(#gold)"/></g>
+<g stroke="#0a0605" stroke-width="2.6" stroke-linejoin="round">
+<path d="M-6,846 L92,846 L92,960 L-6,960Z" fill="url(#woodV)"/><path d="M-6,846 L92,846 L92,960 L-6,960Z" fill="#fff" stroke="none" filter="url(#grain)"/><path d="M-6,846 L92,960 M92,846 L-6,960" stroke-width="2" opacity=".5"/><rect x="-6" y="846" width="98" height="114" fill="none"/>
+<path d="M10,786 L78,786 L78,846 L10,846Z" fill="url(#woodV)"/><path d="M10,786 L78,786 L78,846 L10,846Z" fill="#fff" stroke="none" filter="url(#grain)"/><text x="44" y="822" text-anchor="middle" font-family="Arial Black,Arial" font-size="11" fill="#3a1a08" stroke="none">FRÁGIL</text>
+<path d="M630,872 L730,872 L730,960 L630,960Z" fill="url(#woodV)"/><path d="M630,872 L730,872 L730,960 L630,960Z" fill="#fff" stroke="none" filter="url(#grain)"/><text x="680" y="916" text-anchor="middle" font-family="Arial Black,Arial" font-size="12" fill="#3a1a08" stroke="none">NO ABRIR</text>
+<path d="M640,884 h80" stroke-width="1.6" opacity=".5"/></g>
+<path d="M0,888 L720,888" stroke="#000" stroke-width="2" opacity=".4"/></svg>

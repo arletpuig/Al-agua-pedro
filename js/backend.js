@@ -3,6 +3,7 @@ import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { state, applyServer, applyChestLocal, changed, snapshot } from './state.js';
 import { adProvider } from './ads.js';
+import * as Shop from './shop.js';
 
 let timeOffset = 0, nextMidnight = null, serverChecked = false, flush = async () => {};
 // Antes de una operación en la nube se envía el progreso pendiente, para que el servidor conozca las pesetas ganadas.
@@ -44,6 +45,11 @@ export const backend = {
     if (!E.canUpgrade(state.cards, id, state.pesetas)) throw new Error('No puedes mejorar esta carta todavía');
     const L = E.level(state.cards, id), cost = E.upgradeCost(id, L, state.cards);
     state.cards[id].frags -= E.fragsNeeded(id, L); state.cards[id].level++; state.stats.pesetasSpent += cost; changed(false);
+  },
+  // La Trastienda: compra de un objeto permanente
+  async buyShopItem(id) {
+    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.buyShopItem(id)); applyServer(r, sent); Shop.applyServerItems(r.shop_items); return Shop.ITEM[id]; }
+    return Shop.buy(id);
   },
   // Anuncio recompensado: solo da recompensa con verificación real del proveedor y del servidor.
   async watchAd(placement) {

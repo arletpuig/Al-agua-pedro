@@ -7,6 +7,9 @@
 4. **Authentication → URL Configuration**: pon la dirección del juego en **Site URL** y en **Redirect URLs** (por ejemplo `https://arletpuig.github.io/Al-agua-pedro/`).
 5. (Opcional) **Authentication → Providers → Email**: desactiva "Confirm email" para entrar sin confirmar el correo.
 
+## La Trastienda (v3)
+Ejecuta también `schema_v3.sql`: añade los objetos comprados (`shop_items`) y la compra validada en el servidor (`buy_shop_item`).
+
 ## Si ya tenías la versión 1
 Solo el paso 3: ejecuta `schema_v2.sql`. Conserva los jugadores y su progreso. Hazlo a la vez que publicas la nueva versión del juego: la versión antigua del juego no puede guardar con el esquema nuevo, y viceversa.
 

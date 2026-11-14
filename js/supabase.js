@@ -68,6 +68,7 @@ export const openChest = kind => rpc('open_chest', { p_kind: kind });          /
 export const claimDaily = () => rpc('claim_daily', {});                        // -> { reward, profile }
 export const upgradeCard = id => rpc('upgrade_card', { p_card: id });          // -> profile
 export const importGuest = payload => rpc('import_guest', { p: payload });     // -> profile
+export const buyShopItem = id => rpc('buy_shop_item', { p_item: id });         // -> profile
 export const claimAdReward = (placement, token) => rpc('claim_ad_reward', { p_placement: placement, p_token: token });
 export const serverNow = () => rpc('server_now', {}, { auth: false });         // -> { date, now, next_midnight }
 export const leaderboard = () => req('/rest/v1/leaderboard?select=*&order=tomatoes_earned.desc,falls.desc&limit=20', { auth: false });

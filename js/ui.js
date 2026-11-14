@@ -6,9 +6,10 @@ import * as E from './economy.js';
 import { CARD_ART, chestSvg } from './cards-art.js';
 import { backend } from './backend.js';
 import { adProvider, PLACEMENTS } from './ads.js';
+import * as Shop from './shop.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => n.toLocaleString('es-ES');
-let H = {}, busy = false, toastTimer = null, tutorialCb = null;
+let H = {}, busy = false, toastTimer = null, tutorialCb = null, shopSel = null;
 
 export function init(handlers) {
   H = handlers;
@@ -29,6 +30,14 @@ export function init(handlers) {
     if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if ('probs' in b.dataset) { b.closest('.chest-card').querySelector('.probs').classList.toggle('open'); }
   });
   $('#cards-grid').addEventListener('click', e => { const b = e.target.closest('button[data-upgrade]'); if (b) H.onUpgrade(b.dataset.upgrade); });
+  // La Trastienda
+  $('#btn-trastienda').addEventListener('click', () => H.onEnterShop());
+  $('#sd-back').addEventListener('click', () => H.onLeaveShop());
+  $('#sd-thumbs').innerHTML = Shop.ITEMS.map(it => `<button data-item="${it.id}" class="${it.premium ? 'premium' : ''}" aria-label="${it.name}"><img src="assets/shop/${it.frame}.svg" alt=""></button>`).join('');
+  $('#sd-thumbs').addEventListener('click', e => { const b = e.target.closest('button[data-item]'); if (b) H.onPickItem(b.dataset.item); });
+  $('#sd-buy').addEventListener('click', () => shopSel && (Shop.isOwned(shopSel) ? H.onUseItem(shopSel, false) : H.onBuyItem(shopSel)));
+  $('#sd-try').addEventListener('click', () => shopSel && H.onUseItem(shopSel, true));
+  $('#arsenal').addEventListener('click', e => { const b = e.target.closest('button[data-item]'); if (b && !b.disabled) H.onUseItem(b.dataset.item, false); });
 }
 // ---------- HUD ----------
 export function hud(pop = false) {
@@ -49,7 +58,38 @@ export function hud(pop = false) {
   const fb = $('#falcon-badge'); fb.classList.toggle('hidden', !falconActive());
   if (falconActive()) { const ms = state.falconUntil - Date.now(), m = Math.floor(ms / 60000), sec = Math.floor(ms % 60000 / 1000); $('#falcon-time').textContent = `${m}:${String(sec).padStart(2, '0')}`; }
   $('#chest-dot').classList.toggle('hidden', !backend.dailyAvailable());
+  renderDoor(); renderArsenal(aiming);
 }
+// ---------- La Trastienda ----------
+function renderDoor() {
+  const open = Shop.isUnlocked(), d = $('#btn-trastienda');
+  d.classList.toggle('locked', !open);
+  $('#door-prog').textContent = open ? 'Psst... pasa' : `🔒 ${fmt(Shop.unlockProgress())}/${Shop.SHOP.UNLOCK_FALLS} caídas`;
+}
+function renderArsenal(aiming) {
+  const own = Shop.ownedItems(), el = $('#arsenal'), key = own.map(i => i.id).join();
+  el.classList.toggle('hidden', !own.length || aiming || !Shop.isUnlocked());
+  if (el.dataset.key !== key) { el.dataset.key = key; el.innerHTML = own.map(it => `<button data-item="${it.id}" class="${it.premium ? 'premium' : ''}" title="${it.name}" aria-label="Lanzar ${it.name}"><img src="assets/shop/${it.frame}.svg" alt=""></button>`).join(''); }
+  el.querySelectorAll('button').forEach(b => b.disabled = busy);
+}
+export function renderShopDock(id = shopSel) {
+  shopSel = id; const it = id && Shop.ITEM[id];
+  $$('#sd-thumbs button').forEach(b => { b.classList.toggle('sel', b.dataset.item === id); b.classList.toggle('own', Shop.isOwned(b.dataset.item)); });
+  const price = $('#sd-price'), buy = $('#sd-buy'), tryB = $('#sd-try');
+  if (!it) {
+    $('#sd-name').textContent = 'La Trastienda'; price.textContent = `${fmt(state.pesetas)} ₧`; price.className = 'sd-price';
+    $('#sd-desc').textContent = 'Toca un objeto del puesto para verlo de cerca. Lo que compres aquí es tuyo para siempre.';
+    buy.classList.add('hidden'); tryB.classList.add('hidden'); return;
+  }
+  const own = Shop.isOwned(id);
+  $('#sd-name').textContent = it.name; $('#sd-desc').textContent = it.desc;
+  price.textContent = own ? '¡Tuyo!' : it.premium ? it.priceLabel : `${fmt(it.price)} ₧`; price.className = 'sd-price' + (own ? ' own' : it.premium ? ' premium' : '');
+  tryB.classList.toggle('hidden', own || !Shop.SHOP.FREE_TRY);
+  buy.classList.remove('hidden');
+  buy.className = 'btn ' + (it.premium && !own ? 'gold' : 'primary');
+  buy.textContent = own ? '¡Lánzaselo a Pedro!' : it.premium ? `Comprar · ${it.priceLabel}` : state.pesetas < it.price ? `Te faltan ${fmt(it.price - state.pesetas)} ₧` : `Comprar · ${fmt(it.price)} ₧`;
+}
+export function demoBadge(v, name = '') { $('#demo-badge').classList.toggle('hidden', !v); if (v) $('#demo-badge').textContent = `Prueba gratis · ${name}`; }
 function setNum(sel, v, popSel) { const el = $(sel); if (el.textContent !== fmt(v)) { el.textContent = fmt(v); popEl(popSel ? $(popSel) : el); } }
 function popEl(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 export function setBusy(b) { busy = b; hud(); }

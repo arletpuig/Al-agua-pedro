@@ -3,6 +3,7 @@ import { Pedro, TEX_SCALE } from './pedro.js';
 import { buildStage, L } from './stage.js';
 import { CONFIG } from '../config.js';
 import { SFX } from '../audio.js';
+import { playItem } from './arsenal.js';
 
 export class MainScene extends Phaser.Scene {
   constructor() { super('main'); this.busy = false; this.aim = null; this.bus = new Phaser.Events.EventEmitter(); }
@@ -147,6 +148,8 @@ export class MainScene extends Phaser.Scene {
     if (last) this.say(LINES.face[Phaser.Math.Between(0, LINES.face.length - 1)], 2200);
     await this.pedro.angryShake(last ? 1600 : 600); this.pedro.setMood('smile');
   }
+  // objetos de La Trastienda (js/game/arsenal.js)
+  useItem(id) { return playItem(this, id); }
   // efecto Falcón: avión cruzando
   falconFly() {
     const f = this.add.container(-80, 120).setDepth(8), g = this.add.graphics();

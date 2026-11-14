@@ -156,7 +156,7 @@ await page.click('#panel-shop [data-close]');
 
 console.log('Cartas: desbloqueo por fragmentos');
 check('desbloquear cuesta más cuanto más rara', await page.evaluate(() => { const E = AAP.E; return E.unlockNeed('puerta') < E.unlockNeed('mariscada') && E.unlockNeed('mariscada') < E.unlockNeed('hacienda') && E.unlockNeed('hacienda') < E.unlockNeed('inflacion'); }));
-check('rarezas nuevas: legendarias, épicas, poco común y comunes', await page.evaluate(() => { const C = AAP.E.CARDS, r = id => C[id].rarity; return ['inflacion', 'joyas', 'amnistia'].every(id => r(id) === 'legendary') && ['hacienda', 'paguitas'].every(id => r(id) === 'epic') && r('mariscada') === 'rare' && AAP.E.RARITIES.rare.name === 'Poco común' && ['puerta', 'plusultra', 'apagon'].every(id => r(id) === 'common'); }));
+check('rarezas nuevas: legendarias, épicas, poco común y comunes', await page.evaluate(() => { const C = AAP.E.CARDS, r = id => C[id].rarity; return ['inflacion', 'joyas'].every(id => r(id) === 'legendary') && ['hacienda', 'paguitas'].every(id => r(id) === 'epic') && r('mariscada') === 'rare' && AAP.E.RARITIES.rare.name === 'Poco común' && ['puerta', 'plusultra', 'apagon', 'amnistia'].every(id => r(id) === 'common'); }));
 check('sin desbloquear da 1 fragmento; al llegar se desbloquea; luego da varios', await page.evaluate(() => {
   const E = AAP.E, c = E.emptyCards(), need = E.unlockNeed('hacienda'); let unlocked = 0;
   for (let i = 0; i < need; i++) { const r = [{ id: 'hacienda' }]; E.applyChestCards(c, r); if (r[0].isNew) unlocked++; if (i < need - 1 && (r[0].frags !== 1 || !r[0].locked)) return false; }
@@ -216,7 +216,7 @@ check('Paguitas: cada nivel llueve más a menudo', await page.evaluate(() => { c
 await give(page, { cards: { paguitas: { level: 15, frags: 0 }, hacienda: { level: 0, frags: 0 }, puerta: { level: 0, frags: 0 }, plusultra: { level: 0, frags: 0 } } });
 before = await S(page); await page.waitForSelector('.pg-coin', { timeout: 30000 }); await page.waitForTimeout(1500);
 const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"); return { w: c.offsetWidth, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length }; });
-check("Paguitas: caen 3 monedas grandes que giran", pgc.n === 3 && pgc.w >= 50 && pgc.w <= 64 && pgc.anim === "pgspin", JSON.stringify(pgc));
+check("Paguitas: caen 3 monedas grandes que giran", pgc.n === 3 && pgc.w >= 36 && pgc.w <= 48 && pgc.anim === "pgspin", JSON.stringify(pgc));
 s = await S(page); check('si no las tocas no se cobran', s.paguitasPesetas === (before.paguitasPesetas || 0));
 for (const c of await page.locator('.pg-coin').all()) await c.dispatchEvent('pointerdown');
 await page.waitForTimeout(300); s = await S(page);

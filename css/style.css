@@ -618,9 +618,9 @@ svg { display: block; }
 .pk-was span { font: 700 11px 'Baloo 2'; color: #ffffffd9; text-shadow: 0 1px 2px #000a; }
 
 /* ---------- v24: paguitas para atrapar ---------- */
-.pg-coin { position: absolute; top: -90px; z-index: 9; width: 56px; height: 56px; margin-left: -28px; padding: 0; border-radius: 50%; touch-action: manipulation;
+.pg-coin { position: absolute; top: -90px; z-index: 9; width: 42px; height: 42px; margin-left: -21px; padding: 0; border-radius: 50%; touch-action: manipulation;
   animation: pgfall 5.5s linear forwards; filter: drop-shadow(0 6px 0 #0008) drop-shadow(0 0 14px #ffd23f); }
-.pg-coin::before { content: ''; position: absolute; inset: -14px; border-radius: 50%; background: radial-gradient(circle, #fff6b088, #ffd23f33 45%, #ffd23f00 70%); }
+.pg-coin::before { content: ''; position: absolute; inset: -12px; border-radius: 50%; background: radial-gradient(circle, #fff6b088, #ffd23f33 45%, #ffd23f00 70%); }
 .pg-spin { position: absolute; inset: 0; display: block; animation: pgspin .9s linear infinite; }
 .pg-spin svg { width: 100%; height: 100%; }
 @keyframes pgfall { 0% { transform: translate(0, 0) rotate(0deg); } 25% { transform: translate(var(--sway), 25vh) rotate(180deg); } 50% { transform: translate(0, 50vh) rotate(360deg); } 75% { transform: translate(calc(var(--sway) * -1), 75vh) rotate(540deg); } 100% { transform: translate(0, calc(100vh + 120px)) rotate(720deg); } }

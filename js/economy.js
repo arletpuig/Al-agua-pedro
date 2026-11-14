@@ -35,7 +35,7 @@ export const CARDS = {
   paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 15, icon: 'paguitas',
     desc: 'Cada cierto tiempo caen 3 pesetas del cielo: ¡tócalas antes de que lleguen al suelo! Cuanto más nivel, más a menudo.',
     effect: L => `3 pesetas cada ${CARDS.paguitas.value(L)} s`, value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, L - 1)) : 0) },
-  amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'legendary', max: 20, icon: 'amnistia',
+  amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'common', max: 20, icon: 'amnistia',
     desc: 'Tus fallos quedan perdonados: a veces, aunque no aciertes en el centro, Pedro cae igual al agua.',
     effect: L => `${pct(CARDS.amnistia.value(L))} de fallos perdonados`, value: dimin(0.30, 8) },
 };

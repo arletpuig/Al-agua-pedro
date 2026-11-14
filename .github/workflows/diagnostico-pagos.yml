@@ -1,0 +1,31 @@
+# Diagnóstico (solo lectura) de los pagos: no crea pagos ni cambia nada.
+# Comprueba que las funciones crear-pago y stripe-webhook están desplegadas y bien configuradas, y que el SQL de compras está ejecutado.
+name: Diagnóstico de pagos
+on:
+  workflow_dispatch:
+  push:
+    branches: [ccr-dae401b7-wkadqy]
+    paths: ['.github/workflows/diagnostico-pagos.yml']
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar los pagos
+        run: |
+          K=$(grep -o "SUPABASE_KEY: '[^']*'" js/config.js | cut -d"'" -f2)
+          U=$(grep -o "SUPABASE_URL: '[^']*'" js/config.js | cut -d"'" -f2)
+          show() { echo "   → código $1 · $(head -c 300 /tmp/b | tr '\n' ' ')"; }
+          echo "== 1. crear-pago: permiso del navegador (CORS) desde alaguapedro.es"
+          curl -sS -o /tmp/b -D /tmp/h -X OPTIONS "$U/functions/v1/crear-pago" -H 'Origin: https://alaguapedro.es' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization, apikey, content-type' -w '%{http_code}' > /tmp/c; show $(cat /tmp/c)
+          grep -i 'access-control-allow-origin\|access-control-allow-headers' /tmp/h | sed 's/^/   /' || echo "   (sin cabeceras CORS)"
+          echo "== 2. crear-pago: llamada sin jugador (debe responder «Necesitas iniciar sesión para comprar»)"
+          C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/functions/v1/crear-pago" -H "apikey: $K" -H "Authorization: Bearer $K" -H 'Content-Type: application/json' -H 'Origin: https://alaguapedro.es' -d '{"pack":"calderilla"}'); show $C
+          echo "== 3. stripe-webhook: aviso sin firma (debe responder 400 «Firma no válida»; 401 = falta desactivar Enforce JWT verification)"
+          C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/functions/v1/stripe-webhook" -H 'Content-Type: application/json' -d '{}'); show $C
+          echo "== 4. SQL de compras (tabla purchases): «permission denied» = existe (bien); «does not exist / not find» = falta ejecutar el SQL"
+          C=$(curl -sS -o /tmp/b -w '%{http_code}' "$U/rest/v1/purchases?select=stripe_session&limit=1" -H "apikey: $K"); show $C
+          echo "== 5. SQL nuevo de rarezas (v12) y del pack con cartas (v11): función fn_pack"
+          C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/rest/v1/rpc/fn_pack" -H "apikey: $K" -H 'Content-Type: application/json' -d '{"p":"camara"}'); show $C

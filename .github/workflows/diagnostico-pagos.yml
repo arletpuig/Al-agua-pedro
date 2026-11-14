@@ -1,4 +1,4 @@
-# Diagnóstico (solo lectura) de los pagos: no crea pagos ni cambia nada.
+# Diagnóstico (solo lectura) de los pagos: no crea pagos ni cambia nada. (2.ª comprobación)
 # Comprueba que las funciones crear-pago y stripe-webhook están desplegadas y bien configuradas, y que el SQL de compras está ejecutado.
 name: Diagnóstico de pagos
 on:

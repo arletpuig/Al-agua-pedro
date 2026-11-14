@@ -24,6 +24,8 @@ export const CONFIG = {
   REWARDED_ADS: false,
   // Pagos con Stripe: encender cuando estén desplegadas las funciones crear-pago y stripe-webhook (ver supabase/STRIPE.md)
   PAYMENTS: true,
+  // dirección (nombre interno) de la función «crear-pago» en Supabase: se creó con el nombre automático «rapid-handler»
+  PAY_FUNCTION: 'rapid-handler',
   ADSENSE: { client: 'ca-pub-7829705078320776', slots: { profile: '', cards: '', shop: '' } },
   // Entrar con Google desde alaguapedro.es (botón oficial de Google): así Google muestra «alaguapedro.es» y no la dirección de Supabase.
   // Es el ID de cliente público de Google Cloud (no es secreto). Si no carga el botón de Google, se usa el acceso por Supabase de siempre.

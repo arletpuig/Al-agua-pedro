@@ -36,7 +36,7 @@ async function bridge(page) {
       if (p === '/auth/v1/user') return me ? json(200, me) : json(401, { msg: 'invalid token' });
       if (p === '/auth/v1/settings') return json(200, { external: { google: true, email: true } });
       // pagos: la función crear-pago (simulada) y la consulta de compras. El «webhook» se simula entregando el pack con la clave de servicio.
-      if (p === '/functions/v1/crear-pago') {
+      if (p === '/functions/v1/crear-pago' || p === '/functions/v1/rapid-handler') {
         if (!me) return json(401, { message: 'Necesitas iniciar sesión para comprar' });
         payRequests.push(body);
         psql(`select public.grant_pack('cs_test_e2e', '${me.id}', ${lit(body.pack)}, 299, 'eur')`, 'service_role');

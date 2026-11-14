@@ -1,4 +1,4 @@
-# Diagnóstico (solo lectura) de los pagos: no crea pagos ni cambia nada. (6.ª comprobación)
+# Diagnóstico (solo lectura) de los pagos: no crea pagos ni cambia nada. (7.ª comprobación: buscar las direcciones de las funciones)
 # Comprueba que las funciones crear-pago y stripe-webhook están desplegadas y bien configuradas, y que el SQL de compras está ejecutado.
 name: Diagnóstico de pagos
 on:
@@ -31,3 +31,8 @@ jobs:
           C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/rest/v1/rpc/fn_pack" -H "apikey: $K" -H 'Content-Type: application/json' -d '{"p":"camara"}'); show $C
           echo "== 6. SQL de rarezas nuevas (v12): Inflación debe ser «legendary» y Mariscada «rare» (poco común)"
           for c in inflacion mariscada puerta amnistia; do C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/rest/v1/rpc/fn_rarity" -H "apikey: $K" -H 'Content-Type: application/json' -d "{\"p_id\":\"$c\"}"); echo "   $c → $(cat /tmp/b) (código $C)"; done
+          echo "== 7. Buscar las direcciones reales de las funciones (rapid-handl… y swift-proce…)"
+          for f in rapid-handler rapid-handle rapid-handling swift-processor swift-process swift-procedure crear-pago stripe-webhook; do
+            C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/functions/v1/$f" -H "apikey: $K" -H "Authorization: Bearer $K" -H 'Content-Type: application/json' -H 'Origin: https://alaguapedro.es' -d '{"pack":"calderilla"}')
+            echo "   $f → $C · $(head -c 160 /tmp/b | tr '\n' ' ')"
+          done

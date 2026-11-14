@@ -13,14 +13,15 @@ AddDefaultCharset UTF-8
 AddType text/javascript .js .mjs
 AddType image/svg+xml .svg
 AddType font/woff2 .woff2
+AddType audio/mpeg .mp3
 
 <IfModule mod_headers.c>
   # el código cambia con cada versión: el navegador pregunta siempre si hay algo nuevo (con ETag, sin volver a descargar si no ha cambiado)
   <FilesMatch "\.(html|js|mjs|css|json|txt)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
-  # imágenes y fuentes: una semana
-  <FilesMatch "\.(png|jpg|svg|woff2|ico)$">
+  # imágenes, fuentes y música: una semana
+  <FilesMatch "\.(png|jpg|svg|woff2|ico|mp3)$">
     Header set Cache-Control "public, max-age=604800"
   </FilesMatch>
   Header always set X-Content-Type-Options "nosniff"

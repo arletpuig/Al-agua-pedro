@@ -236,7 +236,10 @@ check('panel de estadísticas completo', /Tomates conseguidos/.test(await txt('#
 await page.click('#panel-stats [data-close]');
 await page.click('#btn-settings'); await page.waitForTimeout(300);
 const snd = async () => page.evaluate(() => [AAP.state.sound, AAP.state.music, document.querySelector('#sw-sound').classList.contains('on'), document.querySelector('#sw-music').classList.contains('on')].join());
-await page.click('#btn-sound'); const m1 = await snd(); await page.click('#btn-music'); const m2 = await snd(); await page.click('#btn-music'); const m3 = await snd();
+const songs = []; page.on('response', r => { if (r.url().includes('assets/musica/musica.mp3')) songs.push(r.status() + ' ' + (r.headers()['content-type'] || '')); });
+await page.click('#btn-sound'); const m1 = await snd(); await page.click('#btn-music'); const m2 = await snd(); await page.waitForTimeout(1200);
+check('música: al activarla se descarga la canción nueva', songs.length > 0 && /^(200|206)/.test(songs[0]), songs.join(' | ') || 'no se ha pedido');
+await page.click('#btn-music'); const m3 = await snd();
 check('sonido: silencio, música opcional y vuelta a solo efectos', m1 === 'false,false,false,false' && m2 === 'true,true,true,true' && m3 === 'true,false,true,false', [m1, m2, m3].join(' | '));
 await page.click('#panel-settings [data-close]');
 

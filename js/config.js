@@ -2,7 +2,7 @@
 export const CONFIG = {
   CLICKS_PER_TOMATO: 200,      // clics necesarios para conseguir un tomate (también en supabase/schema_v4.sql; antes eran 100)
   // Lanzamiento: el tomate va de lado a lado en horizontal por delante de la diana (coordenadas del escenario, 1080 de ancho)
-  AIM_SPEED: 440,              // velocidad del tomate al apuntar (píxeles del escenario por segundo)
+  AIM_SPEED: 520,              // velocidad del tomate al apuntar (píxeles del escenario por segundo)
   BEGINNER_THROWS: 6,          // los primeros lanzamientos de un jugador nuevo van más despacio...
   BEGINNER_SPEED: 0.65,        // ...a esta fracción de la velocidad normal
   SPEED_PER_FALL: 0.01,        // aumento de velocidad por cada caída provocada (dificultad progresiva, suave)

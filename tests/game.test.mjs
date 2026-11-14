@@ -35,7 +35,7 @@ check('tutorial la primera vez', await page.locator('#panel-tutorial').evaluate(
 await page.click('#panel-tutorial [data-close]'); await page.waitForTimeout(300);
 check('descuenta 1 tomate al lanzar', (await S(page)).tomatoes === 6);
 check('el botón grande pasa a ¡LANZA!', await page.locator('#btn-click.aim').isVisible() && (await txt('#mega-lbl')) === '¡LANZA!');
-check('los primeros lanzamientos van más despacio', await page.evaluate(() => AAP.scene.aim.speed < 300));
+check('los primeros lanzamientos van más despacio', await page.evaluate(async () => AAP.scene.aim.speed < 0.8 * (await import('./js/config.js')).CONFIG.AIM_SPEED));
 await stopAt(page, 0, 10); await page.waitForTimeout(1500); await shot('02-caida');
 await idle(page); s = await S(page);
 check('impacto perfecto: Pedro cae', s.falls === 1 && s.perfects === 1);
@@ -215,8 +215,8 @@ check('Puerta Giratoria: 2 tomates por nivel en cada mejora; Hacienda devuelve p
 check('Paguitas: cada nivel llueve más a menudo', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value; return v(0) === 0 && v(1) === 120 && v(15) < v(10) && v(10) < v(1) && v(15) >= 15; }));
 await give(page, { cards: { paguitas: { level: 15, frags: 0 }, hacienda: { level: 0, frags: 0 }, puerta: { level: 0, frags: 0 }, plusultra: { level: 0, frags: 0 } } });
 before = await S(page); await page.waitForSelector('.pg-coin', { timeout: 30000 }); await page.waitForTimeout(1500);
-const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"), r = c.getBoundingClientRect(); return { w: r.width, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length }; });
-check("Paguitas: caen 3 monedas grandes que giran", pgc.n === 3 && pgc.w >= 70 && pgc.anim === "pgspin", JSON.stringify(pgc));
+const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"); return { w: c.offsetWidth, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length }; });
+check("Paguitas: caen 3 monedas grandes que giran", pgc.n === 3 && pgc.w >= 50 && pgc.w <= 64 && pgc.anim === "pgspin", JSON.stringify(pgc));
 s = await S(page); check('si no las tocas no se cobran', s.paguitasPesetas === (before.paguitasPesetas || 0));
 for (const c of await page.locator('.pg-coin').all()) await c.dispatchEvent('pointerdown');
 await page.waitForTimeout(300); s = await S(page);

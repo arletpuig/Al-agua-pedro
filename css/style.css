@@ -11,7 +11,8 @@
   --safe-top: env(safe-area-inset-top, 0px); --safe-bot: env(safe-area-inset-bottom, 0px);
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; background: #02040f; overflow: hidden; overscroll-behavior: none; }
+html, body { margin: 0; height: 100%; background: #02040f; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { position: fixed; inset: 0; width: 100%; }   /* iPhone: la página no se desplaza ni rebota */
 body { font-family: 'Baloo 2', system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
 #app { position: relative; width: 100%; max-width: 520px; height: 100%; height: 100dvh; margin: 0 auto; overflow: hidden; user-select: none; -webkit-user-select: none; background: #04071a; box-shadow: 0 0 60px #000; }
 button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; touch-action: manipulation; }
@@ -670,3 +671,9 @@ svg { display: block; }
 .tap-hint { position: absolute; right: max(14px, calc(50% - 200px)); bottom: 70px; z-index: 5; display: flex; flex-direction: column; align-items: center; pointer-events: none; animation: tourhand .6s ease-in-out infinite alternate; }
 .tap-hint i { font-size: 40px; font-style: normal; transform: rotate(160deg); filter: drop-shadow(0 3px 0 #0009); }
 .tap-hint b { font: 15px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); }
+
+/* ---------- v31: iPhone sin zoom ni movimientos al pulsar rápido ---------- */
+#app { touch-action: manipulation; -webkit-touch-callout: none; }
+#game, .top, .action, .tabs, .mega, #btn-click, .pg-coin { touch-action: none; }   /* zona de juego: ni zoom ni arrastre */
+.sheet-body { touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+#app input, #app textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }

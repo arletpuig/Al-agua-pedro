@@ -388,5 +388,34 @@ console.log('27. Guía de bienvenida para jugadores nuevos');
   await c6.close();
 }
 
+console.log('28. iPhone: sin zoom ni movimientos al pulsar rápido');
+{
+  check('la pantalla no deja hacer zoom (viewport)', /maximum-scale=1/.test(await page.getAttribute('meta[name=viewport]', 'content')));
+  const r = await page.evaluate(async () => {
+    const fire = (type, el, n = 1) => { const ts = Array.from({ length: n }, (_, i) => new Touch({ identifier: i + 1, target: el, clientX: 100 + i * 40, clientY: 300 })); const e = new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : ts, changedTouches: ts.slice(0, 1) }); el.dispatchEvent(e); return e.defaultPrevented; };
+    const game = document.querySelector('#game'), mega = document.querySelector('#btn-click'), tab = document.querySelector('#tabs [data-panel="rank"]');
+    const out = { moveGame: fire('touchmove', game), pinch: fire('touchmove', game, 2) };
+    const g = new Event('gesturestart', { cancelable: true }); document.dispatchEvent(g); out.gesture = g.defaultPrevented;
+    fire('touchend', mega); out.dblMega = fire('touchend', mega);
+    await new Promise(r => setTimeout(r, 450)); fire('touchend', tab); out.dblTab = fire('touchend', tab);
+    document.querySelector('#panel-cards').classList.add('open'); const body = document.querySelector('#panel-cards .sheet-body');
+    out.scrollList = fire('touchmove', body); out.pinchList = fire('touchmove', body, 2);
+    document.querySelector('#panel-cards').classList.remove('open');
+    out.ta = getComputedStyle(mega).touchAction + ' / ' + getComputedStyle(body).touchAction;
+    return out;
+  });
+  check('arrastrar en el juego no mueve la página', r.moveGame && r.pinch && r.gesture, JSON.stringify(r));
+  check('doble toque rápido en ¡DALE! no hace zoom', r.dblMega);
+  check('los botones normales siguen funcionando con toques rápidos', !r.dblTab);
+  check('las listas (cartas, tienda...) se pueden desplazar con un dedo, pero no hacer zoom', !r.scrollList && r.pinchList);
+  check('¡DALE! sin gestos del navegador; listas solo en vertical', /^none \/ pan-y$/.test(r.ta), r.ta);
+  const n0 = await page.evaluate(() => { window.__taps = 0; document.querySelector('#btn-click').addEventListener('pointerdown', () => window.__taps++); return 0; });
+  const box = await page.locator('#btn-click').boundingBox();
+  for (let k = 0; k < 25; k++) await page.touchscreen.tap(box.x + box.width / 2 + (k % 5) * 6, box.y + box.height / 2);
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => ({ taps: window.__taps, scale: visualViewport.scale, sx: scrollX, sy: scrollY }));
+  check('25 toques rapidísimos: cuentan todos y la pantalla no se mueve ni se amplía', after.taps === 25 && after.scale === 1 && after.sx === 0 && after.sy === 0, JSON.stringify(after));
+}
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

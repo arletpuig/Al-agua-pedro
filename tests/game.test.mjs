@@ -166,6 +166,7 @@ check('sin desbloquear da 1 fragmento; al llegar se desbloquea; luego da varios'
 console.log('16, 17. Cartas y potenciadores');
 await give(page, { cards: { inflacion: { level: 1, frags: 6 }, mariscada: { level: 1, frags: 3 }, joyas: { level: 1, frags: 0 }, apagon: { level: 1, frags: 0 }, amnistia: { level: 1, frags: 0 } } });
 await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(300); await shot('10-cartas');
+check('cartas ordenadas por rareza: comunes primero y legendarias al final, con brillo', await page.evaluate(() => { const r = [...document.querySelectorAll('#cards-grid .card')].map(c => AAP.E.CARDS[c.dataset.id].rarity), o = ['common', 'rare', 'epic', 'legendary']; return r.every((x, i) => i === 0 || o.indexOf(x) >= o.indexOf(r[i - 1])) && r.at(-1) === 'legendary' && document.querySelectorAll('#cards-grid .card.r-legendary').length === 2; }));
 check('la colección muestra las 9 cartas', await page.locator('#cards-grid .card').count() === 9 && /Plus Ultra/.test(await txt('#cards-grid')) && /Paguitas/.test(await txt('#cards-grid')));
 before = await S(page);
 const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 1, AAP.state.cards)), needF = await page.evaluate(() => AAP.E.fragsNeeded('inflacion', 1));

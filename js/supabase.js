@@ -53,6 +53,8 @@ export function consumeAuthHash() {
 }
 // Entrar con Google: Supabase redirige a Google y vuelve a esta misma página con la sesión en el hash.
 export const authSettings = () => req('/auth/v1/settings', { auth: false });
+// Entrar con el botón oficial de Google: Google da un token de identidad y Supabase lo convierte en sesión
+export async function signInWithGoogleToken(idToken) { const s = await req('/auth/v1/token?grant_type=id_token', { method: 'POST', body: { provider: 'google', id_token: idToken }, auth: false }); setSession(s); return s.user; }
 export function googleURL() { return `${URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(location.origin + location.pathname + location.search)}`; }
 export async function signUp(email, password, username) {
   const d = await req('/auth/v1/signup', { method: 'POST', body: { email, password, data: { username } }, auth: false });

@@ -24,7 +24,10 @@ export async function mockTime(page, nowFn = () => new Date()) {
 }
 const URL_ = globalThis.URL;
 export const madrid = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-export const blockAds = page => page.route(/googlesyndication\.com|doubleclick\.net/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
+// Sin conexión con Google en las pruebas: anuncios y botón de Google se sirven vacíos (el juego usa entonces el botón de siempre)
+export const blockAds = page => page.route(/googlesyndication\.com|doubleclick\.net|accounts\.google\.com\/gsi/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
+// Botón oficial de Google simulado: al pulsarlo entrega el token indicado
+export const fakeGoogle = (page, token) => page.route(/accounts\.google\.com\/gsi\/client/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: `window.google = { accounts: { id: { initialize(o) { window.__gsi = o; }, renderButton(el) { const b = document.createElement('button'); b.id = 'fake-gsi'; b.textContent = 'Continuar con Google'; b.onclick = () => window.__gsi.callback({ credential: ${JSON.stringify(token)} }); el.appendChild(b); } } } };` }));
 export async function open(page, url = URL) { await blockAds(page); await page.goto(url); await page.waitForFunction(() => window.AAP?.scene?.ready && document.querySelector('#loading.off'), null, { timeout: 20000 }); await page.waitForTimeout(300); }
 export const tap = (page, n) => page.evaluate(n => { const b = document.querySelector('#btn-click'); for (let i = 0; i < n; i++) b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 500 })); }, n);
 export const S = page => page.evaluate(() => ({ ...AAP.state.stats, clicks: AAP.state.clicks, tomatoes: AAP.state.tomatoes, pesetas: AAP.state.pesetas, cards: JSON.parse(JSON.stringify(AAP.state.cards)), daily: AAP.state.dailyClaimedOn, falcon: AAP.state.falconUntil }));

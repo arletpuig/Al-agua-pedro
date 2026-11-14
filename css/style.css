@@ -627,3 +627,17 @@ svg { display: block; }
 @keyframes pgspin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
 .pg-coin.got { animation: pggot .35s ease-out forwards; }
 @keyframes pggot { to { transform: translateY(-40px) scale(1.6); opacity: 0; } }
+
+/* ---------- v27: cartas legendarias con brillo extra ---------- */
+.card.r-legendary { position: relative; overflow: hidden; border-color: #ffb400; box-shadow: 0 0 0 2px #ffe08a, 0 0 18px #ffb400aa, inset 0 0 24px #ffb40033; }
+.card.r-legendary::before { content: ''; position: absolute; inset: -2px; z-index: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% 0%, #ffe76655, #ffe76600 60%); animation: legglow 2.2s ease-in-out infinite; }
+.card.r-legendary::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; z-index: 3; pointer-events: none;
+  background: linear-gradient(105deg, #fff0, #fff6c088, #fff0); transform: translateX(-130%); animation: shinemove 3s ease-in-out infinite; }
+.card.r-legendary > * { position: relative; z-index: 1; }
+.card.r-legendary.locked { box-shadow: 0 0 0 2px #ffe08a88, 0 0 12px #ffb40066; }
+@keyframes legglow { 50% { opacity: .35; } }
+
+/* botón oficial de Google (se dibuja dentro, en un marco de Google) */
+.gsi-wrap { display: flex; justify-content: center; min-height: 44px; }
+.gsi-wrap.hidden { display: none; }

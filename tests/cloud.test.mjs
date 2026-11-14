@@ -1,7 +1,7 @@
 // Prueba de extremo a extremo de la parte online: el juego real contra las funciones SQL reales (supabase/schema*.sql)
 // en un PostgreSQL local que hace de Supabase. Preparación: sh tests/pg-reset.sh   Ejecución: node tests/cloud.test.mjs
 import { execFileSync } from 'node:child_process';
-import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid, noCombo, URL_LOGIN, blockAds } from './helpers.mjs';
+import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idle, SB, madrid, noCombo, URL_LOGIN, blockAds, fakeGoogle } from './helpers.mjs';
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
@@ -21,6 +21,12 @@ async function bridge(page) {
         if (psql(`select count(*) from auth.users where email = ${lit(body.email)}`) !== '0') return json(422, { msg: 'User already registered' });
         const id = psql(`insert into auth.users (email, raw_user_meta_data) values (${lit(body.email)}, ${lit(body.data || {})}) returning id`);
         return json(200, session({ id, email: body.email, user_metadata: body.data || {} }));
+      }
+      if (p === '/auth/v1/token' && u.searchParams.get('grant_type') === 'id_token') {   // botón oficial de Google
+        if (body.provider !== 'google' || body.id_token !== 'gsi-token-ok') return json(400, { msg: 'Bad ID token' });
+        let id = psql(`select id from auth.users where email = 'gsi@gmail.com'`);
+        if (!id) id = psql(`insert into auth.users (email, raw_user_meta_data) values ('gsi@gmail.com', '{"full_name":"Lola Google"}') returning id`);
+        return json(200, session({ id, email: 'gsi@gmail.com', user_metadata: { full_name: 'Lola Google' } }));
       }
       if (p === '/auth/v1/token') {
         const id = body.password === 'secreto1' ? psql(`select id from auth.users where email = ${lit(body.email)}`) : '';
@@ -184,6 +190,14 @@ await p2.fill('#form-login [name=email]', email); await p2.fill('#form-login [na
 check('contraseña incorrecta: mensaje claro', (await p2.locator('#acc-msg').innerText()).includes('incorrectos'));
 await p2.fill('#form-login [name=password]', 'secreto1'); await p2.click('#form-login button'); await p2.waitForTimeout(1200); s = await S(p2);
 check('otro dispositivo: mismo progreso (tomates, pesetas, cartas)', s.totalClicks === +final.total_clicks && s.pesetas === final.pesetas && s.tomatoes === final.tomatoes && s.cards.inflacion.level === final.cards.inflacion.level, JSON.stringify({ c: [s.totalClicks, final.total_clicks], p: [s.pesetas, final.pesetas], t: [s.tomatoes, final.tomatoes], l: [s.cards.inflacion.level, final.cards.inflacion.level] }));
+console.log('H2. Botón oficial de Google en alaguapedro.es');
+const ctx4 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p4 = await ctx4.newPage(); watchErrors(p4); await bridge(p4); await fakeGoogle(p4, 'gsi-token-ok');
+await p4.goto(URL_LOGIN); await p4.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await p4.waitForSelector('#fake-gsi', { timeout: 8000 }).catch(() => {});
+check('se ve el botón oficial de Google (y no el de siempre)', await p4.locator('#fake-gsi').isVisible() && !(await p4.locator('#btn-google').isVisible()));
+await p4.click('#fake-gsi'); await p4.waitForFunction(() => document.querySelector('#acc-short').textContent === 'Lola Google', null, { timeout: 10000 }).catch(() => {});
+check('con el token de Google se entra en la cuenta (sin pasar por la página de Supabase)', (await p4.locator('#acc-short').textContent()) === 'Lola Google' && !(await p4.evaluate(() => document.querySelector('#panel-account').classList.contains('open'))));
+await ctx4.close();
+
 console.log('H. Entrar con Google');
 const gid = psql(`insert into auth.users (email, raw_user_meta_data) values ('pepe${Date.now()}@gmail.com', '{"full_name":"Pepe Google","name":"Pepe Google"}') returning id`);
 users.set('tok-google', { id: gid, email: 'pepe@gmail.com', user_metadata: { full_name: 'Pepe Google' } });

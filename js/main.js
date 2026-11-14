@@ -131,6 +131,26 @@ async function afterLogin(user) {
 // ---------- cuenta ----------
 const hasBackend = sb.hasBackend();
 $('#btn-account').addEventListener('click', () => { ui.closeAll(); ui.openPanel('#panel-profile'); });
+// Botón oficial de Google en alaguapedro.es (Google muestra este dominio, no el de Supabase)
+function setupGoogleButton() {
+  if (!CONFIG.GOOGLE_CLIENT_ID || TEST_HOST || !hasBackend) return;
+  const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+  s.onload = () => {
+    try {
+      const box = $('#gsi-btn');
+      window.google.accounts.id.initialize({ client_id: CONFIG.GOOGLE_CLIENT_ID, callback: onGoogleCredential, ux_mode: 'popup', auto_select: false, itp_support: true, use_fedcm_for_button: true });
+      window.google.accounts.id.renderButton(box, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', logo_alignment: 'center', locale: 'es', width: Math.min(360, Math.max(240, (box.parentElement?.clientWidth || 320))) });
+      box.classList.remove('hidden'); $('#btn-google').classList.add('hidden');
+    } catch (e) { /* si falla, queda el botón de siempre */ }
+  };
+  document.head.appendChild(s);
+}
+async function onGoogleCredential(resp) {
+  ui.accMsg('Entrando con Google...');
+  try { const u = await sb.signInWithGoogleToken(resp.credential); ui.accMsg(''); await afterLogin(u); ui.showToast('✅ Has entrado con Google'); }
+  catch (e) { ui.accMsg('❌ No se ha podido entrar con Google. Inténtalo de nuevo.', 'err'); }
+}
+setupGoogleButton();
 $('#btn-google').addEventListener('click', async () => {
   const b = $('#btn-google'); b.disabled = true; ui.accMsg('Conectando con Google...');
   try {

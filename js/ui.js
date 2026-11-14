@@ -225,13 +225,16 @@ export function renderShop() {
     <div class="wallet">${icon('ic-coin')}<div><b>${fmt(state.pesetas)}</b> pesetas<small>Gana más tirando a Pedro al agua</small></div></div>`;
 }
 export const renderChests = renderShop;
+// Cartas ordenadas por rareza: comunes primero y legendarias al final
+const RAR_ORDER = ['common', 'rare', 'epic', 'legendary'];
+const byRarity = () => [...E.CARD_IDS].sort((a, b) => RAR_ORDER.indexOf(E.CARDS[a].rarity) - RAR_ORDER.indexOf(E.CARDS[b].rarity));
 export function renderCards(upgradedId) {
-  $('#cards-grid').innerHTML = E.CARD_IDS.map(id => {
+  $('#cards-grid').innerHTML = byRarity().map(id => {
     const c = E.CARDS[id], r = E.RARITIES[c.rarity], L = E.level(state.cards, id), owned = L > 0, max = L >= c.max;
     const need = owned && !max ? E.fragsNeeded(id, L) : 0, have = E.frags(state.cards, id), cost = owned && !max ? E.upgradeCost(id, L, state.cards) : 0;
     const base = owned && !max ? E.upgradeCost(id, L, {}) : 0, can = owned && !max && have >= need && state.pesetas >= cost;   // precio sin el descuento de la Mariscada
     const un = E.unlockNeed(id), fresh = isNewCard(id);
-    return `<div class="card ${owned ? '' : 'locked'} ${upgradedId === id ? 'upgraded' : ''} ${fresh ? 'fresh' : ''}" data-id="${id}" style="--rc:${r.color}">
+    return `<div class="card r-${c.rarity} ${owned ? '' : 'locked'} ${upgradedId === id ? 'upgraded' : ''} ${fresh ? 'fresh' : ''}" data-id="${id}" style="--rc:${r.color}">
       ${fresh ? '<i class="dot"></i><i class="new-tag">¡NUEVA!</i>' : ''}
       <div class="card-art">${CARD_ART[id]}</div><h3>${c.name}</h3>
       <div class="lvl">${rarTag(c.rarity)}<span>${owned ? `Nv ${L}/${c.max}` : ''}</span></div>

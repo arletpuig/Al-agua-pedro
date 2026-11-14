@@ -330,7 +330,7 @@ check('tres packs: 1,99 €, 3,99 € y 9,95 €, con monedas por el suelo', pac
 check('el de 9,95 € es el de más valor', packs[2].best && /MÁS VALOR/.test(packs[2].ribbon) && packs.slice(0, 2).every(p => /OFERTA/.test(p.ribbon)));
 check('cada pack da más pesetas por euro que el anterior', await page.evaluate(() => { const P = Object.values(AAP.E.PACKS), r = P.map(p => p.pesetas / parseFloat(p.price.replace(',', '.'))); return r[0] < r[1] && r[1] < r[2] && P.every(p => p.pesetas > p.base); }));
 await page.click('.pack.maletin .pk-buy'); await page.waitForTimeout(300);
-check('con los pagos aún sin activar, avisa y no abre nada', /muy pronto/.test(await txt('#toast')) && !(await page.evaluate(() => document.querySelector('#pay-overlay').classList.contains('open'))));
+check('sin cuenta no se puede comprar: avisa y no abre nada', /iniciar sesión|muy pronto/.test(await txt('#toast')) && !(await page.evaluate(() => document.querySelector('#pay-overlay').classList.contains('open'))));
 await page.click('#panel-shop [data-close]');
 
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));

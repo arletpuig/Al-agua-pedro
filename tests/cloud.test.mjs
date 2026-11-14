@@ -150,7 +150,7 @@ await page.evaluate(() => { AAP.giftTest.off = true; });
 console.log('J. Packs de pesetas con pago (Stripe simulado)');
 await page.evaluate(async () => { (await import('./js/config.js')).CONFIG.PAYMENTS = true; });
 before = db(email);
-await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(400); await page.click('.pack.maletin .pk-buy'); await page.waitForTimeout(300);
+await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(400); await page.click('.pack.maletin .pk-buy', { force: true }); await page.waitForTimeout(300);
 check('elegir pack abre la compra, con el botón de pagar bloqueado hasta aceptar las condiciones', await page.evaluate(() => document.querySelector('#pay-overlay').classList.contains('open')) && await page.locator('#pay-go').isDisabled() && (await txt('#pay-price')) === '3,99 €');
 await page.check('#pay-ok'); await page.click('#pay-go', { force: true });
 await page.waitForURL(/localhost:8080\/\?debug/, { timeout: 15000 }); await page.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });

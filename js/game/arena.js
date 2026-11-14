@@ -54,7 +54,8 @@ export class Arena {
     catch (e) { window.__aapFail?.('No se han podido cargar las imágenes de Pedro'); throw e; }
     window.__aapStep?.('Montando el escenario');
     this.play('idle');
-    const loop = () => { this.frame(); requestAnimationFrame(loop); };
+    let skip = 0;
+    const loop = () => { if (!(this.covered && (++skip % 4))) this.frame(); requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
     this.ready = true; this.bus.emit('ready');
   }
@@ -341,7 +342,7 @@ export class Arena {
       if (age < 2.6) {
         const out = age > 2.2 ? (age - 2.2) / 0.4 : 0, imp = Math.min(1, age / 0.12);
         c.save(); c.globalAlpha = 1 - out; c.translate(0, slide + out * 60);
-        this.rig.tomato(c, [s.x, s.y], 46 * s.s, 1.25 - 0.1 * imp, 0.78 + 0.07 * imp, s.tr);
+        this.rig.tomato(c, [s.x, s.y], 34 * s.s, 1.25 - 0.1 * imp, 0.78 + 0.07 * imp, s.tr);
         c.restore();
       }
     }
@@ -365,10 +366,10 @@ export class Arena {
       c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,220,90,${0.18 + pulse * 0.12})`; ell(c, TARGET.x, TARGET.y, this.aim.perfectR, this.aim.perfectR); c.fill(); c.restore();
       const x = this.aim.x; softBlob(c, x + 10, AIM.y + 60, 50, 14, '#000000', 0.35, 6);
       const big = 0.9 + Math.min(0.3, (this.aim.n - 1) * 0.04);
-      this.rig.tomato(c, [x, AIM.y], 50 * big, 1, 1, Math.sin(this.now * 6) * 0.15);
+      this.rig.tomato(c, [x, AIM.y], 36 * big, 1, 1, Math.sin(this.now * 6) * 0.15);
       if (this.aim.n > 1) this.label(c, '×' + this.aim.n, x + 46 * big, AIM.y - 46 * big);
     }
-    if (fly) { this.rig.tomato(c, [fly.x, fly.y], 50 * fly.s, 1, 1, fly.rot); if (fly.n > 1) this.label(c, '×' + fly.n, fly.x + 46 * fly.s, fly.y - 46 * fly.s); }
+    if (fly) { this.rig.tomato(c, [fly.x, fly.y], 36 * fly.s, 1, 1, fly.rot); if (fly.n > 1) this.label(c, '×' + fly.n, fly.x + 40 * fly.s, fly.y - 40 * fly.s); }
   }
   drawRipples(c) {
     if (!this.ripples) return;

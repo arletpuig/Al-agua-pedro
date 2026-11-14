@@ -597,3 +597,22 @@ svg { display: block; }
 .gift-list li.won { min-width: 0; flex-direction: row; gap: 6px; padding: 4px 10px; background: linear-gradient(#2c0d63, #1a0640); border-color: var(--rc); }
 .gift-list li.won span { color: #fff; font-size: 13px; } .gift-list li.won em { font: 12px 'Titan One'; font-style: normal; color: #ffe766; }
 #paid-list { flex-wrap: wrap; justify-content: center; max-width: 360px; }
+
+/* ---------- v23: tienda más ligera ---------- */
+/* destello: se mueve con transform (no repinta la tarjeta en cada fotograma) */
+.chest-card::after, .pack::after { inset: 0 auto 0 0; width: 45%; background: linear-gradient(105deg, #fff0, #ffffff4d, #fff0); background-size: auto; animation: shinemove 3.4s ease-in-out infinite; transform: translateX(-120%); }
+@keyframes shinemove { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(260%); } }
+.chest-card, .pack { contain: layout paint; }
+.pk-rays, .chest-card::before, .free .rays, .overlay .rays { will-change: transform; }
+/* brillos y pulsos sin sombras animadas */
+#pill-pesetas .ri, .price svg, .wallet svg, .chest-card li svg[class=""], .reward svg, .pk-amount svg { animation: none; filter: drop-shadow(0 3px 0 #0007) drop-shadow(0 0 6px #ffd23f99); }
+.chest-card.diamond { animation: none; box-shadow: inset 0 3px 0 #ffffff55, inset 0 -5px 0 #0006, 0 5px 0 #0009, 0 0 18px #d79bff99; }
+.pack.camara { animation: none; box-shadow: inset 0 3px 0 #ffffff88, inset 0 -6px 0 #0005, 0 6px 0 #0009, 0 0 24px #ffd23f99; }
+.pk-buy, .pack.camara .pk-buy { animation: btnpulse 1.4s ease-in-out infinite; }
+@keyframes btnpulse { 50% { transform: scale(1.05); } }
+.floor .fg { animation: none; }
+.pk-cards { animation: none; }
+/* «+88% EXTRA» en vez de cantidades tachadas */
+.pk-was { flex-direction: column; gap: 0; }
+.pack.camara .pk-was { align-items: flex-start; }
+.pk-was span { font: 700 11px 'Baloo 2'; color: #ffffffd9; text-shadow: 0 1px 2px #000a; }

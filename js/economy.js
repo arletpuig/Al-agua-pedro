@@ -2,8 +2,8 @@
 // Las mismas reglas están replicadas en supabase/schema_v2.sql, schema_v4.sql y schema_v5.sql para los usuarios con cuenta.
 export const RARITIES = {
   // unlock: fragmentos para desbloquear (antes de tenerla cada aparición da 1); drop: fragmentos por aparición ya desbloqueada
-  common:    { name: 'Común',      color: '#8fa3b5', weightWood: 55, weightDiamond: 30, baseCost: 8,  growth: 1.42, unlock: 2, drop: 3 },
-  rare:      { name: 'Rara',       color: '#3fa9f5', weightWood: 15, weightDiamond: 19, baseCost: 12, growth: 1.45, unlock: 3, drop: 3 },
+  common:    { name: 'Común',      color: '#9aa9b8', weightWood: 55, weightDiamond: 30, baseCost: 8,  growth: 1.42, unlock: 2, drop: 3 },
+  rare:      { name: 'Poco común', color: '#2fc43c', weightWood: 15, weightDiamond: 19, baseCost: 12, growth: 1.45, unlock: 3, drop: 3 },
   epic:      { name: 'Épica',      color: '#b163ff', weightWood: 11, weightDiamond: 22, baseCost: 18, growth: 1.5,  unlock: 5, drop: 2 },
   legendary: { name: 'Legendaria', color: '#ffb400', weightWood: 4,  weightDiamond: 10, baseCost: 30, growth: 1.55, unlock: 6, drop: 2 },
 };
@@ -11,28 +11,28 @@ export const RARITIES = {
 const dimin = (cap, k) => L => cap * (1 - Math.exp(-L / k));
 const pct = v => `${Math.round(v * 1000) / 10}%`;
 export const CARDS = {
-  inflacion: { id: 'inflacion', name: 'Inflación', rarity: 'common', max: 30, icon: 'inflacion',
+  inflacion: { id: 'inflacion', name: 'Inflación', rarity: 'legendary', max: 30, icon: 'inflacion',
     desc: 'Cada pulsación vale más clics. Todo sube, hasta tus tomates.',
     effect: L => `${1 + L} clics por pulsación`, value: L => 1 + L },
-  joyas: { id: 'joyas', name: 'Joyas de Zapatero', rarity: 'rare', max: 25, icon: 'joyas',
+  joyas: { id: 'joyas', name: 'Joyas de Zapatero', rarity: 'legendary', max: 25, icon: 'joyas',
     desc: 'Cada caída al agua puede soltar pesetas extra. Cuanto más alto, menos sube cada nivel.',
     effect: L => { const p = CARDS.joyas.value(L); return `${pct(p)} de 2 pesetas · ${pct(p / 3)} de 3`; }, value: dimin(0.45, 9) },
-  mariscada: { id: 'mariscada', name: 'Mariscada Sindical', rarity: 'epic', max: 25, icon: 'mariscada',
+  mariscada: { id: 'mariscada', name: 'Mariscada Sindical', rarity: 'rare', max: 25, icon: 'mariscada',
     desc: 'Descuento en todas las mejoras de cartas. Cuanto más alto, menos descuenta cada nivel nuevo.',
     effect: L => `-${pct(CARDS.mariscada.value(L))} en mejoras`, value: dimin(0.40, 8) },
-  apagon: { id: 'apagon', name: 'Apagón', rarity: 'rare', max: 25, icon: 'apagon',
+  apagon: { id: 'apagon', name: 'Apagón', rarity: 'common', max: 25, icon: 'apagon',
     desc: 'Con la luz a medias la diana parece más grande: el centro que tira a Pedro al agua crece.',
     effect: L => `centro de la diana +${pct(CARDS.apagon.value(L))}`, value: dimin(0.45, 10) },
   plusultra: { id: 'plusultra', name: 'Plus Ultra', rarity: 'common', max: 25, icon: 'plusultra',
     desc: 'Más allá de la diana: si fallas, a veces recuperas los tomates que has lanzado.',
     effect: L => `${pct(CARDS.plusultra.value(L))} de recuperar los tomates al fallar`, value: dimin(0.5, 10) },
-  hacienda: { id: 'hacienda', name: 'Hacienda Inversa', rarity: 'rare', max: 20, icon: 'hacienda',
+  hacienda: { id: 'hacienda', name: 'Hacienda Inversa', rarity: 'epic', max: 20, icon: 'hacienda',
     desc: 'Cada vez que gastas pesetas (cofres o mejoras), Hacienda te devuelve una parte.',
     effect: L => `te devuelve el ${pct(CARDS.hacienda.value(L))} de lo que gastas`, value: dimin(0.12, 8) },
-  puerta: { id: 'puerta', name: 'Puerta Giratoria', rarity: 'epic', max: 20, icon: 'puerta',
+  puerta: { id: 'puerta', name: 'Puerta Giratoria', rarity: 'common', max: 20, icon: 'puerta',
     desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
     effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },
-  paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'legendary', max: 15, icon: 'paguitas',
+  paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 15, icon: 'paguitas',
     desc: 'Cada cierto tiempo llueven 3 pesetas mientras juegas. Cuanto más nivel, más a menudo.',
     effect: L => `3 pesetas cada ${CARDS.paguitas.value(L)} s`, value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, L - 1)) : 0) },
   amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'legendary', max: 20, icon: 'amnistia',

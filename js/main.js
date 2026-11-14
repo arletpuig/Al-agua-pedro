@@ -32,6 +32,8 @@ const { scene } = createArena('game', { top: 58, bottom: 252 });
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank,
   onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onTitle: saveTitle, onPack: id => openPack(id), onShare: share, onShareGo: shareGo, onShareSave: shareSave });
 ui.setAccountUI(null, null, profile.avatar || DEFAULT_AVATAR);
+// con un panel o una ventana delante, el escenario se dibuja más despacio
+new MutationObserver(() => { scene.covered = !!document.querySelector('.panel.open, .overlay.open'); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
 ui.setSoundUI(state.sound, state.music); ui.hud();
 // Pedro provocando en la pantalla de acceso (un fotograma real de la escena)
 function gatePedro() {
@@ -51,7 +53,7 @@ onChange(() => ui.hud());
 backend.syncTime().then(() => ui.hud());
 setInterval(() => {                       // reloj: Falcón, punto de cofre diario
   const on = falconActive(); if (on && !falconWas) { scene.falconFly?.(); ui.showToast('✈️ ¡El Falcón despega! Clics ×5'); } falconWas = on;
-  ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.renderShop();
+  ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
 if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest };

@@ -155,21 +155,22 @@ check('los tomates de cofre cuentan como históricos', s.tomatoesEarned === Math
 await page.click('#panel-shop [data-close]');
 
 console.log('Cartas: desbloqueo por fragmentos');
-check('desbloquear cuesta más cuanto más rara', await page.evaluate(() => { const E = AAP.E; return E.unlockNeed('inflacion') < E.unlockNeed('joyas') && E.unlockNeed('joyas') < E.unlockNeed('mariscada') && E.unlockNeed('mariscada') < E.unlockNeed('amnistia'); }));
+check('desbloquear cuesta más cuanto más rara', await page.evaluate(() => { const E = AAP.E; return E.unlockNeed('puerta') < E.unlockNeed('mariscada') && E.unlockNeed('mariscada') < E.unlockNeed('hacienda') && E.unlockNeed('hacienda') < E.unlockNeed('inflacion'); }));
+check('rarezas nuevas: legendarias, épicas, poco común y comunes', await page.evaluate(() => { const C = AAP.E.CARDS, r = id => C[id].rarity; return ['inflacion', 'joyas', 'amnistia'].every(id => r(id) === 'legendary') && ['hacienda', 'paguitas'].every(id => r(id) === 'epic') && r('mariscada') === 'rare' && AAP.E.RARITIES.rare.name === 'Poco común' && ['puerta', 'plusultra', 'apagon'].every(id => r(id) === 'common'); }));
 check('sin desbloquear da 1 fragmento; al llegar se desbloquea; luego da varios', await page.evaluate(() => {
-  const E = AAP.E, c = E.emptyCards(), need = E.unlockNeed('mariscada'); let unlocked = 0;
-  for (let i = 0; i < need; i++) { const r = [{ id: 'mariscada' }]; E.applyChestCards(c, r); if (r[0].isNew) unlocked++; if (i < need - 1 && (r[0].frags !== 1 || !r[0].locked)) return false; }
-  const r = [{ id: 'mariscada' }]; E.applyChestCards(c, r);
-  return unlocked === 1 && c.mariscada.level === 1 && r[0].frags === E.RARITIES.epic.drop && r[0].frags > 1;
+  const E = AAP.E, c = E.emptyCards(), need = E.unlockNeed('hacienda'); let unlocked = 0;
+  for (let i = 0; i < need; i++) { const r = [{ id: 'hacienda' }]; E.applyChestCards(c, r); if (r[0].isNew) unlocked++; if (i < need - 1 && (r[0].frags !== 1 || !r[0].locked)) return false; }
+  const r = [{ id: 'hacienda' }]; E.applyChestCards(c, r);
+  return unlocked === 1 && c.hacienda.level === 1 && r[0].frags === E.RARITIES.epic.drop && r[0].frags > 1;
 }));
 console.log('16, 17. Cartas y potenciadores');
 await give(page, { cards: { inflacion: { level: 1, frags: 6 }, mariscada: { level: 1, frags: 3 }, joyas: { level: 1, frags: 0 }, apagon: { level: 1, frags: 0 }, amnistia: { level: 1, frags: 0 } } });
 await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(300); await shot('10-cartas');
 check('la colección muestra las 9 cartas', await page.locator('#cards-grid .card').count() === 9 && /Plus Ultra/.test(await txt('#cards-grid')) && /Paguitas/.test(await txt('#cards-grid')));
 before = await S(page);
-const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 1, AAP.state.cards));
+const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 1, AAP.state.cards)), needF = await page.evaluate(() => AAP.E.fragsNeeded('inflacion', 1));
 await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(300); s = await S(page);
-check('mejorar Inflación descuenta el precio exacto y los fragmentos', s.pesetas === before.pesetas - cost && s.cards.inflacion.level === 2 && s.cards.inflacion.frags === 6 - 3, `(coste ${cost})`);
+check('mejorar Inflación descuenta el precio exacto y los fragmentos', s.pesetas === before.pesetas - cost && s.cards.inflacion.level === 2 && s.cards.inflacion.frags === 6 - needF, `(coste ${cost}, ${needF} fragmentos)`);
 check('no se puede mejorar sin fragmentos', await page.locator('[data-upgrade="joyas"]').isDisabled());
 const base = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 2, { mariscada: { level: 0 } }));
 await page.click('[data-upgrade="mariscada"]'); await page.waitForTimeout(300); s = await S(page);
@@ -329,7 +330,11 @@ const packs = await page.evaluate(() => [...document.querySelectorAll('.pack')].
 check('tres packs: 1,99 €, 3,99 € y 9,95 €, con monedas por el suelo', packs.length === 3 && packs.map(p => p.price).join('|') === '1,99 €|3,99 €|9,95 €' && packs.every(p => p.coins >= 5), JSON.stringify(packs.map(p => p.price)));
 check('el de 9,95 € es el de más valor', packs[2].best && /MÁS VALOR/.test(packs[2].ribbon) && packs.slice(0, 2).every(p => /OFERTA/.test(p.ribbon)));
 check('cada pack da más pesetas por euro que el anterior', await page.evaluate(() => { const P = Object.values(AAP.E.PACKS), r = P.map(p => p.pesetas / parseFloat(p.price.replace(',', '.'))); return r[0] < r[1] && r[1] < r[2] && P.every(p => p.pesetas > p.base); }));
-await page.click('.pack.maletin .pk-buy'); await page.waitForTimeout(300);
+check('sin cantidades tachadas: «+X% EXTRA»', await page.locator('.pack s').count() === 0 && /EXTRA/.test(await txt('.pack.maletin .pk-was')));
+await page.click('.chest-card.wood .probs-btn'); await page.waitForTimeout(2300);
+check('las probabilidades se quedan abiertas aunque pase el tiempo', await page.locator('.chest-card.wood .probs.open').count() === 1 && await page.locator('.chest-card.wood .probs').isVisible());
+await page.click('.chest-card.wood .probs-btn');
+await page.click('.pack.maletin .pk-buy', { force: true }); await page.waitForTimeout(300);
 check('sin cuenta no se puede comprar: avisa y no abre nada', /iniciar sesión|muy pronto/.test(await txt('#toast')) && !(await page.evaluate(() => document.querySelector('#pay-overlay').classList.contains('open'))));
 await page.click('#panel-shop [data-close]');
 

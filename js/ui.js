@@ -31,7 +31,7 @@ export function init(handlers) {
   $('#shop-body').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.pack) H.onPack?.(b.dataset.pack); else if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
-    else if ('probs' in b.dataset) b.parentElement.querySelector('.probs').classList.toggle('open');
+    else if ('probs' in b.dataset) { const on = b.parentElement.querySelector('.probs').classList.toggle('open'); on ? openProbs.add(b.dataset.probs) : openProbs.delete(b.dataset.probs); }
   });
   // perfil: bandera, nombre e imagen para compartir
   $('#flag-grid').addEventListener('click', e => { const b = e.target.closest('button[data-flag]'); if (b) H.onAvatar?.(b.dataset.flag); });
@@ -167,13 +167,22 @@ function packCard(p) {
     <div class="pk-art">${icon(p.icon)}</div>
     <div class="pk-info"><h3>${p.name}</h3>
       <div class="pk-amount">${icon('ic-coin')}<b>${fmt(p.pesetas)}</b></div>
-      <div class="pk-was"><s>${fmt(p.base)}</s><i>+${bonus}%</i></div>
+      <div class="pk-was"><i>+${bonus}% EXTRA</i><span>bonus de lanzamiento</span></div>
       <div class="pk-tom">${icon('ic-tomato')}+${fmt(p.tomatoes)} tomates</div>
       ${p.cards ? `<div class="pk-cards">${icon('ic-cards')}+${p.cards} cartas épicas o legendarias</div>` : ''}
       <button class="pk-buy" data-pack="${p.id}">${p.price} €</button></div>
     <i class="floor">${floor}</i></div>`;
 }
+// Con la tienda abierta, cada segundo solo se actualizan los textos que cambian (no se redibuja todo).
+const openProbs = new Set(); let shopKey = '';
+export function shopTick() {
+  const daily = backend.dailyAvailable(), key = [daily, falconActive(), state.pesetas].join('|');
+  if (key !== shopKey) return renderShop();
+  const ms = backend.msToNextDaily(), el = $('#daily-sub'); if (el && !daily) el.textContent = `Vuelve en ${Math.floor(ms / 3600000)} h ${String(Math.floor(ms % 3600000 / 60000)).padStart(2, '0')} min`;
+  const fs = $('#falcon-state'); if (fs && falconActive()) fs.textContent = 'ACTIVO · ' + $('#falcon-time').textContent;
+}
 export function renderShop() {
+  shopKey = [backend.dailyAvailable(), falconActive(), state.pesetas].join('|');
   const daily = backend.dailyAvailable(), ms = backend.msToNextDaily(), h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000);
   const probs = kind => { const p = E.rarityPercents(kind, state.cards), d = E.CHESTS[kind]; return `<div class="probs">
     ${Object.keys(p).map(r => `<div><span><i class="gem" style="background:${E.RARITIES[r].color}"></i>${E.RARITIES[r].name}</span><b>${p[r].toFixed(1)}%</b></div>`).join('')}
@@ -185,10 +194,10 @@ export function renderShop() {
       ${gems(kind)}
       <ul><li>${icon('ic-cards')}<b>${d.cards}</b> carta${d.cards > 1 ? 's' : ''}</li><li>${icon('ic-tomato')}<b>${d.tomatoes[0]}–${d.tomatoes[1]}</b> tomates</li><li>${icon('ic-coin')}<b>${Math.round(d.pesetaChance * 100)}%</b> pesetas extra</li></ul>
       <button class="price" data-buy="${kind}" ${ok ? '' : 'disabled'}>${icon('ic-coin')}<b>${d.price}</b></button>
-      <button class="probs-btn" data-probs>Probabilidades</button>${probs(kind)}</div>`; };
+      <button class="probs-btn" data-probs="${kind}">Probabilidades</button>${probs(kind).replace('class="probs"', `class="probs${openProbs.has(kind) ? ' open' : ''}"`)}</div>`; };
   const adOk = p => canShowVideo(p), fal = falconActive();
   $('#shop-body').innerHTML = `
-    <div class="free ${daily ? '' : 'off'}"><i class="rays"></i><span class="tag">COFRE DIARIO</span><span class="sub">${daily ? '¡Gratis! Uno cada día' : `Vuelve en ${h} h ${String(m).padStart(2, '0')} min`}</span>
+    <div class="free ${daily ? '' : 'off'}"><i class="rays"></i><span class="tag">COFRE DIARIO</span><span class="sub" id="daily-sub">${daily ? '¡Gratis! Uno cada día' : `Vuelve en ${h} h ${String(m).padStart(2, '0')} min`}</span>
       ${icon('ic-chest', 'big')}<button class="btn-g" data-daily ${daily ? '' : 'disabled'}>${daily ? 'ABRIR GRATIS' : 'MAÑANA'}</button></div>
     <h4 class="sec gold"><span>PACKS DE PESETAS</span></h4>
     <div class="packs">${Object.values(E.PACKS).map(packCard).join('')}</div>

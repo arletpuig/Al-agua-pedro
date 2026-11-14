@@ -1,7 +1,12 @@
 # Diagnóstico (solo lectura) del acceso con Google: no cambia nada.
 # Mira si Google está activado en Supabase, adónde redirige el botón y qué contesta Google.
 name: Diagnóstico de acceso con Google
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  # se lanza solo al cambiar este archivo en la rama de trabajo
+  push:
+    branches: [ccr-dae401b7-wkadqy]
+    paths: ['.github/workflows/diagnostico-google.yml']
 
 jobs:
   diagnostico:

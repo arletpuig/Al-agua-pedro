@@ -8,7 +8,7 @@ export const CONFIG = {
   SPEED_PER_FALL: 0.01,        // aumento de velocidad por cada caída provocada (dificultad progresiva, suave)
   MAX_SPEED_MULT: 1.3,
   AIM_MIN: 600, AIM_MAX: 1075, // recorrido horizontal del tomate (la diana está en x = 880; a la izquierda queda Pedro)
-  PERFECT_RADIUS: 32,          // distancia al centro para "acierto perfecto" (el centro de la diana): Pedro cae
+  PERFECT_RADIUS: 26,          // distancia al centro para "acierto perfecto" (el centro de la diana): Pedro cae
   NEAR_RADIUS: 153,            // radio de la diana: impacto válido ("¡casi!")
   // Multiplicador de pulsaciones: aparece si pulsas seguido y baja si paras
   // tarda en llegar (70 toques seguidos para ×2, 220 para ×3) y se va enseguida si paras (0,5 s de gracia y cae rápido)

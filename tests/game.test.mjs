@@ -176,6 +176,7 @@ const base = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 2, { maris
 await page.click('[data-upgrade="mariscada"]'); await page.waitForTimeout(300); s = await S(page);
 const disc = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 2, AAP.state.cards));
 check('Mariscada Sindical abarata las mejoras', s.cards.mariscada.level === 2 && disc < base && disc >= 1, `(${base} → ${disc})`);
+check('precio de mejora: tachado solo con descuento y siempre más caro que el real', await page.evaluate(() => [...document.querySelectorAll('#cards-grid button[data-upgrade]')].every(b => { const d = b.querySelector('del'); return !d || +d.textContent > +b.textContent.replace(d.textContent, '').trim(); })));
 check('Mariscada: cada nivel descuenta menos y nunca pasa del 40%', await page.evaluate(() => { const v = AAP.E.CARDS.mariscada.value; return v(2) - v(1) > v(25) - v(24) && v(25) < 0.40 && v(100) <= 0.40 && AAP.E.upgradeCost('inflacion', 1, { mariscada: { level: 25 } }) >= 1; }));
 await page.click('#panel-cards [data-close]');
 before = await S(page); await tap(page, 10); s = await S(page);
@@ -213,8 +214,13 @@ const pg = await page.evaluate(async () => { const t0 = AAP.state.tomatoes, p0 =
 check('Puerta Giratoria: 2 tomates por nivel en cada mejora; Hacienda devuelve parte', pg.b.tomatoes === 10 && pg.dt === 10 && pg.b.refund >= 1 && pg.dp === -pg.cost + pg.b.refund, JSON.stringify(pg));
 check('Paguitas: cada nivel llueve más a menudo', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value; return v(0) === 0 && v(1) === 120 && v(15) < v(10) && v(10) < v(1) && v(15) >= 15; }));
 await give(page, { cards: { paguitas: { level: 15, frags: 0 }, hacienda: { level: 0, frags: 0 }, puerta: { level: 0, frags: 0 }, plusultra: { level: 0, frags: 0 } } });
-before = await S(page); await page.waitForFunction(p => AAP.state.stats.paguitasPesetas > p, before.paguitasPesetas || 0, { timeout: 30000 }); s = await S(page);
-check('Paguitas: llueven 3 pesetas', s.paguitasPesetas === (before.paguitasPesetas || 0) + 3 && s.pesetas === before.pesetas + 3);
+before = await S(page); await page.waitForSelector('.pg-coin', { timeout: 30000 }); await page.waitForTimeout(1500);
+const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"), r = c.getBoundingClientRect(); return { w: r.width, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length }; });
+check("Paguitas: caen 3 monedas grandes que giran", pgc.n === 3 && pgc.w >= 70 && pgc.anim === "pgspin", JSON.stringify(pgc));
+s = await S(page); check('si no las tocas no se cobran', s.paguitasPesetas === (before.paguitasPesetas || 0));
+for (const c of await page.locator('.pg-coin').all()) await c.dispatchEvent('pointerdown');
+await page.waitForTimeout(300); s = await S(page);
+check('tocándolas: +3 pesetas', s.paguitasPesetas === (before.paguitasPesetas || 0) + 3 && s.pesetas === before.pesetas + 3);
 await give(page, { cards: { paguitas: { level: 0, frags: 0 } } });
 console.log('19. Pedro habla mientras pulsas');
 await page.waitForFunction(() => !AAP.scene.bubble, null, { timeout: 8000 });

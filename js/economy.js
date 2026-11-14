@@ -33,7 +33,7 @@ export const CARDS = {
     desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
     effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },
   paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 15, icon: 'paguitas',
-    desc: 'Cada cierto tiempo llueven 3 pesetas mientras juegas. Cuanto más nivel, más a menudo.',
+    desc: 'Cada cierto tiempo caen 3 pesetas del cielo: ¡tócalas antes de que lleguen al suelo! Cuanto más nivel, más a menudo.',
     effect: L => `3 pesetas cada ${CARDS.paguitas.value(L)} s`, value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, L - 1)) : 0) },
   amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'legendary', max: 20, icon: 'amnistia',
     desc: 'Tus fallos quedan perdonados: a veces, aunque no aciertes en el centro, Pedro cae igual al agua.',

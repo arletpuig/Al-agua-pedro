@@ -101,6 +101,18 @@ export function combo(mult, heat, next) {
   b.classList.toggle('c2', mult === 2 && !aiming); b.classList.toggle('c3', mult >= 3 && !aiming);
 }
 export function comboUp() { const el = $('#combo'); el.classList.remove('up'); void el.offsetWidth; el.classList.add('up'); }
+// Paguitas: caen monedas grandes girando; cada una que toques es 1 peseta. Las que llegan abajo se pierden.
+export function paguitaRain(n, collect) {
+  const app = $('#app'), w = app.clientWidth;
+  for (let i = 0; i < n; i++) setTimeout(() => {
+    const c = document.createElement('button'); c.className = 'pg-coin'; c.setAttribute('aria-label', 'Coger peseta');
+    c.style.left = Math.round(w * (0.12 + Math.random() * 0.62)) + 'px'; c.style.setProperty('--sway', (Math.random() < .5 ? -1 : 1) * (20 + Math.random() * 30) + 'px');
+    c.innerHTML = '<i class="pg-spin"><svg><use href="#ic-coin"/></svg></i>';
+    c.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (c.classList.contains('got')) return; c.classList.add('got'); collect(1); floater('+1', e.clientX, e.clientY); setTimeout(() => c.remove(), 350); });
+    c.addEventListener('animationend', e => { if (e.animationName === 'pgfall' && !c.classList.contains('got')) c.remove(); });
+    app.appendChild(c);
+  }, i * 650);
+}
 export function floater(text, x, y) {
   const r = $('#btn-click').getBoundingClientRect(), el = document.createElement('div'); el.className = 'floater'; el.textContent = text;
   el.style.left = ((x ?? r.left + r.width / 2) - 18 + (Math.random() - .5) * 40) + 'px'; el.style.top = ((y ?? r.top + 10) - 34) + 'px';
@@ -217,7 +229,7 @@ export function renderCards(upgradedId) {
   $('#cards-grid').innerHTML = E.CARD_IDS.map(id => {
     const c = E.CARDS[id], r = E.RARITIES[c.rarity], L = E.level(state.cards, id), owned = L > 0, max = L >= c.max;
     const need = owned && !max ? E.fragsNeeded(id, L) : 0, have = E.frags(state.cards, id), cost = owned && !max ? E.upgradeCost(id, L, state.cards) : 0;
-    const base = owned && !max ? Math.round(r.baseCost * Math.pow(r.growth, L - 1)) : 0, can = owned && !max && have >= need && state.pesetas >= cost;
+    const base = owned && !max ? E.upgradeCost(id, L, {}) : 0, can = owned && !max && have >= need && state.pesetas >= cost;   // precio sin el descuento de la Mariscada
     const un = E.unlockNeed(id), fresh = isNewCard(id);
     return `<div class="card ${owned ? '' : 'locked'} ${upgradedId === id ? 'upgraded' : ''} ${fresh ? 'fresh' : ''}" data-id="${id}" style="--rc:${r.color}">
       ${fresh ? '<i class="dot"></i><i class="new-tag">¡NUEVA!</i>' : ''}
@@ -226,7 +238,7 @@ export function renderCards(upgradedId) {
       <p>${c.desc}</p>
       ${owned ? `<div class="eff">${c.effect(L)}${max ? '<span>Nivel máximo</span>' : `<span>Siguiente: ${c.effect(L + 1)}</span>`}</div>
         ${max ? '' : `<div class="frag">Fragmentos ${Math.min(have, need)}/${need}<div class="bar"><div class="bar-fill" style="width:${Math.min(100, have / need * 100)}%"></div></div></div>
-        <button class="btn-g" data-upgrade="${id}" ${can ? '' : 'disabled'}>${icon('ic-coin', 'ci')}${base !== cost ? `<del>${base}</del>` : ''}${cost}</button>`}`
+        <button class="btn-g" data-upgrade="${id}" ${can ? '' : 'disabled'}>${icon('ic-coin', 'ci')}${base > cost ? `<del>${base}</del>` : ''}${cost}</button>`}`
       : `<div class="frag unlock">Para desbloquear ${Math.min(have, un)}/${un}<div class="bar"><div class="bar-fill" style="width:${Math.min(100, have / un * 100)}%"></div></div></div>
         <div class="eff">Consigue fragmentos en los cofres<span>Nivel 1: ${c.effect(1)}</span></div>`}
     </div>`;

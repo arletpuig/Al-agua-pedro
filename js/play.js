@@ -61,7 +61,7 @@ function onTap(e) {
 function tickPaguitas() {
   const every = E.paguitasEvery(state.cards);
   if (!every || document.visibilityState !== 'visible') { paguitaAt = performance.now(); return; }
-  if (performance.now() - paguitaAt >= every * 1000) { paguitaAt = performance.now(); addPaguita(E.PAGUITA); SFX.coin(); scene.rainCoins?.(E.PAGUITA); ui.hud(); }
+  if (performance.now() - paguitaAt >= every * 1000) { paguitaAt = performance.now(); SFX.coin(); ui.paguitaRain(E.PAGUITA, p => { addPaguita(p); SFX.coin(); ui.hud(); }); }
 }
 // ---------- decisión de un lanzamiento ----------
 export const testRng = { fn: null };   // solo para pruebas automáticas (modo ?debug)

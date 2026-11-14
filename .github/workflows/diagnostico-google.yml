@@ -1,0 +1,29 @@
+# Diagnóstico (solo lectura) del acceso con Google: no cambia nada.
+# Mira si Google está activado en Supabase, adónde redirige el botón y qué contesta Google.
+name: Diagnóstico de acceso con Google
+on: workflow_dispatch
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar el acceso con Google
+        run: |
+          K=$(grep -o "SUPABASE_KEY: '[^']*'" js/config.js | cut -d"'" -f2)
+          U=$(grep -o "SUPABASE_URL: '[^']*'" js/config.js | cut -d"'" -f2)
+          echo "== Ajustes de acceso de Supabase"
+          curl -sS -H "apikey: $K" "$U/auth/v1/settings" | python3 -c "import json,sys; d=json.load(sys.stdin); e=d.get('external',{}); print('google activado:', e.get('google'), '| correo:', e.get('email'), '| sin confirmar correo:', d.get('mailer_autoconfirm'))"
+          for R in https://alaguapedro.es/ https://arletpuig.github.io/Al-agua-pedro/; do
+            echo; echo "== Botón «Entrar con Google» con vuelta a $R"
+            ENC=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=''))" "$R")
+            CODE=$(curl -sS -o /tmp/body -w '%{http_code}' -H "apikey: $K" "$U/auth/v1/authorize?provider=google&redirect_to=$ENC")
+            L=$(curl -sS -o /dev/null -w '%{redirect_url}' -H "apikey: $K" "$U/auth/v1/authorize?provider=google&redirect_to=$ENC")
+            echo "Supabase responde $CODE"; [ "$CODE" != "302" ] && head -c 300 /tmp/body && echo
+            echo "$L" | python3 -c "import sys,urllib.parse as u; p=u.urlparse(sys.stdin.read().strip()); q=u.parse_qs(p.query); print('va a:', p.netloc + p.path); print('redirect_uri que envía a Google:', q.get('redirect_uri')); print('client_id configurado:', 'sí' if q.get('client_id') else 'NO'); print('formato client_id correcto:', bool(q.get('client_id') and q['client_id'][0].endswith('.apps.googleusercontent.com')))"
+            echo "== Respuesta de Google"
+            curl -sS -L -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' "$L" -o /tmp/g.html -w 'código final %{http_code}\n' || true
+            grep -o -i 'redirect_uri_mismatch\|invalid_client\|deleted_client\|disabled_client\|unauthorized_client\|invalid_request\|access_denied\|Error 40[0-9]' /tmp/g.html | sort | uniq -c | head -8 || true
+            grep -o -i '<title>[^<]*' /tmp/g.html | head -1 || true
+          done

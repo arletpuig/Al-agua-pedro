@@ -1,4 +1,4 @@
-# Diagnóstico (solo lectura) del acceso con Google: no cambia nada. (2.ª comprobación)
+# Diagnóstico (solo lectura) del acceso con Google: no cambia nada. (3.ª comprobación: ID de cliente público)
 # Mira si Google está activado en Supabase, adónde redirige el botón y qué contesta Google.
 name: Diagnóstico de acceso con Google
 on:
@@ -26,7 +26,7 @@ jobs:
             CODE=$(curl -sS -o /tmp/body -w '%{http_code}' -H "apikey: $K" "$U/auth/v1/authorize?provider=google&redirect_to=$ENC")
             L=$(curl -sS -o /dev/null -w '%{redirect_url}' -H "apikey: $K" "$U/auth/v1/authorize?provider=google&redirect_to=$ENC")
             echo "Supabase responde $CODE"; [ "$CODE" != "302" ] && head -c 300 /tmp/body && echo
-            echo "$L" | python3 -c "import sys,urllib.parse as u; p=u.urlparse(sys.stdin.read().strip()); q=u.parse_qs(p.query); print('va a:', p.netloc + p.path); print('redirect_uri que envía a Google:', q.get('redirect_uri')); print('client_id configurado:', 'sí' if q.get('client_id') else 'NO'); print('formato client_id correcto:', bool(q.get('client_id') and q['client_id'][0].endswith('.apps.googleusercontent.com')))"
+            echo "$L" | python3 -c "import sys,urllib.parse as u; p=u.urlparse(sys.stdin.read().strip()); q=u.parse_qs(p.query); print('va a:', p.netloc + p.path); print('redirect_uri que envía a Google:', q.get('redirect_uri')); print('client_id configurado:', 'sí' if q.get('client_id') else 'NO'); print('formato client_id correcto:', bool(q.get('client_id') and q['client_id'][0].endswith('.apps.googleusercontent.com'))); print('ID de cliente (público, letra a letra):', ' '.join(q.get('client_id',[''])[0]))"
             echo "== Respuesta de Google"
             if [ -z "$L" ]; then echo "(Supabase no redirige a Google)"; continue; fi
             curl -sS -L -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' "$L" -o /tmp/g.html -w 'código final %{http_code}\n' || true

@@ -1,4 +1,4 @@
-# Diagnóstico (solo lectura) de los pagos: no crea pagos ni cambia nada. (4.ª comprobación)
+# Diagnóstico (solo lectura) de los pagos: no crea pagos ni cambia nada. (5.ª comprobación)
 # Comprueba que las funciones crear-pago y stripe-webhook están desplegadas y bien configuradas, y que el SQL de compras está ejecutado.
 name: Diagnóstico de pagos
 on:
@@ -29,3 +29,5 @@ jobs:
           C=$(curl -sS -o /tmp/b -w '%{http_code}' "$U/rest/v1/purchases?select=stripe_session&limit=1" -H "apikey: $K"); show $C
           echo "== 5. SQL nuevo de rarezas (v12) y del pack con cartas (v11): función fn_pack"
           C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/rest/v1/rpc/fn_pack" -H "apikey: $K" -H 'Content-Type: application/json' -d '{"p":"camara"}'); show $C
+          echo "== 6. SQL de rarezas nuevas (v12): Inflación debe ser «legendary» y Mariscada «rare» (poco común)"
+          for c in inflacion mariscada puerta; do C=$(curl -sS -o /tmp/b -w '%{http_code}' -X POST "$U/rest/v1/rpc/fn_rarity" -H "apikey: $K" -H 'Content-Type: application/json' -d "{\"p_id\":\"$c\"}"); echo "   $c → $(cat /tmp/b) (código $C)"; done

@@ -1,4 +1,4 @@
-# Diagnóstico (solo lectura) del acceso con Google: no cambia nada. (5.ª comprobación: ¿acepta Google el botón en alaguapedro.es?)
+# Diagnóstico (solo lectura) del acceso con Google: no cambia nada. (6.ª comprobación: ¿adónde vuelve el jugador tras entrar con Google?)
 # Mira si Google está activado en Supabase, adónde redirige el botón y qué contesta Google.
 name: Diagnóstico de acceso con Google
 on:
@@ -18,14 +18,6 @@ jobs:
         run: |
           K=$(grep -o "SUPABASE_KEY: '[^']*'" js/config.js | cut -d"'" -f2)
           U=$(grep -o "SUPABASE_URL: '[^']*'" js/config.js | cut -d"'" -f2)
-          CID=$(grep -o "GOOGLE_CLIENT_ID: '[^']*'" js/config.js | cut -d"'" -f2)
-          echo "== Botón oficial de Google: ¿qué contesta Google según la web? (orígenes de JavaScript autorizados)"
-          for O in https://alaguapedro.es https://www.alaguapedro.es https://arletpuig.github.io https://origen-inventado.example; do
-            C=$(curl -sS -o /tmp/gs -w '%{http_code}' "https://accounts.google.com/gsi/status?client_id=$CID&as=diag" -H "Origin: $O" -H "Referer: $O/" -A 'Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile')
-            echo "   $O → $C · $(head -c 160 /tmp/gs | tr '\n' ' ')"
-            C=$(curl -sS -o /tmp/gb -w '%{http_code}' "https://accounts.google.com/gsi/button?type=standard&size=large&client_id=$CID&iframe_id=gsi_1&as=diag&hl=es" -H "Referer: $O/" -A 'Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile')
-            echo "     botón → $C · $(grep -o -i 'origin[^<"]\{0,80\}' /tmp/gb | head -2 | tr '\n' ' ')"
-          done
           echo "== Registros nuevos y proveedores (solo lectura)"
           curl -sS -H "apikey: $K" "$U/auth/v1/settings" | python3 -c "import json,sys; d=json.load(sys.stdin); print('registros nuevos desactivados (disable_signup):', d.get('disable_signup')); print('proveedores:', {k:v for k,v in d.get('external',{}).items() if v})"
           echo "== Entrar con el botón de Google (token falso: solo para ver qué contesta Supabase)"
@@ -41,6 +33,13 @@ jobs:
             L=$(curl -sS -o /dev/null -w '%{redirect_url}' -H "apikey: $K" "$U/auth/v1/authorize?provider=google&redirect_to=$ENC")
             echo "Supabase responde $CODE"; [ "$CODE" != "302" ] && head -c 300 /tmp/body && echo
             echo "$L" | python3 -c "import sys,urllib.parse as u; p=u.urlparse(sys.stdin.read().strip()); q=u.parse_qs(p.query); print('va a:', p.netloc + p.path); print('redirect_uri que envía a Google:', q.get('redirect_uri')); print('client_id configurado:', 'sí' if q.get('client_id') else 'NO'); print('formato client_id correcto:', bool(q.get('client_id') and q['client_id'][0].endswith('.apps.googleusercontent.com'))); print('ID de cliente (público, letra a letra):', ' '.join(q.get('client_id',[''])[0]))"
+            echo "$L" | python3 -c "
+          import sys,urllib.parse as u,json,base64
+          q=u.parse_qs(u.urlparse(sys.stdin.read().strip()).query); st=q.get('state',[''])[0]
+          try:
+            pl=st.split('.')[1]; pl+='='*(-len(pl)%4); d=json.loads(base64.urlsafe_b64decode(pl))
+            print('tras entrar, Supabase devolverá al jugador a:', d.get('referrer'), '| web principal de Supabase (Site URL):', d.get('site_url'))
+          except Exception as e: print('no se pudo leer la vuelta:', e)"
             echo "== Respuesta de Google"
             if [ -z "$L" ]; then echo "(Supabase no redirige a Google)"; continue; fi
             curl -sS -L -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' "$L" -o /tmp/g.html -w 'código final %{http_code}\n' || true

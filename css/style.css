@@ -1100,3 +1100,6 @@ svg { display: block; }
 .chest-art.small.opened { animation: openc-small .5s cubic-bezier(.2, 1.6, .4, 1) forwards; }
 @keyframes openc-small { 0% { transform: scale(1.1); } 100% { transform: scale(.55) translateY(-40px); filter: drop-shadow(0 0 40px #ffe766); } }
 .chest-stage:has(.chest-rewards.many) { gap: 4px; }
+
+/* el juego nunca se desplaza (ni por programa ni al enfocar un campo) */
+#app { overflow: hidden; overflow: clip; }

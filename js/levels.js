@@ -4,7 +4,7 @@
 export const LEVEL_NAMES = ['Perroflauta', 'Okupa', 'Anticapitalista', 'Anarquista', 'Marxista', 'Comunista', 'Leninista', 'Bolivariano', 'Sindicalista', 'Republicano',
   'Podemita', 'Ecologista', 'Feminista radical', 'Activista', 'Progresista', 'Sanchista', 'Socialista', 'Separatista', 'Independentista', 'Socialdemócrata',
   'Centrista', 'Moderado', 'Ciudadano', 'Liberal', 'Constitucionalista', 'Popular', 'Pepero', 'Liberal-conservador', 'Conservador', 'Monárquico',
-  'Patriota', 'Españolista', 'Derechista', 'Gaviotista', 'Anticomunista', 'Soberanista', 'Tradicionalista', 'Nacional-conservador', 'Voxista', 'Abascalista',
+  'Patriota', 'Españolista', 'Derechista', 'Carlista', 'Anticomunista', 'Soberanista', 'Tradicionalista', 'Nacional-conservador', 'Voxista', 'Imperialista español',
   'Ultrapatriota', 'Ultraderechista', 'Reaccionario', 'Nacionalista radical', 'Falangista', 'Nacional-sindicalista', 'Nacionalcatólico', 'Legionario', 'Franquista', 'Caudillo Supremo'];
 export const MAX_LEVEL = LEVEL_NAMES.length;
 // XP total para llegar a cada nivel: XP_AT[L - 1]. Subir del nivel k al k+1 cuesta 70·k^1.65 + 30 (redondeado a decenas).

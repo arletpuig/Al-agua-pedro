@@ -33,8 +33,8 @@ export const CARDS = {
     desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
     effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },
   paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 15, icon: 'paguitas',
-    desc: 'Cada cierto tiempo caen 3 monedas del cielo: ¡tócalas antes de que lleguen al suelo! Hasta el nivel 7 caen más a menudo; desde el 8, cada moneda vale más.',
-    effect: L => { const v = paguitaValue(L), t = CARDS.paguitas.value(L); return v > 1 ? `3 monedas ×${v} cada ${t} s (${3 * v} pesetas)` : `3 pesetas cada ${t} s`; },
+    desc: 'Cada cierto tiempo caen 3 monedas del cielo: ¡tócalas antes de que lleguen al suelo! Hasta el nivel 7 caen más a menudo. Desde el 8 ya no caen antes: cada moneda vale más (×2, luego ×3 y ×4).',
+    effect: L => { const v = paguitaValue(L), t = CARDS.paguitas.value(L); return v > 1 ? `3 monedas ×${v} cada ${t} s (${3 * v} pesetas)` : `3 pesetas cada ${t} s${L < 8 ? ' · desde el nivel 8, monedas ×2' : ''}`; },
     // segundos entre lluvias: bajan hasta el nivel 7 y luego se quedan; desde el 8 sube lo que vale cada moneda (paguitaValue)
     value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, Math.min(L, PAGUITA_FAST_MAX) - 1)) : 0) },
   amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'common', max: 20, icon: 'amnistia',

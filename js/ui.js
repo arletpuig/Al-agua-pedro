@@ -139,15 +139,12 @@ let streakFx = null;
 export function streak(d) {
   const el = $('#streak'), app = $('#app'), s = state.streak, T = STREAK.tierOf(s);
   if (d && d.streakLost >= 2) {                      // racha perdida: se rompe
-    el.className = 'streak lost'; $('#st-x').textContent = '×' + d.streakLost; $('#st-name').textContent = 'RACHA PERDIDA'; $('#st-sub').textContent = '¡Vuelve a empezar!'; $('#st-fill').style.width = '0%';
+    el.className = 'streak lost'; $('#st-x').textContent = '×' + d.streakLost; $('#st-name').textContent = 'RACHA PERDIDA';
     app.dataset.streak = '0'; SFX.streakLost?.(); setTimeout(() => { if (state.streak < 2) el.classList.add('hidden'); }, 1800); return;
   }
   if (!T) { el.classList.add('hidden'); app.dataset.streak = '0'; return; }
-  const per = Math.round(STREAK.pct(s) * 100), next = STREAK.nextMilestone(s);
   el.className = 'streak t' + T.id; app.dataset.streak = String(T.id);
   $('#st-x').textContent = '×' + s; $('#st-name').textContent = T.name;
-  $('#st-sub').textContent = `+${per}% pesetas · a la ${next}.ª: +${STREAK.milestone(next)}`;
-  $('#st-fill').style.width = ((s % 5) / 5 * 100) + '%';
   if (!d || !d.fall) return;
   void el.offsetWidth; el.classList.add('pop');
   SFX.streak?.(s);
@@ -159,7 +156,7 @@ export function streak(d) {
     const r = el.getBoundingClientRect(), a = app.getBoundingClientRect();
     streakFx.burst(r.left - a.left + r.width / 2, r.top - a.top, 60, { colors: [T.color, '#ffffff', '#ffe766'], max: 520 });
     const ban = document.createElement('div'); ban.className = 'streak-ban t' + T.id;
-    ban.innerHTML = `<b>¡RACHA DE ${s}!</b><span><i>+${m}</i> pesetas · ahora +${per}%</span>`;
+    ban.innerHTML = `<b>¡RACHA DE ${s}!</b><span><i>+${m}</i> pesetas</span>`;
     app.appendChild(ban); setTimeout(() => ban.remove(), 2400);
     if (navigator.vibrate) try { navigator.vibrate([30, 40, 30, 40, 90]); } catch (e) {}
   }

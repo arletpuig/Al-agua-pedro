@@ -1183,3 +1183,8 @@ svg { display: block; }
 #app[data-streak="2"] #btn-click, #app[data-streak="3"] #btn-click, #app[data-streak="4"] #btn-click, #app[data-streak="5"] #btn-click { filter: none; }
 .streak-ban b { font-size: 27px; -webkit-text-stroke: 7px var(--ink); text-shadow: 0 0 12px var(--sc), 0 4px 0 #0009; }
 .streak-ban span { font-size: 13px; padding: 2px 10px 3px; -webkit-text-stroke: 3.5px var(--ink); box-shadow: 0 3px 0 #0009, 0 0 10px var(--sc); }
+
+/* v42: segunda forma de entrar con Google y aviso en navegadores de apps */
+.google-alt { align-self: center; margin-top: -2px; padding: 4px 8px; font: 700 13px 'Baloo 2'; color: #9fd0ff; text-decoration: underline; }
+.google-alt.hidden, .note.inapp.hidden { display: none; }
+.note.inapp { padding: 8px 10px; border-radius: 12px; background: #ff9a1a22; border: 2px solid #ff9a1a88; color: #ffe1b0; font-size: 13px; }

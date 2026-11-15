@@ -321,6 +321,10 @@ console.log('H2. Botón oficial de Google en alaguapedro.es');
 const ctx4 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p4 = await ctx4.newPage(); watchErrors(p4); await bridge(p4); await fakeGoogle(p4, 'gsi-token-ok');
 await p4.goto(URL_LOGIN); await p4.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await p4.waitForSelector('#fake-gsi', { timeout: 8000 }).catch(() => {});
 check('se ve el botón oficial de Google (y no el de siempre)', await p4.locator('#fake-gsi').isVisible() && !(await p4.locator('#btn-google').isVisible()));
+check('y debajo, siempre, una segunda forma de entrar con Google', await p4.locator('#google-alt').isVisible());
+// un token que Supabase rechaza: se dice el motivo y se ofrece la otra forma
+await p4.evaluate(() => window.__gsi.callback({ credential: 'token-malo' })); await p4.waitForTimeout(800);
+check('si Google falla, se explica el motivo', /No se ha podido entrar con Google \(.+\)/.test(await p4.locator('#acc-msg').textContent()), await p4.locator('#acc-msg').textContent());
 await p4.click('#fake-gsi'); await p4.waitForFunction(() => document.querySelector('#acc-short').textContent === 'Lola Google', null, { timeout: 10000 }).catch(() => {});
 check('con el token de Google se entra en la cuenta (sin pasar por la página de Supabase)', (await p4.locator('#acc-short').textContent()) === 'Lola Google' && !(await p4.evaluate(() => document.querySelector('#panel-account').classList.contains('open'))));
 await ctx4.close();

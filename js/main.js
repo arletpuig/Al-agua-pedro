@@ -186,7 +186,7 @@ function setupGoogleButton() {
       const box = $('#gsi-btn');
       window.google.accounts.id.initialize({ client_id: CONFIG.GOOGLE_CLIENT_ID, callback: onGoogleCredential, ux_mode: 'popup', auto_select: false, itp_support: true, use_fedcm_for_button: true });
       window.google.accounts.id.renderButton(box, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', logo_alignment: 'center', locale: 'es', width: Math.min(360, Math.max(240, (box.parentElement?.clientWidth || 320))) });
-      box.classList.remove('hidden'); $('#btn-google').classList.add('hidden');
+      box.classList.remove('hidden'); $('#btn-google').classList.add('hidden'); $('#google-alt').classList.remove('hidden');
     } catch (e) { /* si falla, queda el botón de siempre */ }
   };
   document.head.appendChild(s);
@@ -194,8 +194,22 @@ function setupGoogleButton() {
 async function onGoogleCredential(resp) {
   ui.accMsg('Entrando con Google...');
   try { const u = await sb.signInWithGoogleToken(resp.credential); ui.accMsg(''); await afterLogin(u); ui.showToast('✅ Has entrado con Google'); }
-  catch (e) { ui.accMsg('❌ No se ha podido entrar con Google. Inténtalo de nuevo.', 'err'); }
+  catch (e) { ui.accMsg(`❌ No se ha podido entrar con Google (${googleWhy(e.message)}). Prueba con «¿No puedes entrar con Google?» o con tu correo.`, 'err'); $('#google-alt').classList.remove('hidden'); }
 }
+// motivo del fallo, en castellano (para saber qué ajustar en Google o en Supabase)
+function googleWhy(m = '') {
+  if (/signups? not allowed|signup.*disabled/i.test(m)) return 'los registros nuevos están desactivados en Supabase';
+  if (/audience|aud/i.test(m)) return 'el ID de cliente de Google no coincide con el de Supabase';
+  if (/nonce/i.test(m)) return 'falta activar «Skip nonce checks» de Google en Supabase';
+  if (/provider.*not enabled|unsupported provider/i.test(m)) return 'Google no está activado en Supabase';
+  if (/database error/i.test(m)) return 'error al crear la cuenta en la base de datos';
+  if (/failed to fetch|network/i.test(m)) return 'sin conexión';
+  return m ? m.slice(0, 80) : 'error desconocido';
+}
+// la segunda forma de entrar (por la página de Google, sin el botón oficial)
+$('#google-alt').addEventListener('click', () => $('#btn-google').click());
+// dentro de Instagram, TikTok, Facebook... Google bloquea el acceso: se avisa
+if (/FBAN|FBAV|Instagram|TikTok|musical_ly|Bytedance|Line\/|; wv\)/i.test(navigator.userAgent)) $('#google-inapp')?.classList.remove('hidden');
 setupGoogleButton();
 $('#btn-google').addEventListener('click', async () => {
   const b = $('#btn-google'); b.disabled = true; ui.accMsg('Conectando con Google...');

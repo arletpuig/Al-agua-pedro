@@ -100,7 +100,7 @@ export async function throwTomatoes(n) {
     // Plus Ultra: si fallas, a veces recuperas los tomates
     if (!d.fall && (testRng.fn || Math.random)() < E.recoverChance(state.cards)) { d.recovered = n; recoverTomatoes(n); }
     // racha de lanzamientos: cada caída la sube (y da pesetas extra); un fallo la corta
-    if (d.fall) { const sk = ++state.streak, canBank = (!backend.cloud || state.serverStreak) && !streakTest.off, b = canBank ? STREAK.bonus(sk) : 0; d.streak = sk; d.streakBonus = b; if (b) addStreakPesetas(b); }
+    if (d.fall) { const sk = ++state.streak, canBank = (!backend.cloud || state.serverStreak) && !streakTest.off, b = canBank ? STREAK.bonus(sk, d.pesetas) : 0; d.streak = sk; d.streakBonus = b; if (b) addStreakPesetas(b); }
     else { d.streakLost = state.streak; state.streak = 0; }
     save();
     ui.hud();

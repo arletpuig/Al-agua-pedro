@@ -1162,3 +1162,24 @@ svg { display: block; }
 .streak-ban.t5 b { animation: strainbow 1.5s linear infinite; }
 @keyframes banin { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3) rotate(-8deg); } 14% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(2deg); } 22% { transform: translate(-50%, -50%) scale(1) rotate(-2deg); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-2deg); } 100% { opacity: 0; transform: translate(-50%, -90%) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .streak, .streak-aura, .st-fire::before, .streak-ban { animation-duration: .01s !important; } }
+
+/* v41: racha más discreta */
+.streak { top: -38px; gap: 6px; padding: 2px 10px 2px 4px; border-width: 2.5px; border-radius: 14px;
+  background: linear-gradient(180deg, #16206acc, #0a1240e6); border-color: color-mix(in srgb, var(--sc) 70%, #000); box-shadow: 0 3px 0 #0008, 0 0 8px color-mix(in srgb, var(--sc) 55%, transparent); }
+.streak.t2, .streak.t3, .streak.t4 { animation: none; }
+.st-fire { width: 20px; height: 23px; }
+.st-fire::before { clip-path: path('M10 0 C12 5 18 8 18 15 C18 19.5 14 23 10 23 C6 23 2 19.5 2 15 C2 10 6 9 6.7 4 C8.7 6.7 8 9.4 10 10.7 C11.4 7.4 8.7 4 10 0 Z'); }
+.st-x { font-size: 18px; -webkit-text-stroke: 4.5px var(--ink); color: var(--sc); }
+.st-info em { font-size: 10px; -webkit-text-stroke: 3px var(--ink); color: color-mix(in srgb, var(--sc) 60%, #fff); }
+.st-info small { font-size: 9.5px; font-weight: 700; color: #c9d4ff; }
+.st-bar { height: 4px; border-width: 1px; }
+.st-bar i { background: var(--sc); }
+#app[data-streak="1"] .streak-aura { opacity: .12; }
+#app[data-streak="2"] .streak-aura { opacity: .18; }
+#app[data-streak="3"] .streak-aura { opacity: .24; }
+#app[data-streak="4"] .streak-aura { opacity: .28; }
+#app[data-streak="5"] .streak-aura { opacity: .32; }
+@keyframes aura { from { box-shadow: inset 0 0 22px var(--ac); } to { box-shadow: inset 0 0 40px var(--ac); } }
+#app[data-streak="2"] #btn-click, #app[data-streak="3"] #btn-click, #app[data-streak="4"] #btn-click, #app[data-streak="5"] #btn-click { filter: none; }
+.streak-ban b { font-size: 27px; -webkit-text-stroke: 7px var(--ink); text-shadow: 0 0 12px var(--sc), 0 4px 0 #0009; }
+.streak-ban span { font-size: 13px; padding: 2px 10px 3px; -webkit-text-stroke: 3.5px var(--ink); box-shadow: 0 3px 0 #0009, 0 0 10px var(--sc); }

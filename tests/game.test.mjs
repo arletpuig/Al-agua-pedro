@@ -583,10 +583,11 @@ console.log('30. Abrir varios cofres a la vez');
 
 console.log('31. Racha de lanzamientos y peineta');
 {
-  const st = await page.evaluate(async () => { const S = await import('./js/streak.js'); return { b: [1, 2, 3, 4, 5, 8, 10, 12, 20, 40, 100].map(S.bonus).join(), t: [1, 2, 5, 10, 20, 35].map(s => S.tierOf(s)?.name || '-').join('|'),
+  const st = await page.evaluate(async () => { const S = await import('./js/streak.js'); return { b: [1, 2, 3, 4, 5, 8, 10, 12, 20, 40, 100].map(s => S.bonus(s, 1)).join(), big: [[2, 100], [10, 100], [10, 1], [35, 300], [10, 250]].map(([s, p]) => S.bonus(s, p)).join(), t: [1, 2, 5, 10, 20, 35].map(s => S.tierOf(s)?.name || '-').join('|'),
     // en una racha larga de lanzamientos ×1 nunca se pasa de lo que admite el servidor (15 por caída)
-    max: Math.max(...Array.from({ length: 300 }, (_, i) => Array.from({ length: i + 1 }, (_, k) => S.bonus(k + 1)).reduce((a, b) => a + b, 0) / (i + 1))) }; });
-  check('pesetas de racha: +1 desde 4 seguidos, más cada 4 (máx. 5) y premios a los 5, 10, 15...', st.b === '0,0,0,1,6,2,12,3,30,45,45', st.b);
+    max: Math.max(...Array.from({ length: 300 }, (_, i) => Array.from({ length: i + 1 }, (_, k) => S.bonus(k + 1, 3)).reduce((a, b) => a + b, 0) / (i + 1))) }; });
+  check('pesetas de racha con ×1: al menos 1 por acierto y premios a los 5, 10, 15...', st.b === '0,1,1,1,6,1,11,1,26,41,41', st.b);
+  check('la racha es un % de lo que ganas: ×100 da 100 veces más (10 % → 50 % → 100 %)', st.big === '10,60,11,340,135', st.big);
   check('la racha cambia de nombre: Racha, En llamas, Imparable, Legendaria, Dios del tomate', st.t === '-|RACHA|¡EN LLAMAS!|¡IMPARABLE!|¡LEGENDARIA!|¡DIOS DEL TOMATE!', st.t);
   check('nunca da más de lo que admite el servidor (15 por caída)', st.max < 15, st.max.toFixed(2));
   const c8 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p8 = await c8.newPage(); const e8 = watchErrors(p8); await mockTime(p8);
@@ -598,7 +599,7 @@ console.log('31. Racha de lanzamientos y peineta');
   let s8 = await S(p8);
   const ui8 = await p8.evaluate(() => ({ x: document.querySelector('#st-x').textContent, name: document.querySelector('#st-name').textContent, cls: document.querySelector('#streak').className, aura: document.querySelector('#app').dataset.streak, ban: !!document.querySelector('.streak-ban') }));
   check('5 aciertos seguidos: racha ×5 «¡EN LLAMAS!», aura roja y cartel', ui8.x === '×5' && ui8.name === '¡EN LLAMAS!' && /t2/.test(ui8.cls) && ui8.aura === '2' && ui8.ban, JSON.stringify(ui8));
-  check('y da sus pesetas extra (1 + 6 = 7) además de las de cada caída', s8.streakPesetas === 7 && s8.pesetas === p0 + 7 + (s8.pesetasEarned - b8.pesetasEarned), JSON.stringify({ sp: s8.streakPesetas, p0, p: s8.pesetas }));
+  check('y da sus pesetas extra (1 + 1 + 1 + 6 = 9) además de las de cada caída', s8.streakPesetas === 9 && s8.pesetas === p0 + 9 + (s8.pesetasEarned - b8.pesetasEarned), JSON.stringify({ sp: s8.streakPesetas, p0, p: s8.pesetas }));
   // al fallar: la peineta (siempre) y la racha se pierde
   await p8.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p8, 120, 220, 'R');
   await p8.waitForFunction(() => AAP.scene.clipName === 'peineta', null, { timeout: 6000 }).catch(() => {});

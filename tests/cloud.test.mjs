@@ -286,7 +286,7 @@ console.log('L. Racha de lanzamientos en el servidor');
   before = db(email);
   for (let i = 0; i < 5; i++) { await page.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(page, 0, 6); await idle(page); }
   await page.waitForTimeout(5500); row = db(email); s = await S(page);
-  check('5 aciertos seguidos: las 7 pesetas de la racha se guardan en el servidor y cuentan en tus pesetas', row.streak_pesetas === before.streak_pesetas + 7 && row.pesetas === s.pesetas && s.streakPesetas === row.streak_pesetas, JSON.stringify({ srv: row.streak_pesetas, loc: s.streakPesetas }));
+  check('5 aciertos seguidos: las 9 pesetas de la racha se guardan en el servidor y cuentan en tus pesetas', row.streak_pesetas === before.streak_pesetas + 9 && row.pesetas === s.pesetas && s.streakPesetas === row.streak_pesetas, JSON.stringify({ srv: row.streak_pesetas, loc: s.streakPesetas }));
   const before2 = row.streak_pesetas;
   await page.evaluate(async () => { AAP.state.stats.streakPesetas += 100000; (await import('./js/state.js')).changed(); });
   await page.waitForTimeout(5500); row = db(email); s = await S(page);

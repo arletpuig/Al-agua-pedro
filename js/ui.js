@@ -143,10 +143,10 @@ export function streak(d) {
     app.dataset.streak = '0'; SFX.streakLost?.(); setTimeout(() => { if (state.streak < 2) el.classList.add('hidden'); }, 1800); return;
   }
   if (!T) { el.classList.add('hidden'); app.dataset.streak = '0'; return; }
-  const per = STREAK.perHit(s), next = STREAK.nextMilestone(s);
+  const per = Math.round(STREAK.pct(s) * 100), next = STREAK.nextMilestone(s);
   el.className = 'streak t' + T.id; app.dataset.streak = String(T.id);
   $('#st-x').textContent = '×' + s; $('#st-name').textContent = T.name;
-  $('#st-sub').textContent = per ? `+${per} por acierto · a la ${next}.ª: +${STREAK.milestone(next)}` : `A la ${next}.ª: +${STREAK.milestone(next)} pesetas`;
+  $('#st-sub').textContent = `+${per}% pesetas · a la ${next}.ª: +${STREAK.milestone(next)}`;
   $('#st-fill').style.width = ((s % 5) / 5 * 100) + '%';
   if (!d || !d.fall) return;
   void el.offsetWidth; el.classList.add('pop');
@@ -157,9 +157,9 @@ export function streak(d) {
     if (!streakFx) streakFx = createFx(app);
     SFX.streakBig?.(); streakFx.resize();
     const r = el.getBoundingClientRect(), a = app.getBoundingClientRect();
-    streakFx.burst(r.left - a.left + r.width / 2, r.top - a.top, 110, { colors: [T.color, '#ffffff', '#ffe766'] });
+    streakFx.burst(r.left - a.left + r.width / 2, r.top - a.top, 60, { colors: [T.color, '#ffffff', '#ffe766'], max: 520 });
     const ban = document.createElement('div'); ban.className = 'streak-ban t' + T.id;
-    ban.innerHTML = `<b>¡RACHA DE ${s}!</b><span>${T.name.replace(/[¡!]/g, '')} · <i>+${m}</i> pesetas</span>`;
+    ban.innerHTML = `<b>¡RACHA DE ${s}!</b><span><i>+${m}</i> pesetas · ahora +${per}%</span>`;
     app.appendChild(ban); setTimeout(() => ban.remove(), 2400);
     if (navigator.vibrate) try { navigator.vibrate([30, 40, 30, 40, 90]); } catch (e) {}
   }

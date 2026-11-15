@@ -1107,3 +1107,58 @@ svg { display: block; }
 /* cofres: el letrero (POPULAR, MEJOR VALOR) dentro de la tarjeta, para que no se corte */
 .chest-card { padding-top: 32px; }
 .chest-card .ribbon { top: 6px; z-index: 3; font-size: 13px; padding: 1px 10px 2px; }
+
+/* ======================================================================== v40: racha de lanzamientos */
+.streak { position: absolute; left: 50%; top: -50px; z-index: 6; display: flex; align-items: center; gap: 8px; padding: 4px 14px 4px 6px; border-radius: 18px; border: 3px solid var(--ink);
+  transform: translateX(-50%); --sc: #ff9a1a; --sc2: #c45a00;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sc) 85%, #fff), var(--sc) 45%, var(--sc2)); box-shadow: inset 0 2px 0 #ffffff88, 0 4px 0 #0009, 0 0 18px var(--sc); white-space: nowrap; pointer-events: none; }
+.streak.hidden { display: none; }
+.streak.t1 { --sc: #ff9a1a; --sc2: #b84a00; }
+.streak.t2 { --sc: #ff3b2f; --sc2: #8c0c12; animation: stfire .5s ease-in-out infinite alternate; }
+.streak.t3 { --sc: #a35cff; --sc2: #3f128a; animation: stzap 1.2s steps(2) infinite; }
+.streak.t4 { --sc: #ffd23f; --sc2: #b86a00; animation: stgold 1.6s ease-in-out infinite; }
+.streak.t5 { --sc: #ff5ad1; --sc2: #5a1d9e; animation: strainbow 2s linear infinite; }
+@keyframes stfire { to { box-shadow: inset 0 2px 0 #ffffff88, 0 4px 0 #0009, 0 0 30px #ff6a00, 0 -6px 26px #ff3b2f; } }
+@keyframes stzap { 50% { box-shadow: inset 0 2px 0 #ffffff88, 0 4px 0 #0009, 0 0 28px #c98bff, 0 0 4px #fff; } }
+@keyframes stgold { 50% { box-shadow: inset 0 2px 0 #ffffffcc, 0 4px 0 #0009, 0 0 34px #ffe766, 0 0 60px #ffb21a88; } }
+@keyframes strainbow { to { filter: hue-rotate(360deg); } }
+.streak.pop { animation-name: stpop; animation-duration: .45s; animation-timing-function: cubic-bezier(.2, 1.8, .4, 1); animation-iteration-count: 1; }
+@keyframes stpop { 0% { transform: translateX(-50%) scale(1.45); } 100% { transform: translateX(-50%) scale(1); } }
+.st-fire { position: relative; width: 30px; height: 34px; flex-shrink: 0; }
+.st-fire::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 75%, #fff6c0 0 18%, #ffd23f 30%, #ff6a00 55%, #e3262c 70%, #e3262c00 72%);
+  clip-path: path('M15 0 C18 8 27 12 27 22 C27 29 21 34 15 34 C9 34 3 29 3 22 C3 15 9 13 10 6 C13 10 12 14 15 16 C17 11 13 6 15 0 Z'); animation: flick .35s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+@keyframes flick { to { transform: scale(1.08, .94) rotate(3deg); } }
+.streak.t3 .st-fire::before { background: radial-gradient(circle at 50% 75%, #fff 0 18%, #c98bff 35%, #6c2bd9 60%, #6c2bd900 72%); }
+.streak.t4 .st-fire::before { background: radial-gradient(circle at 50% 75%, #fff 0 20%, #fff3a0 35%, #ffb21a 60%, #ffb21a00 72%); }
+.streak.t5 .st-fire::before { background: radial-gradient(circle at 50% 75%, #fff 0 20%, #ffd0ff 35%, #ff5ad1 60%, #ff5ad100 72%); }
+.st-x { font: 28px/1 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 7px var(--ink); }
+.st-info { display: flex; flex-direction: column; gap: 1px; }
+.st-info em { font: 13px/1 'Titan One'; font-style: normal; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); letter-spacing: .02em; }
+.st-info small { font: 800 11px/1.1 'Baloo 2'; color: #fff; text-shadow: 0 1px 2px #000c; }
+.st-bar { display: block; width: 100%; height: 6px; border-radius: 4px; background: #0006; border: 1.5px solid var(--ink); overflow: hidden; }
+.st-bar i { display: block; height: 100%; background: linear-gradient(90deg, #fff, #ffe766); transition: width .4s ease; }
+.streak.lost { --sc: #7d8aa8; --sc2: #2a3150; animation: stlost .6s ease-out; filter: grayscale(.7); }
+@keyframes stlost { 0%, 100% { transform: translateX(-50%); } 20% { transform: translateX(calc(-50% - 10px)) rotate(-4deg); } 40% { transform: translateX(calc(-50% + 9px)) rotate(4deg); } 60% { transform: translateX(calc(-50% - 6px)); } 80% { transform: translateX(calc(-50% + 4px)); } }
+/* aura de color en los bordes de la pantalla y el botón grande brillando */
+.streak-aura { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .5s; --ac: #ff9a1a; animation: aura 1.4s ease-in-out infinite alternate; }
+@keyframes aura { from { box-shadow: inset 0 0 30px var(--ac); } to { box-shadow: inset 0 0 70px var(--ac), inset 0 0 8px #fff8; } }
+#app[data-streak="1"] .streak-aura { opacity: .35; --ac: #ff9a1a; }
+#app[data-streak="2"] .streak-aura { opacity: .55; --ac: #ff3b2f; }
+#app[data-streak="3"] .streak-aura { opacity: .7; --ac: #a35cff; animation-duration: .7s; }
+#app[data-streak="4"] .streak-aura { opacity: .8; --ac: #ffd23f; }
+#app[data-streak="5"] .streak-aura { opacity: .9; --ac: #ff5ad1; animation: aura .6s ease-in-out infinite alternate, strainbow 3s linear infinite; }
+#app[data-streak="2"] #btn-click { filter: drop-shadow(0 0 10px #ff3b2f); }
+#app[data-streak="3"] #btn-click { filter: drop-shadow(0 0 12px #a35cff); }
+#app[data-streak="4"] #btn-click { filter: drop-shadow(0 0 14px #ffd23f); }
+#app[data-streak="5"] #btn-click { filter: drop-shadow(0 0 16px #ff5ad1); }
+/* cartel de las rachas grandes (5, 10, 15...) */
+.streak-ban { position: absolute; left: 50%; top: 32%; z-index: 31; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; --sc: #ff9a1a;
+  transform: translate(-50%, -50%); animation: banin 2.4s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.streak-ban.t2 { --sc: #ff3b2f; } .streak-ban.t3 { --sc: #a35cff; } .streak-ban.t4 { --sc: #ffd23f; } .streak-ban.t5 { --sc: #ff5ad1; }
+.streak-ban b { font: 40px/1 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 9px var(--ink); text-shadow: 0 0 24px var(--sc), 0 6px 0 #0009; white-space: nowrap; }
+.streak-ban span { padding: 3px 14px 5px; border-radius: 14px; border: 3px solid var(--ink); background: linear-gradient(var(--sc), color-mix(in srgb, var(--sc) 55%, #000));
+  font: 16px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 4px var(--ink); box-shadow: 0 4px 0 #0009, 0 0 20px var(--sc); white-space: nowrap; }
+.streak-ban span i { font-style: normal; color: #ffe766; }
+.streak-ban.t5 b { animation: strainbow 1.5s linear infinite; }
+@keyframes banin { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3) rotate(-8deg); } 14% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(2deg); } 22% { transform: translate(-50%, -50%) scale(1) rotate(-2deg); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-2deg); } 100% { opacity: 0; transform: translate(-50%, -90%) scale(.9); } }
+@media (prefers-reduced-motion: reduce) { .streak, .streak-aura, .st-fire::before, .streak-ban { animation-duration: .01s !important; } }

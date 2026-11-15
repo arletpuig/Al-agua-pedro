@@ -8,6 +8,8 @@ import { backend } from './backend.js';
 import { canShowVideo, PLACEMENTS } from './ads.js';
 import { AVATARS, avatarSVG } from './avatars.js';
 import * as LV from './levels.js';
+import * as STREAK from './streak.js';
+import { createFx } from './fx.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => n.toLocaleString('es-ES');
 const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
@@ -132,6 +134,36 @@ function gainFx(n, target, iconId, cls, from) {
 }
 export const pesetaGain = (n, from) => gainFx(n, '#pill-pesetas', 'ic-coin', 'pes', from);
 export const tomatoGain = (n, from) => gainFx(n, '#basket', 'ic-tomato', 'tom', from);
+// Racha de lanzamientos: insignia que cambia de color y nombre, aura en los bordes, pesetas extra y celebraciones
+let streakFx = null;
+export function streak(d) {
+  const el = $('#streak'), app = $('#app'), s = state.streak, T = STREAK.tierOf(s);
+  if (d && d.streakLost >= 2) {                      // racha perdida: se rompe
+    el.className = 'streak lost'; $('#st-x').textContent = '×' + d.streakLost; $('#st-name').textContent = 'RACHA PERDIDA'; $('#st-sub').textContent = '¡Vuelve a empezar!'; $('#st-fill').style.width = '0%';
+    app.dataset.streak = '0'; SFX.streakLost?.(); setTimeout(() => { if (state.streak < 2) el.classList.add('hidden'); }, 1800); return;
+  }
+  if (!T) { el.classList.add('hidden'); app.dataset.streak = '0'; return; }
+  const per = STREAK.perHit(s), next = STREAK.nextMilestone(s);
+  el.className = 'streak t' + T.id; app.dataset.streak = String(T.id);
+  $('#st-x').textContent = '×' + s; $('#st-name').textContent = T.name;
+  $('#st-sub').textContent = per ? `+${per} por acierto · a la ${next}.ª: +${STREAK.milestone(next)}` : `A la ${next}.ª: +${STREAK.milestone(next)} pesetas`;
+  $('#st-fill').style.width = ((s % 5) / 5 * 100) + '%';
+  if (!d || !d.fall) return;
+  void el.offsetWidth; el.classList.add('pop');
+  SFX.streak?.(s);
+  if (d.streakBonus) pesetaGain(d.streakBonus, el);
+  const m = STREAK.milestone(s);
+  if (m) {                                           // ¡racha de 5, 10, 15...!
+    if (!streakFx) streakFx = createFx(app);
+    SFX.streakBig?.(); streakFx.resize();
+    const r = el.getBoundingClientRect(), a = app.getBoundingClientRect();
+    streakFx.burst(r.left - a.left + r.width / 2, r.top - a.top, 110, { colors: [T.color, '#ffffff', '#ffe766'] });
+    const ban = document.createElement('div'); ban.className = 'streak-ban t' + T.id;
+    ban.innerHTML = `<b>¡RACHA DE ${s}!</b><span>${T.name.replace(/[¡!]/g, '')} · <i>+${m}</i> pesetas</span>`;
+    app.appendChild(ban); setTimeout(() => ban.remove(), 2400);
+    if (navigator.vibrate) try { navigator.vibrate([30, 40, 30, 40, 90]); } catch (e) {}
+  }
+}
 export function floater(text, x, y) {
   const r = $('#btn-click').getBoundingClientRect(), el = document.createElement('div'); el.className = 'floater'; el.textContent = text;
   el.style.left = ((x ?? r.left + r.width / 2) - 18 + (Math.random() - .5) * 40) + 'px'; el.style.top = ((y ?? r.top + 10) - 34) + 'px';

@@ -7,7 +7,7 @@ import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { backend } from './backend.js';
 import { createArena } from './game/arena.js';
-import { initPlay, throwTomatoes, stopNow, isBusy, testRng, paguitaTest, CHAT } from './play.js';
+import { initPlay, throwTomatoes, stopNow, isBusy, testRng, paguitaTest, CHAT, streakTest } from './play.js';
 import { setEnabled, SFX } from './audio.js';
 import { DEFAULT_AVATAR } from './avatars.js';
 import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
@@ -38,7 +38,7 @@ ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest,
 ui.setAccountUI(null, null, profile.avatar || DEFAULT_AVATAR);
 // con un panel o una ventana delante, el escenario se dibuja más despacio
 new MutationObserver(() => { scene.covered = !!document.querySelector('.panel.open, .overlay.open'); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
-ui.setSoundUI(state.sound, state.music); ui.hud();
+ui.setSoundUI(state.sound, state.music); ui.hud(); ui.streak();
 // Pedro provocando en la pantalla de acceso (un fotograma real de la escena)
 function gatePedro() {
   const cv = $('#gate-pedro'); if (!cv) return;
@@ -61,7 +61,7 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest, CHAT };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest, CHAT, streakTest };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
@@ -136,7 +136,7 @@ function pushNow(keepalive = false) {
   if (!sb.auth.user) return Promise.resolve();
   if (saving) return saving.then(() => state.dirty ? pushNow(keepalive) : null);
   const sent = snapshot();
-  saving = sb.saveProgress(sent, keepalive)
+  saving = sb.saveProgress(sent, keepalive, state.serverStreak)
     .then(row => { applyServer(row, sent); ui.saveStatus('☁️ Guardado en la nube'); setTimeout(() => ui.saveStatus(''), 2000); })
     .catch(() => ui.saveStatus('⚠️ Sin conexión: se guardará más tarde'))
     .finally(() => { saving = null; });

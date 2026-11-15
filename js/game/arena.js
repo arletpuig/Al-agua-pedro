@@ -168,20 +168,16 @@ export class Arena {
     const t0 = this.now; this.plankWobble = () => Math.sin((this.now - t0) * 30) * shake.a;
     this.play('wobble', { keepPlace: false });
     await this.wait(0.9); this.plankWobble = null;
-    if (!last && Math.random() < 0.5) return;
-    // provocación: peineta, burla o carcajada, con frase
-    const r = Math.random();
-    const clip = r < 0.4 ? 'peineta' : r < 0.75 ? 'mock' : 'laugh';
-    this.play(clip); SFX.laugh();
-    this.say(pick(LINES.near), clip === 'peineta' ? 3.2 : 2.6);
-    await this.wait(last ? (clip === 'peineta' ? 2.6 : 1.8) : 0.8);
+    // siempre la peineta, con frase
+    this.play('peineta'); SFX.laugh();
+    this.say(pick(LINES.near), 3.0);
+    await this.wait(last ? 2.2 : 1.2);
   }
   async miss(last) {
     SFX.miss(); this.bigText('¡FALLO!', '#9fb0ff');
-    const clip = Math.random() < 0.55 ? 'laugh' : Math.random() < 0.5 ? 'mock' : 'peineta';
-    this.play(last ? clip : 'laugh'); SFX.laugh();
-    if (last) this.say(pick(LINES.miss), 2.6);
-    await this.wait(last ? 1.6 : 0.7);
+    this.play('peineta'); SFX.laugh();                 // siempre la peineta
+    this.say(pick(LINES.miss), 2.8);
+    await this.wait(last ? 2.2 : 1.2);
   }
   async catchIt(res) {
     // el tomate sale del punto donde apuntabas hacia la mano de Pedro

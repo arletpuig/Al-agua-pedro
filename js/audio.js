@@ -65,6 +65,10 @@ export const SFX = {
   cheer() { if (!enabled) return; [0, 0.1, 0.25, 0.4].forEach(d => noise({ t: 0.6, vol: 0.18, filter: 1500, q: 0.7, type: 'bandpass', delay: d })); [660, 880, 990].forEach((f, i) => tone({ f, type: 'sawtooth', t: 0.4, vol: 0.06, delay: i * 0.1 + 0.1 })); },
   falcon() { if (!enabled) return; noise({ t: 1.6, vol: 0.4, filter: 200, sweep: 4000, type: 'bandpass', q: 2 }); tone({ f: 120, f2: 900, type: 'sawtooth', t: 1.4, vol: 0.12 }); },
   error() { if (!enabled) return; tone({ f: 220, f2: 180, type: 'square', t: 0.2, vol: 0.15 }); },
+  // ---------- racha de lanzamientos ----------
+  streak(s) { if (!enabled) return; const b = 440 * Math.pow(2, Math.min(24, s) / 12); [1, 1.25, 1.5].forEach((m, i) => tone({ f: b * m, type: 'square', t: 0.12, vol: 0.12, delay: i * 0.06 })); tone({ f: b * 2, type: 'triangle', t: 0.3, vol: 0.12, delay: 0.18 }); },
+  streakBig() { if (!enabled) return; [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone({ f, type: 'square', t: 0.16, vol: 0.14, delay: i * 0.07 })); noise({ t: 1.0, vol: 0.25, filter: 5000, type: 'highpass', delay: 0.4 }); tone({ f: 2093, type: 'triangle', t: 0.8, vol: 0.16, delay: 0.42 }); },
+  streakLost() { if (!enabled) return; [392, 330, 262, 196].forEach((f, i) => tone({ f, f2: f * 0.94, type: 'sawtooth', t: 0.22, vol: 0.12, delay: i * 0.16 })); },
   // ---------- niveles y ruleta ----------
   xp() { if (!enabled) return; tone({ f: 1320, f2: 1980, type: 'triangle', t: 0.12, vol: 0.14 }); tone({ f: 2640, type: 'sine', t: 0.18, vol: 0.08, delay: 0.08 }); },
   xpFill() { if (!enabled) return; [880, 1047, 1175, 1319, 1568].forEach((f, i) => tone({ f, type: 'triangle', t: 0.09, vol: 0.09, delay: i * 0.05 })); },

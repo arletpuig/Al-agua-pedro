@@ -2,12 +2,15 @@
 // El botón grande sirve para las dos cosas: pulsar para conseguir tomates y, mientras apuntas, lanzar.
 // Lanzar ×N es UN solo tiro que vale por N tomates: si cae Pedro cuenta N caídas y N pagas de pesetas.
 import { CONFIG } from './config.js';
-import { state, addClicks, useTomatoes, registerThrow, falconActive, recoverTomatoes, addPaguita } from './state.js';
+import { state, addClicks, useTomatoes, registerThrow, falconActive, recoverTomatoes, addPaguita, addStreakPesetas, save } from './state.js';
+import * as STREAK from './streak.js';
+import { backend } from './backend.js';
 import * as E from './economy.js';
 import { SFX, unlock } from './audio.js';
 import { LINES, pick } from './game/arena.js';
 
-export const paguitaTest = { every: 0 };   // solo pruebas: segundos entre lluvias
+export const paguitaTest = { every: 0 };
+export const streakTest = { off: !!window.__AAP_NOSTREAK };   // pruebas: sin pesetas de racha (para contar pesetas exactas)   // solo pruebas: segundos entre lluvias
 // Frases de Pedro: mientras pulsas, como mucho una cada 25 s (y cada 120–200 pulsaciones); sin pulsar, una cada 50–80 s
 export const CHAT = { gap: 25000, taps: [120, 80], idle: [50000, 30000] };
 let scene, ui, hooks, busy = false, taps = 0, idleTimer = null, chatAt = 60, chatTime = 0, paguitaAt = 0;
@@ -96,8 +99,13 @@ export async function throwTomatoes(n) {
     registerThrow(res.kind, d, n);
     // Plus Ultra: si fallas, a veces recuperas los tomates
     if (!d.fall && (testRng.fn || Math.random)() < E.recoverChance(state.cards)) { d.recovered = n; recoverTomatoes(n); }
+    // racha de lanzamientos: cada caída la sube (y da pesetas extra); un fallo la corta
+    if (d.fall) { const sk = ++state.streak, canBank = (!backend.cloud || state.serverStreak) && !streakTest.off, b = canBank ? STREAK.bonus(sk) : 0; d.streak = sk; d.streakBonus = b; if (b) addStreakPesetas(b); }
+    else { d.streakLost = state.streak; state.streak = 0; }
+    save();
     ui.hud();
     await scene.resolveThrow(res, d, true, n);
+    ui.streak?.(d);
     result = { ...res, ...d, n };
   } finally { busy = false; ui.showStop(false); ui.setBusy(false); }
   hooks.onVolleyEnd?.([result], result.pesetas); scheduleIdle();

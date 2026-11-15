@@ -278,6 +278,22 @@ console.log('K2. Subir de nivel jugando (con cuenta): siempre sale la ruleta');
   await page.evaluate(() => { AAP.levelTest.off = true; });
 }
 
+console.log('L. Racha de lanzamientos en el servidor');
+{
+  await page.evaluate(() => { AAP.streakTest.off = false; AAP.state.streak = 0; });
+  row = db(email); psql(`update public.profiles set chest_tomatoes = chest_tomatoes + 10 where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  before = db(email);
+  for (let i = 0; i < 5; i++) { await page.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(page, 0, 6); await idle(page); }
+  await page.waitForTimeout(5500); row = db(email); s = await S(page);
+  check('5 aciertos seguidos: las 7 pesetas de la racha se guardan en el servidor y cuentan en tus pesetas', row.streak_pesetas === before.streak_pesetas + 7 && row.pesetas === s.pesetas && s.streakPesetas === row.streak_pesetas, JSON.stringify({ srv: row.streak_pesetas, loc: s.streakPesetas }));
+  const before2 = row.streak_pesetas;
+  await page.evaluate(async () => { AAP.state.stats.streakPesetas += 100000; (await import('./js/state.js')).changed(); });
+  await page.waitForTimeout(5500); row = db(email); s = await S(page);
+  check('pesetas de racha inventadas: el servidor solo admite las de las caídas nuevas', row.streak_pesetas === before2 && s.streakPesetas === row.streak_pesetas, `(${before2} → ${row.streak_pesetas})`);
+  await page.evaluate(() => { AAP.streakTest.off = true; AAP.state.streak = 0; });
+}
+
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#panel-rank .sheet-body');
 check('ranking con podio para los tres primeros', await page.locator('#rank-podium .pd:not(.empty)').count() >= 2 && await page.locator('#rank-podium .crown').count() === 1);

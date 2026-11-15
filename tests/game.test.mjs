@@ -581,5 +581,34 @@ console.log('30. Abrir varios cofres a la vez');
   await page.evaluate(() => AAP.ui.closeAll());
 }
 
+console.log('31. Racha de lanzamientos y peineta');
+{
+  const st = await page.evaluate(async () => { const S = await import('./js/streak.js'); return { b: [1, 2, 3, 4, 5, 8, 10, 12, 20, 40, 100].map(S.bonus).join(), t: [1, 2, 5, 10, 20, 35].map(s => S.tierOf(s)?.name || '-').join('|'),
+    // en una racha larga de lanzamientos ×1 nunca se pasa de lo que admite el servidor (15 por caída)
+    max: Math.max(...Array.from({ length: 300 }, (_, i) => Array.from({ length: i + 1 }, (_, k) => S.bonus(k + 1)).reduce((a, b) => a + b, 0) / (i + 1))) }; });
+  check('pesetas de racha: +1 desde 4 seguidos, más cada 4 (máx. 5) y premios a los 5, 10, 15...', st.b === '0,0,0,1,6,2,12,3,30,45,45', st.b);
+  check('la racha cambia de nombre: Racha, En llamas, Imparable, Legendaria, Dios del tomate', st.t === '-|RACHA|¡EN LLAMAS!|¡IMPARABLE!|¡LEGENDARIA!|¡DIOS DEL TOMATE!', st.t);
+  check('nunca da más de lo que admite el servidor (15 por caída)', st.max < 15, st.max.toFixed(2));
+  const c8 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p8 = await c8.newPage(); const e8 = watchErrors(p8); await mockTime(p8);
+  await open(p8, undefined, { streak: true });
+  await p8.evaluate(() => { AAP.giftTest.off = true; AAP.state.tutorialSeen = true; AAP.state.stats.chestTomatoes += 30; return import('./js/state.js').then(m => m.changed(false)); }); await noCombo(p8);
+  const hit = async () => { await p8.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p8, 0, 6); await idle(p8); };
+  const b8 = await S(p8), p0 = b8.pesetas;
+  for (let i = 0; i < 5; i++) await hit();
+  let s8 = await S(p8);
+  const ui8 = await p8.evaluate(() => ({ x: document.querySelector('#st-x').textContent, name: document.querySelector('#st-name').textContent, cls: document.querySelector('#streak').className, aura: document.querySelector('#app').dataset.streak, ban: !!document.querySelector('.streak-ban') }));
+  check('5 aciertos seguidos: racha ×5 «¡EN LLAMAS!», aura roja y cartel', ui8.x === '×5' && ui8.name === '¡EN LLAMAS!' && /t2/.test(ui8.cls) && ui8.aura === '2' && ui8.ban, JSON.stringify(ui8));
+  check('y da sus pesetas extra (1 + 6 = 7) además de las de cada caída', s8.streakPesetas === 7 && s8.pesetas === p0 + 7 + (s8.pesetasEarned - b8.pesetasEarned), JSON.stringify({ sp: s8.streakPesetas, p0, p: s8.pesetas }));
+  // al fallar: la peineta (siempre) y la racha se pierde
+  await p8.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p8, 120, 220, 'R');
+  await p8.waitForFunction(() => AAP.scene.clipName === 'peineta', null, { timeout: 6000 }).catch(() => {});
+  const clip = await p8.evaluate(() => AAP.scene.clipName); await idle(p8);
+  const lost = await p8.evaluate(() => ({ s: AAP.state.streak, name: document.querySelector('#st-name').textContent, aura: document.querySelector('#app').dataset.streak }));
+  check('al fallar, Pedro hace la peineta', clip === 'peineta', clip);
+  check('y la racha se pierde («RACHA PERDIDA»)', lost.s === 0 && lost.name === 'RACHA PERDIDA' && lost.aura === '0', JSON.stringify(lost));
+  check('racha: sin errores en consola', e8.length === 0, e8.join(' | '));
+  await c8.close();
+}
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

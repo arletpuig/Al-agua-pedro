@@ -56,9 +56,9 @@ export const FALCON_MINUTES = 10;
 export const isLegendLevel = L => L % 10 === 0;         // los niveles 10, 20, 30, 40 y 50 traen la ruleta legendaria
 export const nextLegendLevel = L => Math.min(MAX_LEVEL, (Math.floor(L / 10) + 1) * 10);
 // En la tienda: la ruleta normal se paga con pesetas (sube con tu nivel, siempre por encima de lo que da de media);
-// la legendaria, con dinero real (Stripe). Ver supabase/schema_v14.sql.
+// la legendaria, viendo 3 vídeos. Ver supabase/schema_v14.sql y schema_v15.sql.
 export const shopSpinPrice = L => 40 + 3 * L;
-export const LEGEND_OFFER = { id: 'ruleta', name: 'Tirada legendaria', price: '0,99', icon: 'ic-wheel-legend' };
+export const LEGEND_ADS = 3;                            // vídeos para una tirada legendaria en la tienda (como mucho una al día)
 export function wheelIndex(r, segs = WHEEL) { const t = segs.reduce((a, s) => a + s.weight, 0); let x = r * t; for (let i = 0; i < segs.length; i++) { x -= segs[i].weight; if (x < 0) return i; } return segs.length - 1; }
 // Texto corto de cada casilla para el nivel L (lo que se ve en la ruleta)
 export function segText(seg, L) { return seg.kind === 'falcon' ? `${seg.minutes} MIN` : seg.kind === 'chest' ? seg.text : '+' + seg.amount(L); }

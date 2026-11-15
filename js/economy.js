@@ -33,8 +33,10 @@ export const CARDS = {
     desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
     effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },
   paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 15, icon: 'paguitas',
-    desc: 'Cada cierto tiempo caen 3 pesetas del cielo: ¡tócalas antes de que lleguen al suelo! Cuanto más nivel, más a menudo.',
-    effect: L => `3 pesetas cada ${CARDS.paguitas.value(L)} s`, value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, L - 1)) : 0) },
+    desc: 'Cada cierto tiempo caen 3 monedas del cielo: ¡tócalas antes de que lleguen al suelo! Hasta el nivel 7 caen más a menudo; desde el 8, cada moneda vale más.',
+    effect: L => { const v = paguitaValue(L), t = CARDS.paguitas.value(L); return v > 1 ? `3 monedas ×${v} cada ${t} s (${3 * v} pesetas)` : `3 pesetas cada ${t} s`; },
+    // segundos entre lluvias: bajan hasta el nivel 7 y luego se quedan; desde el 8 sube lo que vale cada moneda (paguitaValue)
+    value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, Math.min(L, PAGUITA_FAST_MAX) - 1)) : 0) },
   amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'common', max: 20, icon: 'amnistia',
     desc: 'Tus fallos quedan perdonados: a veces, aunque no aciertes en el centro, Pedro cae igual al agua.',
     effect: L => `${pct(CARDS.amnistia.value(L))} de fallos perdonados`, value: dimin(0.30, 8) },
@@ -97,7 +99,11 @@ export function upgradeTomatoes(cards) { return CARDS.puerta.value(level(cards, 
 // Plus Ultra: probabilidad de recuperar los tomates de un lanzamiento fallado. Paguitas: segundos entre lluvias (0 = sin carta).
 export function recoverChance(cards) { return CARDS.plusultra.value(level(cards, 'plusultra')); }
 export function paguitasEvery(cards) { return CARDS.paguitas.value(level(cards, 'paguitas')); }
-export const PAGUITA = 3;
+export const PAGUITA = 3;                       // monedas por lluvia
+export const PAGUITA_FAST_MAX = 7;               // hasta este nivel bajan los segundos entre lluvias
+// Lo que vale cada moneda: ×1 hasta el nivel 7, ×2 del 8 al 10, ×3 del 11 al 13 y ×4 en el 14 y el 15 (igual que fn_paguitas_value)
+export function paguitaValue(L) { return L < 8 ? 1 : L < 11 ? 2 : L < 14 ? 3 : 4; }
+export function paguitasCoin(cards) { return paguitaValue(level(cards, 'paguitas')); }
 // Apagón: el centro de la diana (zona que tira a Pedro) es mayor.
 export function perfectRadius(cards, base) { return base * (1 + CARDS.apagon.value(level(cards, 'apagon'))); }
 // Amnistía: probabilidad de que un fallo (o un casi) se perdone y Pedro caiga igual.

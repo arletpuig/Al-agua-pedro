@@ -414,27 +414,46 @@ export class Arena {
     }
     this.fx = this.fx.filter(f => this.now - f.t0 < 1.5);
   }
+  // Bocadillo de Pedro: se dibuja a tamaño de pantalla (letra legible en cualquier móvil), como panel de videojuego
   drawBubble(c, pedX) {
     const b = this.bubble; if (!b) return;
     if (this.now > b.until) { this.bubble = null; return; }
     const age = this.now - b.t0, pop = age < 0.25 ? EASE.b(age / 0.25) : 1, out = b.until - this.now < 0.2 ? (b.until - this.now) / 0.2 : 1;
-    c.save(); c.font = '800 36px "Baloo 2", sans-serif';
-    const words = b.text.split(' '), lines = []; let line = '';
-    for (const w of words) { const tst = line ? line + ' ' + w : w; if (c.measureText(tst).width > 460 && line) { lines.push(line); line = w; } else line = tst; }
+    const k = this.k, X = x => x * k + this.tx, Y = y => y * k + this.ty, cw = this.cw, top = this.insets.top + 6;
+    c.save(); c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    const fs = Math.round(Math.max(13, Math.min(17, cw / 25))), lh = Math.round(fs * 1.18), padX = 12, padY = 9;
+    c.font = `800 ${fs}px "Baloo 2", sans-serif`;
+    const maxW = Math.min(250, cw * 0.55), words = b.text.split(' '), lines = []; let line = '';
+    for (const w of words) { const t = line ? line + ' ' + w : w; if (c.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
     lines.push(line);
-    const lw = Math.max(...lines.map(l => c.measureText(l).width)), bw = lw + 56, bh = lines.length * 42 + 32;
-    let ax, ay;                                            // punta de la cola
-    if (b.where === 'water') { ax = (TANK.x0 + TANK.x1) / 2 + 40; ay = TANK.water - 330; }
-    else { ax = pedX + 60; ay = PLANK.y - 690; }
-    const bx = Math.min(W - bw - 16, Math.max(16, ax - 40)), by = ay - bh - 34;
+    const lw = Math.max(...lines.map(l => c.measureText(l).width)), bw = Math.max(lw + padX * 2, 92), bh = lines.length * lh + padY * 2 + 4;
+    let ax, ay, bx, by, side;
+    if (b.where === 'water') {                                // en el agua: encima de la pecera
+      ax = X((TANK.x0 + TANK.x1) / 2 + 40); ay = Y(TANK.water - 330); side = 'down';
+      bx = Math.min(cw - bw - 8, Math.max(8, ax - 34)); by = Math.max(top, ay - bh - 14);
+    } else {                                                 // de pie: al lado de la cabeza, con la cola hacia la boca
+      ax = X(pedX + 70); ay = Y(PLANK.y - 600); side = 'left';
+      bx = ax + 16; by = Math.max(top, ay - bh * 0.8);
+      if (bx + bw > cw - 8) { bx = Math.max(8, cw - bw - 8); if (bx < ax + 6) { side = 'down'; by = Math.max(top, ay - bh - 16); } }
+    }
     c.translate(ax, ay); c.scale(pop * out, pop * out); c.translate(-ax, -ay);
-    c.globalAlpha = 0.35; c.fillStyle = '#000'; c.beginPath(); c.roundRect(bx + 6, by + 10, bw, bh, 26); c.fill(); c.globalAlpha = 1;
-    const path = new Path2D(); path.roundRect(bx, by, bw, bh, 26);
-    const tail = new Path2D(); tail.moveTo(ax + 6, by + bh - 4); tail.lineTo(ax - 20, ay); tail.lineTo(ax + 44, by + bh - 4); tail.closePath();
-    c.lineJoin = 'round'; c.strokeStyle = '#0a0b18'; c.lineWidth = 12; c.stroke(path); c.stroke(tail);
-    c.fillStyle = '#ffffff'; c.fill(path); c.fill(tail);
-    c.fillStyle = '#0d1849'; c.textAlign = 'left'; c.textBaseline = 'top';
-    lines.forEach((l, i) => c.fillText(l, bx + 28, by + 17 + i * 42));
+    const r = 13, path = new Path2D(); path.roundRect(bx, by, bw, bh, r);
+    const tail = new Path2D();
+    if (side === 'left') { const ty = Math.min(by + bh - 10, Math.max(by + 10, ay - 4)); tail.moveTo(bx + 3, ty - 8); tail.lineTo(ax, ay); tail.lineTo(bx + 3, ty + 8); }
+    else { const tx = Math.min(bx + bw - 14, Math.max(bx + 14, ax)); tail.moveTo(tx - 8, by + bh - 3); tail.lineTo(ax, ay); tail.lineTo(tx + 9, by + bh - 3); }
+    tail.closePath();
+    c.globalAlpha = 0.45; c.fillStyle = '#000'; c.beginPath(); c.roundRect(bx + 2, by + 5, bw, bh, r); c.fill(); c.globalAlpha = 1;
+    const g = c.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, '#3150dc'); g.addColorStop(0.55, '#1c2c98'); g.addColorStop(1, '#101a62');
+    c.lineJoin = 'round'; c.strokeStyle = '#0a0b18'; c.lineWidth = 5; c.stroke(path); c.stroke(tail);
+    c.fillStyle = '#16237c'; c.fill(tail); c.fillStyle = g; c.fill(path);
+    c.save(); c.clip(path); c.fillStyle = 'rgba(255,255,255,0.14)'; c.beginPath(); c.roundRect(bx + 4, by + 3, bw - 8, bh * 0.42, 10); c.fill(); c.restore();
+    c.strokeStyle = 'rgba(255,210,63,0.9)'; c.lineWidth = 1.6; c.beginPath(); c.roundRect(bx + 3.5, by + 3.5, bw - 7, bh - 7, r - 3); c.stroke();
+    c.textAlign = 'left'; c.textBaseline = 'top';
+    lines.forEach((l, i) => { const y = by + padY + 3 + i * lh; c.lineWidth = 3; c.strokeStyle = 'rgba(5,8,30,0.9)'; c.strokeText(l, bx + padX, y); c.fillStyle = '#fff'; c.fillText(l, bx + padX, y); });
+    // etiqueta «PEDRO»
+    c.font = `${Math.max(10, fs - 4)}px "Titan One", sans-serif`; const tw = c.measureText('PEDRO').width + 14, th = Math.max(15, fs + 1), tx = bx + 9, ty = by - th * 0.6;
+    c.beginPath(); c.roundRect(tx, ty, tw, th, 6); c.fillStyle = '#e3262c'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = '#0a0b18'; c.stroke();
+    c.textBaseline = 'middle'; c.lineWidth = 3; c.strokeText('PEDRO', tx + 7, ty + th / 2 + 0.5); c.fillStyle = '#fff'; c.fillText('PEDRO', tx + 7, ty + th / 2 + 0.5);
     c.restore();
   }
   drawPlane(c) {

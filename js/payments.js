@@ -7,7 +7,6 @@ import { CONFIG } from './config.js';
 import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { SFX } from './audio.js';
-import { LEGEND_OFFER } from './levels.js';
 
 const $ = s => document.querySelector(s);
 const fmt = n => n.toLocaleString('es-ES');
@@ -21,11 +20,11 @@ export function initPayments(uiRef, failFn, refreshFn, paidFn) {
   $('#pay-go').addEventListener('click', go);
   $('#paid-ok').addEventListener('click', () => { $('#paid-overlay').classList.remove('open'); if (paidPack) { const p = paidPack; paidPack = null; onPaid?.(p); } });
 }
-const list = p => p.spins ? `<li>${icon('ic-wheel-legend')}<b>+${p.spins}</b><span>tirada${p.spins > 1 ? 's' : ''} de la ruleta legendaria</span></li>` : `<li>${icon('ic-coin')}<b>+${fmt(p.pesetas)}</b><span>pesetas</span></li><li>${icon('ic-tomato')}<b>+${fmt(p.tomatoes)}</b><span>tomates</span></li>`
+const list = p => `<li>${icon('ic-coin')}<b>+${fmt(p.pesetas)}</b><span>pesetas</span></li><li>${icon('ic-tomato')}<b>+${fmt(p.tomatoes)}</b><span>tomates</span></li>`
   + (p.cards ? `<li>${icon('ic-cards')}<b>+${p.cards}</b><span>cartas top</span></li>` : '');
 
 export function openPack(id) {
-  const p = E.PACKS[id] || (id === LEGEND_OFFER.id ? { ...LEGEND_OFFER, spins: 1 } : null); if (!p) return;
+  const p = E.PACKS[id]; if (!p) return;
   if (window.__AAP_TEST) return ui.showToast('En la versión de pruebas no se puede comprar', 2600);
   if (!CONFIG.PAYMENTS) return ui.showToast('🛠️ Los pagos estarán disponibles muy pronto', 2600);
   if (!sb.auth.user) return ui.showToast('Necesitas iniciar sesión para comprar', 2600, true);
@@ -60,16 +59,15 @@ export async function awaitPurchase(session) {
   for (let i = 0; i < 30 && session; i++) {
     let row = null; try { row = await sb.getPurchase(session); } catch (e) {}
     if (row) {
-      const p = E.PACKS[row.pack] || (row.pack === LEGEND_OFFER.id ? LEGEND_OFFER : { name: 'Pack', icon: 'ic-pack-coins' });
+      const p = E.PACKS[row.pack] || { name: 'Pack', icon: 'ic-pack-coins' };
       try { await refresh(); } catch (e) {}
       $('#paid-art').innerHTML = `<i class="glow"></i>${icon(p.icon)}`;
       $('#paid-title').textContent = '¡YA ES TUYO!'; $('#paid-sub').textContent = p.name;
       const won = row.reward?.cards || [];
-      if (row.pack === LEGEND_OFFER.id) paidPack = row.pack;
-      $('#paid-list').innerHTML = list({ pesetas: row.reward?.pesetas ?? row.pesetas, tomatoes: row.tomatoes, cards: won.length, spins: row.pack === LEGEND_OFFER.id ? (row.reward?.spins || 1) : 0 })
+      $('#paid-list').innerHTML = list({ pesetas: row.reward?.pesetas ?? row.pesetas, tomatoes: row.tomatoes, cards: won.length })
         + won.map(c => `<li class="won" style="--rc:${E.RARITIES[E.CARDS[c.id]?.rarity]?.color || '#fff'}"><span>${E.CARDS[c.id]?.name || c.id}</span><em>${c.isNew ? '¡NUEVA!' : c.locked ? `${c.have}/${c.need}` : `+${c.frags} frag.`}</em></li>`).join('');
       if (won.length) ui.markNewCards?.(won.filter(c => c.isNew).map(c => c.id));
-      ok.textContent = row.pack === LEGEND_OFFER.id ? '¡A GIRAR!' : '¡A GASTARLAS!';
+      ok.textContent = '¡A GASTARLAS!';
       ok.classList.remove('hidden'); SFX.chestOpen?.(); SFX.coin?.(); ui.hud();
       return true;
     }

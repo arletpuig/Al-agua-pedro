@@ -214,9 +214,11 @@ console.log('K. Niveles y ruleta en el servidor');
   check('ruleta de la tienda en el servidor: cobra 40 + 3 por nivel y entrega el premio', buy.w === 'normal' && buy.cost === 40 + 3 * lvNow && row.pesetas_spent === before.pesetas_spent + buy.cost
     && row.chest_pesetas === before.chest_pesetas + buy.p && row.chest_tomatoes === before.chest_tomatoes + buy.t && s.pesetas === row.pesetas, JSON.stringify(buy));
   check('sin tirada legendaria pagada, el servidor no deja girarla', await page.evaluate(() => AAP.backend.spinLegend().then(() => false, e => /No tienes tiradas legendarias/.test(e.message))));
-  psql(`select public.grant_pack('cs_test_ruleta', '${row.user_id}', 'ruleta', 99, 'eur')`, 'service_role');
-  check('pagar la tirada legendaria (0,99 €) da 1 tirada, una sola vez', db(email).legend_spins === 1 && psql(`select public.grant_pack('cs_test_ruleta', '${row.user_id}', 'ruleta', 99, 'eur')`, 'service_role') === 'f' && db(email).legend_spins === 1);
-  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  check('la tirada legendaria ya no se vende', (() => { try { psql(`select public.grant_pack('cs_test_ruleta', '${row.user_id}', 'ruleta', 99, 'eur')`, 'service_role'); return false; } catch (e) { return /Pack desconocido/.test(String(e.stderr)); } })());
+  psql(`insert into public.aap_config (key, value) values ('rewarded_ads', 'true') on conflict (key) do update set value = 'true'`);
+  const vids = await page.evaluate(async () => { const m = await import('./js/ads.js'); m.adsTest.on = true; m.DEMO_AD.seconds = 0; const r = []; for (let i = 0; i < 3; i++) { await AAP.backend.watchAd('ruleta'); r.push(AAP.state.legendAds + '/' + AAP.state.legendSpins); } m.adsTest.on = false; return r.join(' '); });
+  check('3 vídeos = 1 tirada legendaria, guardada en el servidor', vids === '1/0 2/0 0/1' && db(email).legend_spins === 1 && db(email).legend_ads === 0, vids);
+  psql(`update public.aap_config set value = 'false' where key = 'rewarded_ads'`);
   await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(400);
   check('la tienda enseña la tirada comprada', /GIRAR! \(1\)/.test(await page.locator('[data-wheel="legend"]').textContent()));
   before = db(email);

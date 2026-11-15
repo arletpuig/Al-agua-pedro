@@ -37,6 +37,11 @@ export function syncChip(mode = true) {
   $('#lvl-fill').style.width = (info.pct * 100).toFixed(1) + '%';
   $('#lvl-xp').textContent = info.max ? 'NIVEL MÁXIMO' : `${fmt(info.into)} / ${fmt(info.need)} XP`;
   const p = pending(); $('#lvl-dot').classList.toggle('hidden', !p); $('#lvl-dot').textContent = p;
+  // al final de la barra: la ruleta que te espera al subir (la legendaria si el siguiente nivel es múltiplo de 10)
+  const pz = $('#lvl-prize'), legNext = LV.isLegendLevel(info.level + 1) || (p > 0 && LV.isLegendLevel(state.wheelLevel + 1));
+  pz.classList.toggle('hidden', info.max && !p); pz.classList.toggle('legend', legNext); pz.classList.toggle('ready', !!p);
+  pz.querySelector('use').setAttribute('href', legNext ? '#ic-wheel-legend' : '#ic-wheel');
+  pz.title = p ? '¡Tienes una tirada de ruleta!' : legNext ? 'Al subir de nivel: ¡ruleta legendaria!' : 'Al subir de nivel: ruleta de premios';
   chip.classList.toggle('ready', !!p);
   shownXp = info.xp;
 }

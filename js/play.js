@@ -7,6 +7,7 @@ import * as E from './economy.js';
 import { SFX, unlock } from './audio.js';
 import { LINES, pick } from './game/arena.js';
 
+export const paguitaTest = { every: 0 };   // solo pruebas: segundos entre lluvias
 let scene, ui, hooks, busy = false, taps = 0, idleTimer = null, chatAt = 40, chatTime = 0, paguitaAt = 0;
 const combo = { heat: 0, last: 0, mult: 1 };
 export function isBusy() { return busy; }
@@ -59,9 +60,9 @@ function onTap(e) {
   scheduleIdle();
 }
 function tickPaguitas() {
-  const every = E.paguitasEvery(state.cards);
+  const every = E.paguitasEvery(state.cards) && (paguitaTest.every || E.paguitasEvery(state.cards));
   if (!every || document.visibilityState !== 'visible') { paguitaAt = performance.now(); return; }
-  if (performance.now() - paguitaAt >= every * 1000) { paguitaAt = performance.now(); SFX.coin(); ui.paguitaRain(E.PAGUITA, p => { addPaguita(p); SFX.coin(); ui.hud(); }); }
+  if (performance.now() - paguitaAt >= every * 1000) { paguitaAt = performance.now(); SFX.coin(); ui.paguitaRain(E.PAGUITA, E.paguitasCoin(state.cards), p => { addPaguita(p); SFX.coin(); ui.hud(); }); }
 }
 // ---------- decisión de un lanzamiento ----------
 export const testRng = { fn: null };   // solo para pruebas automáticas (modo ?debug)

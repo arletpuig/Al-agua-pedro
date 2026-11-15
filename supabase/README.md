@@ -24,8 +24,11 @@ El botón «Entrar con Google» ya está en el juego; solo hay que activarlo (un
 
 Mientras no esté activado, el botón avisa de que Google todavía no está disponible y se puede entrar con el correo.
 
+## Si ya tenías la versión 14
+Solo ejecuta `schema_v15.sql` (o `schema_todo.sql`): paguitas que valen más desde el nivel 8 de la carta y ruleta legendaria de la tienda con 3 vídeos (ya no se vende).
+
 ## Si ya tenías la versión 13
-Solo ejecuta `schema_v14.sql` (o `schema_todo.sql`): ruleta legendaria (niveles 10, 20, 30, 40 y 50), ruleta de la tienda con pesetas y tirada legendaria de pago (pack «ruleta», 0,99 €: crea el precio en Stripe y el secreto `STRIPE_PRICE_RULETA`).
+Solo ejecuta `schema_v14.sql` (o `schema_todo.sql`): ruleta legendaria (niveles 10, 20, 30, 40 y 50), ruleta de la tienda con pesetas.
 
 ## Si ya tenías la versión 12
 Solo ejecuta `schema_v13.sql` (o `schema_todo.sql`): niveles de jugador del 1 al 50 y ruleta de premios en cada nivel. Los jugadores que ya tenían progreso empiezan en su nivel con una tirada de regalo.

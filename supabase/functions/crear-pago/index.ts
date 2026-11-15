@@ -7,7 +7,6 @@
 //   STRIPE_PRICE_CALDERILLA   id del precio de 1,99 € (price_...)
 //   STRIPE_PRICE_MALETIN      id del precio de 3,99 €
 //   STRIPE_PRICE_CAMARA       id del precio de 9,95 €
-//   STRIPE_PRICE_RULETA       id del precio de 0,99 € (una tirada de la ruleta legendaria)
 //   STRIPE_AUTOMATIC_TAX      «true» solo cuando tengas un registro de impuestos activo en Stripe Tax
 // SUPABASE_URL y SUPABASE_ANON_KEY los pone Supabase solo.
 import Stripe from 'npm:stripe@23.1.0';
@@ -18,7 +17,6 @@ const PRICES: Record<string, string | undefined> = {
   calderilla: Deno.env.get('STRIPE_PRICE_CALDERILLA'),
   maletin: Deno.env.get('STRIPE_PRICE_MALETIN'),
   camara: Deno.env.get('STRIPE_PRICE_CAMARA'),
-  ruleta: Deno.env.get('STRIPE_PRICE_RULETA'),
 };
 // Páginas desde las que se puede comprar (y a las que se vuelve tras pagar)
 const ORIGINS = ['https://alaguapedro.es', 'https://www.alaguapedro.es', 'https://arletpuig.github.io', 'http://localhost:8080'];

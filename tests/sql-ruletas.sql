@@ -14,9 +14,8 @@ begin
     src := case when i <= 49 then 'nivel' when i <= 349 then 'tienda' else 'legendaria' end;
     select * into b from public.profiles where user_id = current_setting('request.jwt.claim.sub')::uuid;
     if src = 'legendaria' then
-      reset role; perform public.grant_pack('cs_ruleta_' || i, current_setting('request.jwt.claim.sub')::uuid, 'ruleta', 99, 'eur'); set role authenticated;
+      reset role; update public.profiles set legend_spins = 1 where user_id = current_setting('request.jwt.claim.sub')::uuid; set role authenticated;
       select * into b from public.profiles where user_id = current_setting('request.jwt.claim.sub')::uuid;
-      if b.legend_spins <> 1 then raise exception 'el pago no dio la tirada'; end if;
       r := public.spin_legend_wheel();
     elsif src = 'tienda' then r := public.buy_wheel_spin();
     else r := public.spin_level_wheel(); end if;
@@ -50,5 +49,29 @@ reset role;
 update public.profiles set chest_pesetas = 0, pesetas_earned = 0, paguitas_pesetas = 0, pesetas_spent = 0 where user_id = :'uid';
 set role authenticated;
 do $$ begin perform public.buy_wheel_spin(); raise exception 'MAL: compró sin pesetas'; exception when others then if sqlerrm like 'MAL%' then raise; end if; raise notice 'ok sin pesetas: %', sqlerrm; end $$;
-do $$ begin perform public.grant_pack('cs_trampa', current_setting('request.jwt.claim.sub')::uuid, 'ruleta', 0, 'eur'); raise exception 'MAL: el jugador se dio una tirada'; exception when others then if sqlerrm like 'MAL%' then raise; end if; raise notice 'ok no se puede regalar tiradas: %', sqlerrm; end $$;
+do $$ begin perform public.grant_pack('cs_trampa', current_setting('request.jwt.claim.sub')::uuid, 'calderilla', 0, 'eur'); raise exception 'MAL: el jugador se dio un pack'; exception when others then if sqlerrm like 'MAL%' then raise; end if; raise notice 'ok no se puede regalar tiradas: %', sqlerrm; end $$;
 do $$ begin perform public.fn_wheel_grant(current_setting('request.jwt.claim.sub')::uuid, 'legend', 50, 0, null, 0); raise exception 'MAL: llamó a la función interna'; exception when others then if sqlerrm like 'MAL%' then raise; end if; raise notice 'ok función interna protegida: %', sqlerrm; end $$;
+
+-- Ruleta legendaria con vídeos: 3 vídeos = 1 tirada; como mucho 3 al día. Ya no se vende.
+reset role;
+insert into public.aap_config (key, value) values ('rewarded_ads', 'true') on conflict (key) do update set value = 'true';
+update public.profiles set legend_spins = 0, legend_ads = 0, ad_claims = '{}'::jsonb where user_id = :'uid';
+set role authenticated;
+do $$ declare r public.profiles; out text := ''; i integer;
+begin
+  for i in 1 .. 3 loop r := public.claim_ad_reward('ruleta', 'demo'); out := out || r.legend_ads || '/' || r.legend_spins || ' '; end loop;
+  if out <> '1/0 2/0 0/1 ' then raise exception 'MAL vídeos: %', out; end if;
+  begin perform public.claim_ad_reward('ruleta', 'demo'); raise exception 'MAL: cuarto vídeo'; exception when others then if sqlerrm like 'MAL%' then raise; end if; end;
+  raise notice 'ok 3 vídeos = 1 tirada legendaria (%), y no más de 3 al día', out;
+end $$;
+do $$ begin if public.fn_pack('ruleta') is null then raise notice 'ok la tirada legendaria ya no se vende'; else raise exception 'MAL: se sigue vendiendo'; end if; end $$;
+-- Paguitas: el guardado admite el nuevo valor de las monedas (nivel 15: ×4) y no más
+reset role;
+update public.profiles set cards = jsonb_set(cards, '{paguitas}', '{"level": 15, "frags": 0}'), paguitas_pesetas = 0, updated_at = now() - interval '112 seconds' where user_id = :'uid';
+set role authenticated;
+do $$ declare r public.profiles; begin
+  r := public.save_progress(0, 0, 0, 0, 0, 0, 0, 1000);
+  -- 112 s / 56 s = 2 lluvias (+2 de margen) = 4 × 3 monedas × 4 = 48 como mucho
+  if r.paguitas_pesetas <> 48 then raise exception 'MAL paguitas: %', r.paguitas_pesetas; end if;
+  raise notice 'ok paguitas nivel 15: como mucho 48 pesetas en 112 s (3 monedas ×4)';
+end $$;

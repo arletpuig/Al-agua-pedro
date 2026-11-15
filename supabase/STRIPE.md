@@ -59,7 +59,6 @@ Lo que entrega cada pack está en `fn_pack` (`schema_v11.sql`) y en `PACKS` (`js
 | `STRIPE_PRICE_CALDERILLA` | `price_…` de 1,99 € |
 | `STRIPE_PRICE_MALETIN` | `price_…` de 3,99 € |
 | `STRIPE_PRICE_CAMARA` | `price_…` de 9,95 € |
-| `STRIPE_PRICE_RULETA` | `price_…` de 0,99 € (tirada de la ruleta legendaria) |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` (paso 7) |
 | `STRIPE_AUTOMATIC_TAX` | `false` (o `true` con registro de IVA activo) |
 

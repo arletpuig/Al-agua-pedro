@@ -213,16 +213,17 @@ const hac = await page.evaluate(async () => { const b = { ...AAP.state.stats }, 
 check('Hacienda Inversa: el cofre te devuelve pesetas', hac.r.refund > 0 && hac.r.refund === hac.exp && hac.d === -40 + hac.r.refund + hac.r.pesetas, JSON.stringify({ refund: hac.r.refund, d: hac.d }));
 const pg = await page.evaluate(async () => { const t0 = AAP.state.tomatoes, p0 = AAP.state.pesetas, cost = AAP.E.upgradeCost('inflacion', AAP.state.cards.inflacion.level, AAP.state.cards), b = await AAP.backend.upgradeCard('inflacion'); return { b, dt: AAP.state.tomatoes - t0, dp: AAP.state.pesetas - p0, cost }; });
 check('Puerta Giratoria: 2 tomates por nivel en cada mejora; Hacienda devuelve parte', pg.b.tomatoes === 10 && pg.dt === 10 && pg.b.refund >= 1 && pg.dp === -pg.cost + pg.b.refund, JSON.stringify(pg));
-check('Paguitas: cada nivel llueve más a menudo', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value; return v(0) === 0 && v(1) === 120 && v(15) < v(10) && v(10) < v(1) && v(15) >= 15; }));
+check('Paguitas: hasta el nivel 7 llueve más a menudo; desde el 8 cada moneda vale más (×2, ×3, ×4)', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value, x = AAP.E.paguitaValue; return v(0) === 0 && v(1) === 120 && v(7) < v(6) && v(7) === 56 && v(15) === v(7) && x(7) === 1 && x(8) === 2 && x(11) === 3 && x(14) === 4 && x(15) === 4 && /×4/.test(AAP.E.CARDS.paguitas.effect(15)); }));
 await give(page, { cards: { paguitas: { level: 15, frags: 0 }, hacienda: { level: 0, frags: 0 }, puerta: { level: 0, frags: 0 }, plusultra: { level: 0, frags: 0 } } });
+await page.evaluate(() => { AAP.paguitaTest.every = 12; });
 before = await S(page); await page.waitForSelector('.pg-coin', { timeout: 30000 }); await page.waitForTimeout(1500);
-const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"); return { w: c.offsetWidth, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length }; });
-check("Paguitas: caen 3 monedas grandes que giran", pgc.n === 3 && pgc.w >= 36 && pgc.w <= 48 && pgc.anim === "pgspin", JSON.stringify(pgc));
+const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"); return { w: c.offsetWidth, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length, x: c.querySelector('.pg-x')?.textContent }; });
+check("Paguitas: caen 3 monedas que giran, marcadas ×4 en el nivel 15", pgc.n === 3 && pgc.w >= 36 && pgc.w <= 48 && pgc.anim === "pgspin" && pgc.x === '×4', JSON.stringify(pgc));
 s = await S(page); check('si no las tocas no se cobran', s.paguitasPesetas === (before.paguitasPesetas || 0));
 for (const c of await page.locator('.pg-coin').all()) await c.dispatchEvent('pointerdown');
 await page.waitForTimeout(300); s = await S(page);
-check('tocándolas: +3 pesetas', s.paguitasPesetas === (before.paguitasPesetas || 0) + 3 && s.pesetas === before.pesetas + 3);
-await give(page, { cards: { paguitas: { level: 0, frags: 0 } } });
+check('tocándolas: +12 pesetas (3 monedas ×4)', s.paguitasPesetas === (before.paguitasPesetas || 0) + 12 && s.pesetas === before.pesetas + 12, `(${before.pesetas} → ${s.pesetas})`);
+await give(page, { cards: { paguitas: { level: 0, frags: 0 } } }); await page.evaluate(() => { AAP.paguitaTest.every = 0; });
 console.log('19. Pedro habla mientras pulsas');
 await page.waitForFunction(() => !AAP.scene.bubble, null, { timeout: 8000 });
 let said = false; for (let i = 0; i < 12 && !said; i++) { await tap(page, 10); await page.waitForTimeout(80); said = await page.evaluate(() => !!AAP.scene.bubble); }
@@ -507,9 +508,11 @@ console.log('29. Niveles de jugador y ruleta');
   // en la tienda: ruleta de la suerte con pesetas (pantalla real)
   await p7.evaluate(async () => { AAP.state.stats.chestPesetas += 300; (await import('./js/state.js')).changed(false); });
   await p7.click('#tabs [data-panel="shop"]'); await p7.waitForTimeout(300);
-  const sh = await p7.evaluate(() => ({ cards: document.querySelectorAll('.wheels .wheel-card').length, price: document.querySelector('[data-wheel="shop"]')?.textContent.trim(), leg: document.querySelector('.wheel-card.legend [data-pack="ruleta"]')?.textContent.trim(), daily: !!document.querySelector('#shop-body [data-daily]') }));
+  const sh = await p7.evaluate(() => ({ cards: document.querySelectorAll('.wheels .wheel-card').length, price: document.querySelector('[data-wheel="shop"]')?.textContent.trim(), leg: document.querySelector('.wheel-card.legend [data-ad="ruleta"]')?.textContent.trim(), legOff: document.querySelector('.wheel-card.legend [data-ad="ruleta"]')?.disabled, dots: document.querySelectorAll('.wheel-card.legend .wc-ads i').length, pay: !!document.querySelector('.wheel-card.legend [data-pack]'), daily: !!document.querySelector('#shop-body [data-daily]') }));
   const lvNow = await p7.evaluate(() => import('./js/levels.js').then(L => L.levelOf(AAP.state.stats)));
-  check('tienda: ruleta de la suerte (con pesetas) y legendaria (0,99 €); el cofre diario sigue en la tienda', sh.cards === 2 && sh.price === String(40 + 3 * lvNow) && sh.leg === '0,99 €' && sh.daily, JSON.stringify(sh));
+  check('tienda: ruleta de la suerte (con pesetas) y legendaria con 3 vídeos (sin pagar, aún «PRONTO»); el cofre diario sigue en la tienda', sh.cards === 2 && sh.price === String(40 + 3 * lvNow) && sh.leg === 'PRONTO' && sh.legOff && sh.dots === 3 && !sh.pay && sh.daily, JSON.stringify(sh));
+  const vids = await p7.evaluate(async () => { const m = await import('./js/ads.js'); m.adsTest.on = true; m.DEMO_AD.seconds = 0; AAP.state.legendAds = 0; AAP.state.legendSpins = 0; const r = []; for (let i = 0; i < 3; i++) { await AAP.backend.watchAd('ruleta'); r.push(AAP.state.legendAds + '/' + AAP.state.legendSpins); } m.adsTest.on = false; AAP.state.legendSpins = 0; return r.join(' '); });
+  check('con los vídeos activados: 3 vídeos = 1 tirada legendaria', vids === '1/0 2/0 0/1', vids);
   let bp = (await S(p7)).pesetas;
   await p7.evaluate(() => { AAP.levelTest.rng = () => 0.01; }); await p7.click('[data-wheel="shop"]', { force: true }); await p7.waitForSelector('#wheel-overlay.open');
   check('se abre la ruleta de la suerte con su precio en el botón', (await p7.locator('#wheel-title').textContent()) === 'RULETA DE LA SUERTE' && (await p7.locator('#wheel-btn').textContent()).includes(String(40 + 3 * lvNow)));
@@ -527,6 +530,17 @@ console.log('29. Niveles de jugador y ruleta');
   await p7.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 10000 });
   check('el cofre enseña las 6 cartas', await p7.locator('#chest-rewards .reward').count() >= 6); await p7.click('#chest-btn'); await p7.waitForTimeout(300);
   await p7.evaluate(() => { AAP.levelTest.rng = null; });
+  // ruleta al final de la barra de nivel (la legendaria si el siguiente nivel es múltiplo de 10)
+  const pzb = await p7.evaluate(async () => { const st = AAP.state.stats, m = await import('./js/levelup.js'), r = [];
+    for (const [t, h] of [[0, 0], [800, 300]]) { st.tomatoesThrown = t; st.hits = h; st.falls = 0; AAP.state.wheelLevel = 50; m.syncChip(); const L = (await import('./js/levels.js')).levelOf(st), e = document.querySelector('#lvl-prize');
+      r.push({ L, vis: e.offsetWidth > 0, href: e.querySelector('use').getAttribute('href'), leg: e.classList.contains('legend') }); }
+    return r; });
+  check('al final de la barra de nivel se ve la ruleta del premio (legendaria antes del nivel 10)', pzb[0].vis && pzb[0].href === '#ic-wheel' && pzb[1].L === 9 && pzb[1].href === '#ic-wheel-legend' && pzb[1].leg, JSON.stringify(pzb));
+  await p7.evaluate(() => { AAP.state.stats.tomatoesThrown = 30000; return import('./js/levelup.js').then(m => m.syncChip()); });
+  // ganancias (Hacienda Inversa, Puerta Giratoria...): solo el número, con monedas volando al marcador
+  await p7.evaluate(() => { AAP.ui.pesetaGain(7); AAP.ui.tomatoGain(5); }); await p7.waitForTimeout(900);
+  const gn = await p7.evaluate(() => ({ tags: [...document.querySelectorAll('.gain-tag')].map(t => t.textContent), toast: document.querySelector('#toast').textContent }));
+  check('ganancias: «+7» de pesetas y «+5» de tomates junto al marcador, sin textos', gn.tags.includes('+7') && gn.tags.includes('+5') && !/Hacienda|Puerta/.test(gn.toast), JSON.stringify(gn));
   check('niveles: sin errores en consola', e7.length === 0, e7.join(' | '));
   await c7.close();
 }

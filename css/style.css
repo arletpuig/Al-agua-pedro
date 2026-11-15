@@ -941,3 +941,58 @@ svg { display: block; }
 .wheel-ov.legend .t-big { font-size: 23px; }
 .wheel-ov.legend .wheel-wrap { --ws: min(80vw, 42vh, 320px); margin-top: 66px; }
 .wheel-ov.legend .wheel-crown { top: -78px; }
+
+/* ======================================================================== v34 */
+/* avisos: panel oscuro de videojuego (antes, blanco) */
+.toast { padding: 10px 18px 11px; border-radius: 16px; border: 3px solid var(--ink); color: #fff; font: 800 15px/1.25 'Baloo 2';
+  background: linear-gradient(180deg, #2b44c8 0%, #1a2a8f 55%, #101a5e 100%);
+  box-shadow: inset 0 2px 0 #ffffff55, inset 0 0 0 2px #ffd23f66, 0 5px 0 #02051a, 0 10px 24px #000a; text-shadow: 0 2px 0 #0008; letter-spacing: .01em; }
+.toast.on { animation: toastin .35s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes toastin { 0% { transform: translate(-50%, -24px) scale(.85); } }
+.toast.err { background: linear-gradient(180deg, #ff6b55, #d81f26 60%, #8c0c12); box-shadow: inset 0 2px 0 #ffffff66, inset 0 0 0 2px #ffffff33, 0 5px 0 #3a0306, 0 10px 24px #000a; }
+/* cartel del premio de la ruleta: también oscuro */
+.wheel-prize { background: linear-gradient(180deg, #2b44c8, #121a5e); box-shadow: 0 8px 0 #0009, inset 0 2px 0 #ffffff44, 0 0 0 4px var(--pc), 0 0 40px var(--pc); }
+.wheel-prize p { color: #dfe6ff; text-shadow: 0 2px 0 #0008; }
+.wheel-prize p b { color: #ffe766; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; }
+.wheel-prize.big:not(.legend) { background: linear-gradient(180deg, #7d2cff, #2a0b6b); }
+
+/* ganancias: monedas/tomates que vuelan al marcador y «+N» */
+.gain-coin { position: fixed; z-index: 62; width: 34px; height: 34px; pointer-events: none; filter: drop-shadow(0 3px 0 #0008) drop-shadow(0 0 8px #ffd23f); }
+.gain-coin svg { width: 100%; height: 100%; }
+.gain-tag { position: fixed; z-index: 62; display: flex; align-items: center; gap: 4px; padding: 3px 12px 4px 6px; border-radius: 14px; border: 3px solid var(--ink); pointer-events: none;
+  transform: translateX(-50%); background: linear-gradient(#fff3a0, #ffb21a 60%, #c47a00); box-shadow: 0 4px 0 #0009, 0 0 18px #ffd23f; animation: gaintag 1.9s cubic-bezier(.2, 1.5, .4, 1) forwards; }
+.gain-tag.tom { background: linear-gradient(#ff9a8a, #e3262c 60%, #8c0c12); box-shadow: 0 4px 0 #0009, 0 0 18px #ff4b3a; }
+.gain-tag svg { width: 24px; height: 24px; }
+.gain-tag b { font: 20px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 5px var(--ink); }
+@keyframes gaintag { 0% { opacity: 0; transform: translate(-50%, -8px) scale(.4); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 25% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 10px); } }
+.res.gain { animation: resgain .45s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes resgain { 40% { transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 22px #ffd23f; } }
+
+/* paguitas que valen más: moneda dorada con su ×2, ×3, ×4 */
+.pg-coin .pg-x { position: absolute; right: -10px; top: -8px; z-index: 2; padding: 0 5px; border-radius: 9px; border: 2px solid var(--ink); background: linear-gradient(var(--red1), var(--red2)); font: 12px/16px 'Titan One'; color: #fff; -webkit-text-stroke: 2.5px var(--ink); paint-order: stroke fill; }
+.pg-coin.x2 { filter: drop-shadow(0 6px 0 #0008) drop-shadow(0 0 16px #ffd23f) drop-shadow(0 0 6px #fff); }
+.pg-coin.x3, .pg-coin.x4 { filter: drop-shadow(0 6px 0 #0008) drop-shadow(0 0 18px #ff9a1a) drop-shadow(0 0 8px #fff); }
+.pg-coin.x3 .pg-x { background: linear-gradient(#c98bff, #7d2cff); } .pg-coin.x4 .pg-x { background: linear-gradient(#ffe766, #ff9a1a); color: #fff; }
+
+/* barra de nivel: la ruleta que te espera al final */
+.lvl-chip .lvl-bar small { padding-right: 26px; }
+.lvl-prize { position: relative; z-index: 3; width: 42px; height: 42px; margin-left: -20px; flex-shrink: 0; filter: drop-shadow(0 3px 0 #0009); animation: wcwob 2.6s ease-in-out infinite; }
+.lvl-prize svg { width: 100%; height: 100%; }
+.lvl-prize.hidden { display: none; }
+.lvl-prize.legend { filter: drop-shadow(0 3px 0 #0009) drop-shadow(0 0 8px #ffd23f); }
+.lvl-prize.ready { animation: spin 1.6s linear infinite; filter: drop-shadow(0 3px 0 #0009) drop-shadow(0 0 10px #ffe766); }
+
+/* ruletas: botón en una sola línea y títulos de la tienda sin tapar */
+#wheel-btn span { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+#wheel-btn .ci, .btn-gold .ci { display: inline-block; flex-shrink: 0; width: 26px; height: 26px; margin: 0 2px 0 6px; vertical-align: middle; }
+.wheel-card { padding-top: 28px; }
+.wheel-card .ribbon { top: -2px; }
+.wheel-card h3 { margin-top: 4px; }
+.wc-ads { position: relative; z-index: 1; display: flex; gap: 6px; justify-content: center; }
+.wc-ads i { width: 26px; height: 26px; border-radius: 50%; opacity: .35; filter: grayscale(1); }
+.wc-ads i.on { opacity: 1; filter: drop-shadow(0 0 6px #ff4b3a); }
+.wc-ads svg { width: 100%; height: 100%; }
+.wheel-card .wc-ad { position: relative; z-index: 1; width: 100%; height: 42px; font-size: 15px; padding: 0 6px; }
+/* ruleta: textos con algo más de aire */
+.wheel .lbl { stroke-width: 5px; letter-spacing: .02em; }
+.wheel .amt { stroke-width: 6px; }

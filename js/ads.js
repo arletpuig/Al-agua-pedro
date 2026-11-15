@@ -10,7 +10,7 @@ export class NoAdProvider {
 }
 export let adProvider = new NoAdProvider();
 export function setAdProvider(p) { adProvider = p; }
-export const PLACEMENTS = { FALCON: 'falcon', SOBRE: 'sobre', WELCOME: 'welcome', FLAG: 'flag' };
+export const PLACEMENTS = { FALCON: 'falcon', SOBRE: 'sobre', WELCOME: 'welcome', FLAG: 'flag', RULETA: 'ruleta' };
 
 // Mientras no haya proveedor: vídeo de muestra de unos segundos (regalo de bienvenida, El Falcón, Sobre de la Moncloa y cambiar de bandera).
 // Cuando se integre un proveedor real, showVideo usará ese proveedor.

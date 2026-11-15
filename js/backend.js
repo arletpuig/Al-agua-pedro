@@ -111,6 +111,7 @@ export const backend = {
     if (!v.completed) throw new Error('No has completado el vídeo');
     if (this.cloud) { const { r: row, sent } = await cloudOp(() => sb.claimAdReward(placement, v.token || 'demo')); applyServer(row, sent); return; }
     if (placement === 'falcon') state.falconUntil = Date.now() + E.FALCON.minutes * 60000;
+    else if (placement === 'ruleta') { state.legendAds++; if (state.legendAds >= LV.LEGEND_ADS) { state.legendAds = 0; state.legendSpins++; } }
     else state.stats.chestPesetas += E.SOBRE.pesetas;
     changed(false);
   },

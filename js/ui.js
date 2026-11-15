@@ -99,17 +99,36 @@ export function combo(mult, heat, next) {
 }
 export function comboUp() { const el = $('#combo'); el.classList.remove('up'); void el.offsetWidth; el.classList.add('up'); }
 // Paguitas: caen monedas grandes girando; cada una que toques es 1 peseta. Las que llegan abajo se pierden.
-export function paguitaRain(n, collect) {
+export function paguitaRain(n, value, collect) {
   const app = $('#app'), w = app.clientWidth;
   for (let i = 0; i < n; i++) setTimeout(() => {
     const c = document.createElement('button'); c.className = 'pg-coin'; c.setAttribute('aria-label', 'Coger peseta');
     c.style.left = Math.round(w * (0.12 + Math.random() * 0.62)) + 'px'; c.style.setProperty('--sway', (Math.random() < .5 ? -1 : 1) * (20 + Math.random() * 30) + 'px');
-    c.innerHTML = '<i class="pg-spin"><svg><use href="#ic-coin"/></svg></i>';
-    c.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (c.classList.contains('got')) return; c.classList.add('got'); collect(1); floater('+1', e.clientX, e.clientY); setTimeout(() => c.remove(), 350); });
+    c.innerHTML = '<i class="pg-spin"><svg><use href="#ic-coin"/></svg></i>' + (value > 1 ? `<b class="pg-x">×${value}</b>` : ''); if (value > 1) c.classList.add('x' + Math.min(4, value));
+    c.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (c.classList.contains('got')) return; c.classList.add('got'); collect(value); floater('+' + value, e.clientX, e.clientY); setTimeout(() => c.remove(), 350); });
     c.addEventListener('animationend', e => { if (e.animationName === 'pgfall' && !c.classList.contains('got')) c.remove(); });
     app.appendChild(c);
   }, i * 650);
 }
+// Ganancias (Hacienda Inversa, Puerta Giratoria, Sobre...): monedas o tomates que vuelan a tu marcador y «+N» en él
+function gainFx(n, target, iconId, cls, from) {
+  if (!n) return;
+  const t = $(target).getBoundingClientRect(), f = (from && from.getBoundingClientRect?.()) || { left: innerWidth / 2 - 20, top: innerHeight / 2 - 20, width: 40, height: 40 };
+  const sx = f.left + f.width / 2, sy = f.top + f.height / 2, tx = t.left + 22, ty = t.top + t.height / 2, k = Math.min(8, Math.max(3, Math.round(Math.sqrt(n) * 1.6)));
+  for (let i = 0; i < k; i++) {
+    const c = document.createElement('div'); c.className = 'gain-coin'; c.innerHTML = icon(iconId);
+    const ox = (Math.random() - .5) * 90, oy = (Math.random() - .5) * 60;
+    c.style.left = sx + 'px'; c.style.top = sy + 'px'; document.body.appendChild(c);
+    c.animate([{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 }, { transform: `translate(calc(-50% + ${ox}px), calc(-50% + ${oy}px)) scale(1.15)`, opacity: 1, offset: .3 },
+      { transform: `translate(calc(-50% + ${tx - sx}px), calc(-50% + ${ty - sy}px)) scale(.6)`, opacity: 1 }], { duration: 700 + i * 70, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'forwards' })
+      .onfinish = () => { c.remove(); const b = $(target); b.classList.remove('gain'); void b.offsetWidth; b.classList.add('gain'); if (i % 2 === 0) (cls === 'tom' ? SFX.tomato : SFX.coin)(); if (i === k - 1) hud(); };
+  }
+  const tag = document.createElement('div'); tag.className = 'gain-tag ' + cls; tag.innerHTML = `${icon(iconId)}<b>+${fmt(n)}</b>`;
+  tag.style.left = (t.left + t.width / 2) + 'px'; tag.style.top = (t.bottom + 6) + 'px';
+  setTimeout(() => { document.body.appendChild(tag); setTimeout(() => tag.remove(), 1900); }, 650);
+}
+export const pesetaGain = (n, from) => gainFx(n, '#pill-pesetas', 'ic-coin', 'pes', from);
+export const tomatoGain = (n, from) => gainFx(n, '#basket', 'ic-tomato', 'tom', from);
 export function floater(text, x, y) {
   const r = $('#btn-click').getBoundingClientRect(), el = document.createElement('div'); el.className = 'floater'; el.textContent = text;
   el.style.left = ((x ?? r.left + r.width / 2) - 18 + (Math.random() - .5) * 40) + 'px'; el.style.top = ((y ?? r.top + 10) - 34) + 'px';
@@ -185,13 +204,13 @@ function packCard(p) {
 // Con la tienda abierta, cada segundo solo se actualizan los textos que cambian (no se redibuja todo).
 const openProbs = new Set(); let shopKey = '';
 export function shopTick() {
-  const daily = backend.dailyAvailable(), key = [daily, falconActive(), state.pesetas, state.legendSpins, LV.levelOf(state.stats)].join('|');
+  const daily = backend.dailyAvailable(), key = [daily, falconActive(), state.pesetas, state.legendSpins, state.legendAds, LV.levelOf(state.stats)].join('|');
   if (key !== shopKey) return renderShop();
   const ms = backend.msToNextDaily(), el = $('#daily-sub'); if (el && !daily) el.textContent = `Vuelve en ${Math.floor(ms / 3600000)} h ${String(Math.floor(ms % 3600000 / 60000)).padStart(2, '0')} min`;
   const fs = $('#falcon-state'); if (fs && falconActive()) fs.textContent = 'ACTIVO · ' + $('#falcon-time').textContent;
 }
 export function renderShop() {
-  shopKey = [backend.dailyAvailable(), falconActive(), state.pesetas, state.legendSpins, LV.levelOf(state.stats)].join('|');
+  shopKey = [backend.dailyAvailable(), falconActive(), state.pesetas, state.legendSpins, state.legendAds, LV.levelOf(state.stats)].join('|');
   const daily = backend.dailyAvailable(), ms = backend.msToNextDaily(), h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000);
   const probs = kind => { const p = E.rarityPercents(kind, state.cards), d = E.CHESTS[kind]; return `<div class="probs">
     ${Object.keys(p).map(r => `<div><span><i class="gem" style="background:${E.RARITIES[r].color}"></i>${E.RARITIES[r].name}</span><b>${p[r].toFixed(1)}%</b></div>`).join('')}
@@ -229,9 +248,12 @@ function wheelCard(kind) {
   const W = LV.WHEELS[kind], L = LV.levelOf(state.stats), leg = kind === 'legend', price = LV.shopSpinPrice(L), n = state.legendSpins;
   const total = W.segs.reduce((a, s) => a + s.weight, 0);
   const probs = `<div class="probs${openProbs.has('w-' + kind) ? ' open' : ''}">${W.segs.map(s => `<div><span>${s.label === '¡BOTE!' ? '¡Bote!' : s.label[0] + s.label.slice(1).toLowerCase()} ${LV.segText(s, L)}</span><b>${(s.weight / total * 100).toFixed(0)}%</b></div>`).join('')}<div><span>Cantidades para tu nivel (${L})</span><b></b></div></div>`;
+  const ads = state.legendAds, okAd = canShowVideo(PLACEMENTS.RULETA);
+  const dots = `<div class="wc-ads" title="Vídeos vistos">${Array.from({ length: LV.LEGEND_ADS }, (_, i) => `<i class="${i < ads ? 'on' : ''}">${icon('ic-play')}</i>`).join('')}</div>`;
   const btn = !leg ? `<button class="price" data-wheel="shop" ${state.pesetas >= price ? '' : 'disabled'}>${icon('ic-coin')}<b>${price}</b></button>`
-    : n ? `<button class="btn-gold sm" data-wheel="legend"><span>¡GIRAR! (${n})</span></button>` : `<button class="pk-buy leg" data-pack="${LV.LEGEND_OFFER.id}">${LV.LEGEND_OFFER.price} €</button>`;
-  return `<div class="wheel-card ${kind}"><i class="ribbon">${leg ? '¡LA MEJOR!' : 'CON PESETAS'}</i>${leg ? '<i class="wc-rays"></i><i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>' : ''}
+    : n ? `<button class="btn-gold sm" data-wheel="legend"><span>¡GIRAR! (${n})</span></button>`
+    : `${dots}<button class="btn-g sm wc-ad" data-ad="${PLACEMENTS.RULETA}" ${okAd ? '' : 'disabled'}>${okAd ? `VER VÍDEO ${ads}/${LV.LEGEND_ADS}` : 'PRONTO'}</button>`;
+  return `<div class="wheel-card ${kind}"><i class="ribbon">${leg ? '3 VÍDEOS' : 'CON PESETAS'}</i>${leg ? '<i class="wc-rays"></i><i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>' : ''}
     <h3>${leg ? 'Ruleta<br>legendaria' : 'Ruleta de<br>la suerte'}</h3><div class="wc-art">${icon(leg ? 'ic-wheel-legend' : 'ic-wheel')}</div>
     <ul>${leg ? `<li>${icon('ic-coin')}<b>${fmt(W.segs[0].amount(L))}–${fmt(W.segs[7].amount(L))}</b></li><li>${icon('ic-cards')}<b>4–6</b> cartas top</li><li>${icon('ic-plane')}<b>×5</b> 30 min</li>`
       : `<li>${icon('ic-coin')}<b>${W.segs[0].amount(L)}–${W.segs[7].amount(L)}</b></li><li>${icon('ic-cards')}<b>1–3</b> cartas</li><li>${icon('ic-plane')}<b>×5</b> 10 min</li>`}</ul>

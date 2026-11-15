@@ -35,7 +35,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7829705078320776" crossorigin="anonymous"></script>
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=33">
+<link rel="stylesheet" href="css/style.css?v=34">
 </head>
 <body>
 <div id="app">
@@ -45,6 +45,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <button class="lvl-chip t1" id="lvl-chip" aria-label="Tu nivel">
     <span class="lvl-medal"><svg><use href="#ic-medal"/></svg><b id="lvl-num">1</b></span>
     <span class="lvl-info"><em id="lvl-name">Perroflauta</em><span class="lvl-bar"><i id="lvl-fill"></i><small id="lvl-xp">0 / 100 XP</small></span></span>
+    <span class="lvl-prize" id="lvl-prize" title="Premio del siguiente nivel"><svg><use href="#ic-wheel"/></svg></span>
     <i class="lvl-dot hidden" id="lvl-dot">1</i>
   </button>
   <!-- barra superior -->
@@ -304,7 +305,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
   <div id="test-badge" class="test-badge hidden">PRUEBAS · DESDE CERO</div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 33</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 34</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -326,6 +327,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <symbol id="ic-wheel" viewBox="0 0 64 64"><circle cx="32" cy="34" r="28" fill="#ffb21a" stroke="#0a0b18" stroke-width="3"/><circle cx="32" cy="34" r="24.5" fill="#0a0b18"/><path d="M32 34 L32.0 10.0 A24 24 0 0 1 49.0 17.0Z" fill="#ffb21a"/><path d="M32 34 L49.0 17.0 A24 24 0 0 1 56.0 34.0Z" fill="#ff4b3a"/><path d="M32 34 L56.0 34.0 A24 24 0 0 1 49.0 51.0Z" fill="#3fa2ff"/><path d="M32 34 L49.0 51.0 A24 24 0 0 1 32.0 58.0Z" fill="#13d1c4"/><path d="M32 34 L32.0 58.0 A24 24 0 0 1 15.0 51.0Z" fill="#ffd23f"/><path d="M32 34 L15.0 51.0 A24 24 0 0 1 8.0 34.0Z" fill="#e3262c"/><path d="M32 34 L8.0 34.0 A24 24 0 0 1 15.0 17.0Z" fill="#b163ff"/><path d="M32 34 L15.0 17.0 A24 24 0 0 1 32.0 10.0Z" fill="#1b1033"/><g stroke="#0a0b18" stroke-width="2"><line x1="32" y1="34" x2="32.0" y2="10.0"/><line x1="32" y1="34" x2="49.0" y2="17.0"/><line x1="32" y1="34" x2="56.0" y2="34.0"/><line x1="32" y1="34" x2="49.0" y2="51.0"/><line x1="32" y1="34" x2="32.0" y2="58.0"/><line x1="32" y1="34" x2="15.0" y2="51.0"/><line x1="32" y1="34" x2="8.0" y2="34.0"/><line x1="32" y1="34" x2="15.0" y2="17.0"/></g><circle cx="32" cy="34" r="24" fill="none" stroke="#0a0b18" stroke-width="2.5"/><circle cx="32" cy="34" r="6.5" fill="#ffd23f" stroke="#0a0b18" stroke-width="2.5"/><path d="M32 15 L27 4 H37 Z" fill="#e3262c" stroke="#0a0b18" stroke-width="2.5" stroke-linejoin="round"/></symbol>
 <symbol id="ic-wheel-legend" viewBox="0 0 64 64"><circle cx="32" cy="34" r="28" fill="#ffe766" stroke="#0a0b18" stroke-width="3"/><circle cx="32" cy="34" r="24.5" fill="#0a0b18"/><path d="M32 34 L32.0 10.0 A24 24 0 0 1 49.0 17.0Z" fill="#ffd23f"/><path d="M32 34 L49.0 17.0 A24 24 0 0 1 56.0 34.0Z" fill="#120a24"/><path d="M32 34 L56.0 34.0 A24 24 0 0 1 49.0 51.0Z" fill="#ffb21a"/><path d="M32 34 L49.0 51.0 A24 24 0 0 1 32.0 58.0Z" fill="#2a1650"/><path d="M32 34 L32.0 58.0 A24 24 0 0 1 15.0 51.0Z" fill="#fff3a0"/><path d="M32 34 L15.0 51.0 A24 24 0 0 1 8.0 34.0Z" fill="#120a24"/><path d="M32 34 L8.0 34.0 A24 24 0 0 1 15.0 17.0Z" fill="#ff9a1a"/><path d="M32 34 L15.0 17.0 A24 24 0 0 1 32.0 10.0Z" fill="#3a1a6a"/><g stroke="#0a0b18" stroke-width="2"><line x1="32" y1="34" x2="32.0" y2="10.0"/><line x1="32" y1="34" x2="49.0" y2="17.0"/><line x1="32" y1="34" x2="56.0" y2="34.0"/><line x1="32" y1="34" x2="49.0" y2="51.0"/><line x1="32" y1="34" x2="32.0" y2="58.0"/><line x1="32" y1="34" x2="15.0" y2="51.0"/><line x1="32" y1="34" x2="8.0" y2="34.0"/><line x1="32" y1="34" x2="15.0" y2="17.0"/></g><circle cx="32" cy="34" r="24" fill="none" stroke="#0a0b18" stroke-width="2.5"/><circle cx="32" cy="34" r="6.5" fill="#ffd23f" stroke="#0a0b18" stroke-width="2.5"/><path d="M32 15 L27 4 H37 Z" fill="#e3262c" stroke="#0a0b18" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 9 L25 2 L29 7 L32 1 L35 7 L39 2 L42 9 Z" fill="#ffd23f" stroke="#0a0b18" stroke-width="2" stroke-linejoin="round"/></symbol>
 <symbol id="ic-crown" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M8 50 L5 18 L20 32 L32 10 L44 32 L59 18 L56 50 Z" fill="#ffd23f"/><rect x="8" y="48" width="48" height="9" rx="3" fill="#ffb21a"/><circle cx="5" cy="17" r="4" fill="#fff3a0"/><circle cx="32" cy="9" r="4.5" fill="#fff3a0"/><circle cx="59" cy="17" r="4" fill="#fff3a0"/><path d="M32 30 L37 37 L32 44 L27 37 Z" fill="#ff3b6b" stroke-width="2"/><circle cx="18" cy="41" r="3.5" fill="#3fd2ff" stroke-width="2"/><circle cx="46" cy="41" r="3.5" fill="#8dff6a" stroke-width="2"/></g><path d="M14 24 Q16 34 15 44" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/></symbol>
+<symbol id="ic-play" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="#e3262c" stroke="#0a0b18" stroke-width="4"/><path d="M26 20 L46 32 L26 44 Z" fill="#fff" stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"/><path d="M14 24 Q18 14 30 11" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".5"/></symbol>
 <symbol id="ic-coin" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="32" cy="35" rx="26" ry="25" fill="#9a5c00"/><circle cx="32" cy="31" r="26" fill="url(#gCoin)"/><circle cx="32" cy="31" r="19" fill="none" stroke="#b97400" stroke-width="2.4"/><path d="M27 43 V20 h8 a7.5 7.5 0 0 1 0 15 h-8 M22 30 h13" fill="none" stroke="#8a5200" stroke-width="5.5"/><path d="M14 22 Q20 12 32 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".75"/></g></symbol>
 <symbol id="ic-gear" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round"><path d="M57.8,28.6 L57.8,35.4 L50.3,36.9 L48.5,41.5 L52.6,47.8 L47.8,52.6 L41.5,48.5 L36.9,50.3 L35.4,57.8 L28.6,57.8 L27.1,50.3 L22.5,48.5 L16.2,52.6 L11.4,47.8 L15.5,41.5 L13.7,36.9 L6.2,35.4 L6.2,28.6 L13.7,27.1 L15.5,22.5 L11.4,16.2 L16.2,11.4 L22.5,15.5 L27.1,13.7 L28.6,6.2 L35.4,6.2 L36.9,13.7 L41.5,15.5 L47.8,11.4 L52.6,16.2 L48.5,22.5 L50.3,27.1 Z" fill="#ffffff"/><circle cx="32" cy="32" r="9" fill="#3567f0"/></g></symbol>
 <symbol id="ic-plane" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M6 36 L28 30 L44 12 Q50 8 52 12 L42 32 L58 36 Q60 40 56 41 L40 40 L32 52 L26 52 L30 40 L10 42Z" fill="#ffffff"/><path d="M28 30 L42 32" stroke="#3567f0" stroke-width="4"/></g></symbol>
@@ -367,7 +369,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 33</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 34</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -382,7 +384,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=33"></script>
+<script type="module" src="js/main.js?v=34"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>
 </html>

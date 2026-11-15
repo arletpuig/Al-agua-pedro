@@ -7,7 +7,7 @@ import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { backend } from './backend.js';
 import { createArena } from './game/arena.js';
-import { initPlay, throwTomatoes, stopNow, isBusy, testRng } from './play.js';
+import { initPlay, throwTomatoes, stopNow, isBusy, testRng, paguitaTest } from './play.js';
 import { setEnabled, SFX } from './audio.js';
 import { DEFAULT_AVATAR } from './avatars.js';
 import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
@@ -60,13 +60,13 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
 async function buyChest(kind) {
   if (opening || isBusy()) return; opening = true;
-  try { const reward = await backend.openChest(kind); ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-shop'); if (reward.refund) ui.showToast(`Hacienda Inversa te devuelve ${reward.refund} peseta${reward.refund > 1 ? 's' : ''}`); } catch (e) { fail(e); ui.renderShop(); }
+  try { const reward = await backend.openChest(kind); ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-shop'); if (reward.refund) ui.pesetaGain(reward.refund); } catch (e) { fail(e); ui.renderShop(); }
   opening = false;
 }
 async function claimDaily() {
@@ -78,15 +78,21 @@ async function upgrade(id) {
   if (opening) return; opening = true;
   try {
     const b = await backend.upgradeCard(id); SFX.upgrade(); ui.renderCards(id);
-    const extra = [b.refund ? `+${b.refund} peseta${b.refund > 1 ? 's' : ''} de Hacienda` : '', b.tomatoes ? `+${b.tomatoes} tomates de la Puerta Giratoria` : ''].filter(Boolean).join(' · ');
-    ui.showToast(`⬆️ ${E.CARDS[id].name} sube a nivel ${E.level(state.cards, id)}` + (extra ? ` · ${extra}` : ''), extra ? 3200 : 2400);
+    ui.showToast(`⬆️ ${E.CARDS[id].name} sube a nivel ${E.level(state.cards, id)}`);
+    if (b.refund) ui.pesetaGain(b.refund, document.querySelector(`#cards-grid [data-upgrade="${id}"]`) || document.querySelector(`#cards-grid .card[data-id="${id}"]`));
+    if (b.tomatoes) setTimeout(() => ui.tomatoGain(b.tomatoes, document.querySelector(`#cards-grid .card[data-id="${id}"]`)), b.refund ? 350 : 0);
   } catch (e) { fail(e); ui.renderCards(); }
   opening = false;
 }
 let watching = false;
 async function watchAd(placement) {
   if (watching) return; watching = true;
-  try { await backend.watchAd(placement); ui.renderShop(); if (placement === 'sobre') { SFX.coin(); ui.showToast(`💌 +${E.SOBRE.pesetas} pesetas del Sobre de la Moncloa`); } }
+  try {
+    const spins0 = state.legendSpins;
+    await backend.watchAd(placement); ui.renderShop();
+    if (placement === 'sobre') { SFX.coin(); ui.pesetaGain(E.SOBRE.pesetas); }
+    if (placement === 'ruleta') { if (state.legendSpins > spins0) { SFX.upgrade(); openWheelFrom('legend'); } else { SFX.ui(); ui.showToast(`🎬 Vídeo ${state.legendAds} de 3 para la ruleta legendaria`); } }
+  }
   catch (e) { fail(e); ui.renderShop(); }
   watching = false;
 }

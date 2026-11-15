@@ -274,7 +274,7 @@ export function renderShop() {
     <div class="wheels">${wheelCard('normal')}${wheelCard('legend')}</div>
     <h4 class="sec"><span>OFERTAS ESPECIALES</span></h4>
     <div class="offer falcon"><i class="ribbon">GRATIS</i><div class="offer-art"><svg><use href="#ic-plane"/></svg></div>
-      <div class="offer-info"><h3>El Falcón</h3><p>Cada pulsación vale <b>×5</b> durante <b>10 minutos</b>. Hasta 6 al día.</p><div id="falcon-state" class="offer-state ${fal ? 'on' : ''}">${fal ? 'ACTIVO · ' + $('#falcon-time').textContent : 'Con un vídeo'}</div></div>
+      <div class="offer-info"><h3>El Falcón</h3><p>Cada pulsación vale <b>×5</b> durante <b>${E.FALCON.minutes} minutos</b>. Hasta 6 al día.</p><div id="falcon-state" class="offer-state ${fal ? 'on' : ''}">${fal ? 'ACTIVO · ' + $('#falcon-time').textContent : 'Con un vídeo'}</div></div>
       <button id="btn-falcon" class="btn-g sm" data-ad="${PLACEMENTS.FALCON}" ${adOk(PLACEMENTS.FALCON) && !fal ? '' : 'disabled'}>${adOk(PLACEMENTS.FALCON) ? 'VER VÍDEO' : 'PRONTO'}</button></div>
     <div class="offer sobre"><i class="ribbon">GRATIS</i><div class="offer-art"><svg><use href="#ic-envelope"/></svg></div>
       <div class="offer-info"><h3>Sobre de la Moncloa</h3><p><b>${E.SOBRE.pesetas} pesetas</b> por ver un vídeo. Nadie preguntará de dónde salen. Hasta 10 al día.</p><div class="offer-state">Con un vídeo</div></div>
@@ -294,8 +294,8 @@ function wheelCard(kind) {
     : `${dots}<button class="btn-g sm wc-ad" data-ad="${PLACEMENTS.RULETA}" ${okAd ? '' : 'disabled'}>${okAd ? `VER VÍDEO ${ads}/${LV.LEGEND_ADS}` : 'PRONTO'}</button>`;
   return `<div class="wheel-card ${kind}"><i class="ribbon">${leg ? '3 VÍDEOS' : 'CON PESETAS'}</i>${leg ? '<i class="wc-rays"></i><i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>' : ''}
     <h3>${leg ? 'Ruleta<br>legendaria' : 'Ruleta de<br>la suerte'}</h3><div class="wc-art">${icon(leg ? 'ic-wheel-legend' : 'ic-wheel')}</div>
-    <ul>${leg ? `<li>${icon('ic-coin')}<b>${fmt(W.segs[0].amount(L))}–${fmt(W.segs[7].amount(L))}</b></li><li>${icon('ic-cards')}<b>4–6</b> cartas top</li><li>${icon('ic-plane')}<b>×5</b> 30 min</li>`
-      : `<li>${icon('ic-coin')}<b>${W.segs[0].amount(L)}–${W.segs[7].amount(L)}</b></li><li>${icon('ic-cards')}<b>1–3</b> cartas</li><li>${icon('ic-plane')}<b>×5</b> 10 min</li>`}</ul>
+    <ul>${leg ? `<li>${icon('ic-coin')}<b>${fmt(W.segs[0].amount(L))}–${fmt(W.segs[7].amount(L))}</b></li><li>${icon('ic-cards')}<b>4–6</b> cartas top</li><li>${icon('ic-plane')}<b>×5</b> ${E.FALCON.minutes} min</li>`
+      : `<li>${icon('ic-coin')}<b>${W.segs[0].amount(L)}–${W.segs[7].amount(L)}</b></li><li>${icon('ic-cards')}<b>1–3</b> cartas</li><li>${icon('ic-plane')}<b>×5</b> ${E.FALCON.minutes} min</li>`}</ul>
     ${btn}<button class="probs-btn" data-probs="w-${kind}">Probabilidades</button>${probs}</div>`;
 }
 // Cartas ordenadas por rareza: comunes primero y legendarias al final

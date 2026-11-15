@@ -63,7 +63,7 @@ export const PACKS = {
 };
 const WELCOME_WEIGHTS = { common: 60, rare: 30, epic: 10, legendary: 0 };
 const PREMIUM_WEIGHTS = { common: 0, rare: 0, epic: 65, legendary: 35 };
-export const FALCON = { mult: 5, minutes: 10 };
+export const FALCON = { mult: 5, minutes: 2 };   // El Falcón: ×5 clics durante 2 minutos (tienda y ruletas)
 export const SOBRE = { pesetas: 25 };
 
 export const level = (cards, id) => cards?.[id]?.level || 0;
@@ -105,8 +105,8 @@ export function paguitasEvery(cards) { return CARDS.paguitas.value(level(cards, 
 export const PAGUITA = 3;                       // monedas por lluvia
 export const PAGUITA_EVERY = 75;                 // segundos entre lluvias de paguitas (igual que fn_paguitas_every)
 // Lo que suman las 3 monedas de cada lluvia: sube en todos los niveles (igual que fn_paguitas_total)
-export const PAGUITA_TOTALS = [0, 3, 4, 5, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 24];
-export const paguitaTotal = L => PAGUITA_TOTALS[Math.max(0, Math.min(15, L))];
+// nivel 1: 3 pesetas; nivel 2: 6; nivel 3: 9... (cada moneda vale el nivel de la carta)
+export const paguitaTotal = L => 3 * Math.max(0, Math.min(15, L));
 // lo que vale cada una de las 3 monedas (repartido: si no sale exacto, alguna vale 1 más)
 export function paguitaCoins(L) { const t = paguitaTotal(L), b = Math.floor(t / PAGUITA); return Array.from({ length: PAGUITA }, (_, i) => b + (i < t - b * PAGUITA ? 1 : 0)); }
 export const paguitaValue = L => Math.max(...paguitaCoins(L));   // la moneda que más vale

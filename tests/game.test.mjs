@@ -213,16 +213,16 @@ const hac = await page.evaluate(async () => { const b = { ...AAP.state.stats }, 
 check('Hacienda Inversa: el cofre te devuelve pesetas', hac.r.refund > 0 && hac.r.refund === hac.exp && hac.d === -40 + hac.r.refund + hac.r.pesetas, JSON.stringify({ refund: hac.r.refund, d: hac.d }));
 const pg = await page.evaluate(async () => { const t0 = AAP.state.tomatoes, p0 = AAP.state.pesetas, cost = AAP.E.upgradeCost('inflacion', AAP.state.cards.inflacion.level, AAP.state.cards), b = await AAP.backend.upgradeCard('inflacion'); return { b, dt: AAP.state.tomatoes - t0, dp: AAP.state.pesetas - p0, cost }; });
 check('Puerta Giratoria: 2 tomates por nivel en cada mejora; Hacienda devuelve parte', pg.b.tomatoes === 10 && pg.dt === 10 && pg.b.refund >= 1 && pg.dp === -pg.cost + pg.b.refund, JSON.stringify(pg));
-check('Paguitas: caen 3 monedas cada 75 s y lo que suman sube en todos los niveles (de 3 a 24)', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value, T = AAP.E.paguitaTotal, C = AAP.E.paguitaCoins; return v(0) === 0 && v(1) === 75 && v(15) === 75 && Array.from({ length: 15 }, (_, i) => T(i + 1)).every((t, i, a) => !i || t > a[i - 1]) && T(1) === 3 && T(15) === 24 && C(5).join() === '3,3,2' && /24 pesetas cada 75 s/.test(AAP.E.CARDS.paguitas.effect(15)); }));
+check('Paguitas: 3 monedas cada 75 s; 3 pesetas por nivel (nivel 1: 3, nivel 2: 6, nivel 3: 9... nivel 15: 45)', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value, T = AAP.E.paguitaTotal, C = AAP.E.paguitaCoins; return v(0) === 0 && v(1) === 75 && v(15) === 75 && T(1) === 3 && T(2) === 6 && T(3) === 9 && T(15) === 45 && C(4).join() === '4,4,4' && /45 pesetas cada 75 s/.test(AAP.E.CARDS.paguitas.effect(15)); }));
 await give(page, { cards: { paguitas: { level: 15, frags: 0 }, hacienda: { level: 0, frags: 0 }, puerta: { level: 0, frags: 0 }, plusultra: { level: 0, frags: 0 } } });
 await page.evaluate(() => { AAP.paguitaTest.every = 12; });
 before = await S(page); await page.waitForSelector('.pg-coin', { timeout: 30000 }); await page.waitForTimeout(1500);
 const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"); return { w: c.offsetWidth, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length, x: c.querySelector('.pg-x')?.textContent }; });
-check("Paguitas: caen 3 monedas que giran, marcadas ×8 en el nivel 15", pgc.n === 3 && pgc.w >= 36 && pgc.w <= 48 && pgc.anim === "pgspin" && pgc.x === '×8', JSON.stringify(pgc));
+check("Paguitas: caen 3 monedas que giran, marcadas ×15 en el nivel 15", pgc.n === 3 && pgc.w >= 36 && pgc.w <= 48 && pgc.anim === "pgspin" && pgc.x === '×15', JSON.stringify(pgc));
 s = await S(page); check('si no las tocas no se cobran', s.paguitasPesetas === (before.paguitasPesetas || 0));
 for (const c of await page.locator('.pg-coin').all()) await c.dispatchEvent('pointerdown');
 await page.waitForTimeout(300); s = await S(page);
-check('tocándolas: +24 pesetas (3 monedas de 8)', s.paguitasPesetas === (before.paguitasPesetas || 0) + 24 && s.pesetas === before.pesetas + 24, `(${before.pesetas} → ${s.pesetas})`);
+check('tocándolas: +45 pesetas (3 monedas de 15)', s.paguitasPesetas === (before.paguitasPesetas || 0) + 45 && s.pesetas === before.pesetas + 45, `(${before.pesetas} → ${s.pesetas})`);
 await give(page, { cards: { paguitas: { level: 0, frags: 0 } } }); await page.evaluate(() => { AAP.paguitaTest.every = 0; });
 console.log('19. Pedro habla mientras pulsas');
 check('Pedro habla menos: como mucho una frase cada 25 s al pulsar y cada 50–80 s sin pulsar', await page.evaluate(() => AAP.CHAT.gap >= 25000 && AAP.CHAT.taps[0] >= 120 && AAP.CHAT.idle[0] >= 50000));
@@ -481,11 +481,11 @@ console.log('29. Niveles de jugador y ruleta');
   s7 = await S(p7);
   check('después de las dos tiradas no quedan pendientes y se vuelve a jugar', await p7.evaluate(() => AAP.state.wheelLevel) === 3 && await p7.locator('.overlay.open').count() === 0 && await p7.locator('#lvl-dot.hidden').count() === 1 && Object.values(s7.cards).some(c => c.frags || c.level));
   check('no se puede girar sin tirada pendiente', await p7.evaluate(() => AAP.backend.spinWheel().then(() => false, e => /No tienes tiradas/.test(e.message))));
-  // ×5 durante 10 minutos (casilla 3) y bote (casilla 7)
+  // ×5 durante 2 minutos (casilla 3) y bote (casilla 7)
   const fx = await p7.evaluate(async () => { const L = await import('./js/levels.js'); AAP.state.stats.tomatoesThrown += 400; (await import('./js/state.js')).changed(false);
     const a = await AAP.backend.spinWheel(() => 0.6); const t = AAP.state.falconUntil - Date.now(); const b = await AAP.backend.spinWheel(() => 0.99);
     return { a: L.WHEEL[a.seg].id, falcon: a.reward.falcon, mins: Math.round(t / 60000), b: L.WHEEL[b.seg].id, bp: b.reward.pesetas, lvl: b.reward.level }; });
-  check('premio ×5 clics durante 10 minutos (el Falcón)', fx.a === 'x5' && fx.falcon && fx.mins === 10, JSON.stringify(fx));
+  check('premio ×5 clics durante 2 minutos (el Falcón)', fx.a === 'x5' && fx.falcon && fx.mins === 2, JSON.stringify(fx));
   check('el bote da 100 + 20 por nivel', fx.b === 'jackpot' && fx.bp === 100 + 20 * fx.lvl, JSON.stringify(fx));
   await p7.evaluate(() => { AAP.state.wheelLevel = AAP.E && 99; }); await p7.evaluate(() => import('./js/state.js').then(m => { AAP.state.wheelLevel = 50; m.changed(false); }));
   await p7.click('#lvl-chip'); await p7.waitForTimeout(400);

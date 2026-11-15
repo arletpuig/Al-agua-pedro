@@ -67,7 +67,7 @@ function onTap(e) {
 function tickPaguitas() {
   const every = E.paguitasEvery(state.cards) && (paguitaTest.every || E.paguitasEvery(state.cards));
   if (!every || document.visibilityState !== 'visible') { paguitaAt = performance.now(); return; }
-  if (performance.now() - paguitaAt >= every * 1000) { paguitaAt = performance.now(); SFX.coin(); ui.paguitaRain(E.PAGUITA, E.paguitasCoin(state.cards), p => { addPaguita(p); SFX.coin(); ui.hud(); }); }
+  if (performance.now() - paguitaAt >= every * 1000) { paguitaAt = performance.now(); SFX.coin(); ui.paguitaRain(E.paguitasCoins(state.cards), p => { addPaguita(p); SFX.coin(); ui.hud(); }); }
 }
 // ---------- decisión de un lanzamiento ----------
 export const testRng = { fn: null };   // solo para pruebas automáticas (modo ?debug)
@@ -101,6 +101,7 @@ export async function throwTomatoes(n) {
     if (!d.fall && (testRng.fn || Math.random)() < E.recoverChance(state.cards)) { d.recovered = n; recoverTomatoes(n); }
     // racha de lanzamientos: cada caída la sube (y da pesetas extra); un fallo la corta
     if (d.fall) { const sk = ++state.streak, canBank = (!backend.cloud || state.serverStreak) && !streakTest.off, b = canBank ? STREAK.bonus(sk, d.pesetas) : 0; d.streak = sk; d.streakBonus = b; if (b) addStreakPesetas(b); }
+    else if (state.streak >= 2 && (testRng.fn || Math.random)() < E.streakShield(state.cards)) d.streakSaved = state.streak;   // Chantaje Pegasus
     else { d.streakLost = state.streak; state.streak = 0; }
     save();
     ui.hud();

@@ -104,9 +104,11 @@ export function combo(mult, heat, next) {
 }
 export function comboUp() { const el = $('#combo'); el.classList.remove('up'); void el.offsetWidth; el.classList.add('up'); }
 // Paguitas: caen monedas grandes girando; cada una que toques es 1 peseta. Las que llegan abajo se pierden.
-export function paguitaRain(n, value, collect) {
+export function paguitaRain(values, collect) {
+  const n = values.length;
   const app = $('#app'), w = app.clientWidth;
   for (let i = 0; i < n; i++) setTimeout(() => {
+    const value = values[i];
     const c = document.createElement('button'); c.className = 'pg-coin'; c.setAttribute('aria-label', 'Coger peseta');
     c.style.left = Math.round(w * (0.12 + Math.random() * 0.62)) + 'px'; c.style.setProperty('--sway', (Math.random() < .5 ? -1 : 1) * (20 + Math.random() * 30) + 'px');
     c.innerHTML = '<i class="pg-spin"><svg><use href="#ic-coin"/></svg></i>' + (value > 1 ? `<b class="pg-x">×${value}</b>` : ''); if (value > 1) c.classList.add('x' + Math.min(4, value));
@@ -141,6 +143,10 @@ export function streak(d) {
   if (d && d.streakLost >= 2) {                      // racha perdida: se rompe
     el.className = 'streak lost'; $('#st-x').textContent = '×' + d.streakLost; $('#st-name').textContent = 'RACHA PERDIDA';
     app.dataset.streak = '0'; SFX.streakLost?.(); setTimeout(() => { if (state.streak < 2) el.classList.add('hidden'); }, 1800); return;
+  }
+  if (d && d.streakSaved) {                           // Chantaje Pegasus: la racha se salva
+    const ban = document.createElement('div'); ban.className = 'streak-ban pegasus'; ban.innerHTML = '<b>¡CHANTAJE PEGASUS!</b><span>Racha salvada</span>';
+    app.appendChild(ban); setTimeout(() => ban.remove(), 2200); SFX.upgrade?.();
   }
   if (!T) { el.classList.add('hidden'); app.dataset.streak = '0'; return; }
   el.className = 'streak t' + T.id; app.dataset.streak = String(T.id);

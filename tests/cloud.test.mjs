@@ -104,7 +104,7 @@ console.log('D. Cofres y cofre diario en el servidor');
 await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(300);
 await openChestUI('[data-daily]'); row = db(email); s = await S(page);
 check('cofre diario: fecha del servidor guardada', row.daily_claimed_on === madrid(new Date()) && row.chests_opened === 1);
-check('cartas y tomates del cofre iguales en cliente y servidor', Object.keys(s.cards).every(k => s.cards[k].level === row.cards[k].level && s.cards[k].frags === row.cards[k].frags) && Object.values(s.cards).some(c => c.level > 0 || c.frags > 0) && s.tomatoes === row.tomatoes && s.chestTomatoes === row.chest_tomatoes, `(tomates ${s.tomatoes}/${row.tomatoes})`);
+check('cartas y tomates del cofre iguales en cliente y servidor', Object.keys(s.cards).every(k => s.cards[k].level === (row.cards[k]?.level || 0) && s.cards[k].frags === (row.cards[k]?.frags || 0)) && Object.values(s.cards).some(c => c.level > 0 || c.frags > 0) && s.tomatoes === row.tomatoes && s.chestTomatoes === row.chest_tomatoes, `(tomates ${s.tomatoes}/${row.tomatoes})`);
 check('segundo cofre diario rechazado por el servidor', await page.evaluate(() => AAP.backend.claimDaily().then(() => false, e => e.message.includes('Ya has reclamado'))));
 check('cofre sin pesetas rechazado por el servidor', await page.evaluate(() => AAP.backend.openChest('diamond').then(() => false, e => e.message.includes('pesetas suficientes'))));
 // pesetas legítimas (simuladas en la base de datos) y recarga
@@ -286,12 +286,22 @@ console.log('L. Racha de lanzamientos en el servidor');
   before = db(email);
   for (let i = 0; i < 5; i++) { await page.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(page, 0, 6); await idle(page); }
   await page.waitForTimeout(5500); row = db(email); s = await S(page);
-  check('5 aciertos seguidos: las 9 pesetas de la racha se guardan en el servidor y cuentan en tus pesetas', row.streak_pesetas === before.streak_pesetas + 9 && row.pesetas === s.pesetas && s.streakPesetas === row.streak_pesetas, JSON.stringify({ srv: row.streak_pesetas, loc: s.streakPesetas }));
+  check('5 aciertos seguidos: las 3 pesetas de la racha se guardan en el servidor y cuentan en tus pesetas', row.streak_pesetas === before.streak_pesetas + 3 && row.pesetas === s.pesetas && s.streakPesetas === row.streak_pesetas, JSON.stringify({ srv: row.streak_pesetas, loc: s.streakPesetas }));
   const before2 = row.streak_pesetas;
   await page.evaluate(async () => { AAP.state.stats.streakPesetas += 100000; (await import('./js/state.js')).changed(); });
   await page.waitForTimeout(5500); row = db(email); s = await S(page);
   check('pesetas de racha inventadas: el servidor solo admite las de las caídas nuevas', row.streak_pesetas === before2 && s.streakPesetas === row.streak_pesetas, `(${before2} → ${row.streak_pesetas})`);
   await page.evaluate(() => { AAP.streakTest.off = true; AAP.state.streak = 0; });
+}
+
+console.log('M. Carta nueva: Chantaje Pegasus en el servidor');
+{
+  row = db(email);
+  psql(`update public.profiles set cards = jsonb_set(cards, '{pegasus}', '{"level": 1, "frags": 50}'), chest_pesetas = chest_pesetas + 500 where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  const up = await page.evaluate(() => AAP.backend.upgradeCard('pegasus').then(() => 'ok', e => e.message));
+  check('Chantaje Pegasus se mejora en el servidor como las demás', up === 'ok' && db(email).cards.pegasus.level === 2, up);
+  check('y sale en los cofres como carta épica', psql(`select 'pegasus' = any (public.fn_rarity_cards('epic'))`) === 't');
 }
 
 console.log('F. Ranking');

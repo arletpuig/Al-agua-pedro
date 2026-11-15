@@ -33,10 +33,13 @@ export const CARDS = {
     desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
     effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },
   paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 15, icon: 'paguitas',
-    desc: 'Cada cierto tiempo caen 3 monedas del cielo: ¡tócalas antes de que lleguen al suelo! Hasta el nivel 7 caen más a menudo. Desde el 8 ya no caen antes: cada moneda vale más (×2, luego ×3 y ×4).',
-    effect: L => { const v = paguitaValue(L), t = CARDS.paguitas.value(L); return v > 1 ? `3 monedas ×${v} cada ${t} s (${3 * v} pesetas)` : `3 pesetas cada ${t} s${L < 8 ? ' · desde el nivel 8, monedas ×2' : ''}`; },
-    // segundos entre lluvias: bajan hasta el nivel 7 y luego se quedan; desde el 8 sube lo que vale cada moneda (paguitaValue)
-    value: L => (L > 0 ? Math.round(120 * Math.pow(0.88, Math.min(L, PAGUITA_FAST_MAX) - 1)) : 0) },
+    desc: 'Cada 75 segundos caen 3 monedas del cielo: ¡tócalas antes de que lleguen al suelo! Cada nivel hace que valgan más.',
+    effect: L => `3 monedas = ${paguitaTotal(L)} pesetas cada ${PAGUITA_EVERY} s`,
+    // segundos entre lluvias (siempre los mismos con la carta; 0 = sin carta)
+    value: L => (L > 0 ? PAGUITA_EVERY : 0) },
+  pegasus: { id: 'pegasus', name: 'Chantaje Pegasus', rarity: 'epic', max: 20, icon: 'pegasus',
+    desc: 'Tienes pinchado el móvil del Presidente. Si fallas, a veces el chantaje funciona y no pierdes la racha. Cuanto más nivel, más a menudo.',
+    effect: L => `${pct(CARDS.pegasus.value(L))} de salvar la racha al fallar`, value: dimin(0.6, 8) },
   amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'common', max: 20, icon: 'amnistia',
     desc: 'Tus fallos quedan perdonados: a veces, aunque no aciertes en el centro, Pedro cae igual al agua.',
     effect: L => `${pct(CARDS.amnistia.value(L))} de fallos perdonados`, value: dimin(0.30, 8) },
@@ -100,13 +103,19 @@ export function upgradeTomatoes(cards) { return CARDS.puerta.value(level(cards, 
 export function recoverChance(cards) { return CARDS.plusultra.value(level(cards, 'plusultra')); }
 export function paguitasEvery(cards) { return CARDS.paguitas.value(level(cards, 'paguitas')); }
 export const PAGUITA = 3;                       // monedas por lluvia
-export const PAGUITA_FAST_MAX = 7;               // hasta este nivel bajan los segundos entre lluvias
-// Lo que vale cada moneda: ×1 hasta el nivel 7, ×2 del 8 al 10, ×3 del 11 al 13 y ×4 en el 14 y el 15 (igual que fn_paguitas_value)
-export function paguitaValue(L) { return L < 8 ? 1 : L < 11 ? 2 : L < 14 ? 3 : 4; }
-export function paguitasCoin(cards) { return paguitaValue(level(cards, 'paguitas')); }
+export const PAGUITA_EVERY = 75;                 // segundos entre lluvias de paguitas (igual que fn_paguitas_every)
+// Lo que suman las 3 monedas de cada lluvia: sube en todos los niveles (igual que fn_paguitas_total)
+export const PAGUITA_TOTALS = [0, 3, 4, 5, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 24];
+export const paguitaTotal = L => PAGUITA_TOTALS[Math.max(0, Math.min(15, L))];
+// lo que vale cada una de las 3 monedas (repartido: si no sale exacto, alguna vale 1 más)
+export function paguitaCoins(L) { const t = paguitaTotal(L), b = Math.floor(t / PAGUITA); return Array.from({ length: PAGUITA }, (_, i) => b + (i < t - b * PAGUITA ? 1 : 0)); }
+export const paguitaValue = L => Math.max(...paguitaCoins(L));   // la moneda que más vale
+export function paguitasCoins(cards) { return paguitaCoins(level(cards, 'paguitas')); }
 // Apagón: el centro de la diana (zona que tira a Pedro) es mayor.
 export function perfectRadius(cards, base) { return base * (1 + CARDS.apagon.value(level(cards, 'apagon'))); }
 // Amnistía: probabilidad de que un fallo (o un casi) se perdone y Pedro caiga igual.
+// Chantaje Pegasus: probabilidad de no perder la racha al fallar
+export function streakShield(cards) { return CARDS.pegasus.value(level(cards, 'pegasus')); }
 export function forgiveChance(cards) { return CARDS.amnistia.value(level(cards, 'amnistia')); }
 export function rarityWeights(kind, cards = {}) {
   const w = {}; for (const r in RARITIES) w[r] = kind === 'wood' ? RARITIES[r].weightWood : kind === 'welcome' ? WELCOME_WEIGHTS[r] : kind === 'premium' ? PREMIUM_WEIGHTS[r] : RARITIES[r].weightDiamond;

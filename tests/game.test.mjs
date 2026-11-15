@@ -167,7 +167,7 @@ console.log('16, 17. Cartas y potenciadores');
 await give(page, { cards: { inflacion: { level: 1, frags: 6 }, mariscada: { level: 1, frags: 3 }, joyas: { level: 1, frags: 0 }, apagon: { level: 1, frags: 0 }, amnistia: { level: 1, frags: 0 } } });
 await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(300); await shot('10-cartas');
 check('cartas ordenadas por rareza: comunes primero y legendarias al final, con brillo', await page.evaluate(() => { const r = [...document.querySelectorAll('#cards-grid .card')].map(c => AAP.E.CARDS[c.dataset.id].rarity), o = ['common', 'rare', 'epic', 'legendary']; return r.every((x, i) => i === 0 || o.indexOf(x) >= o.indexOf(r[i - 1])) && r.at(-1) === 'legendary' && document.querySelectorAll('#cards-grid .card.r-legendary').length === 2; }));
-check('la colección muestra las 9 cartas', await page.locator('#cards-grid .card').count() === 9 && /Plus Ultra/.test(await txt('#cards-grid')) && /Paguitas/.test(await txt('#cards-grid')));
+check('la colección muestra las 10 cartas (con Chantaje Pegasus)', await page.locator('#cards-grid .card').count() === 10 && /Plus Ultra/.test(await txt('#cards-grid')) && /Paguitas/.test(await txt('#cards-grid')) && /Chantaje Pegasus/.test(await txt('#cards-grid')));
 before = await S(page);
 const cost = await page.evaluate(() => AAP.E.upgradeCost('inflacion', 1, AAP.state.cards)), needF = await page.evaluate(() => AAP.E.fragsNeeded('inflacion', 1));
 await page.click('[data-upgrade="inflacion"]'); await page.waitForTimeout(300); s = await S(page);
@@ -213,16 +213,16 @@ const hac = await page.evaluate(async () => { const b = { ...AAP.state.stats }, 
 check('Hacienda Inversa: el cofre te devuelve pesetas', hac.r.refund > 0 && hac.r.refund === hac.exp && hac.d === -40 + hac.r.refund + hac.r.pesetas, JSON.stringify({ refund: hac.r.refund, d: hac.d }));
 const pg = await page.evaluate(async () => { const t0 = AAP.state.tomatoes, p0 = AAP.state.pesetas, cost = AAP.E.upgradeCost('inflacion', AAP.state.cards.inflacion.level, AAP.state.cards), b = await AAP.backend.upgradeCard('inflacion'); return { b, dt: AAP.state.tomatoes - t0, dp: AAP.state.pesetas - p0, cost }; });
 check('Puerta Giratoria: 2 tomates por nivel en cada mejora; Hacienda devuelve parte', pg.b.tomatoes === 10 && pg.dt === 10 && pg.b.refund >= 1 && pg.dp === -pg.cost + pg.b.refund, JSON.stringify(pg));
-check('Paguitas: hasta el nivel 7 llueve más a menudo; desde el 8 cada moneda vale más (×2, ×3, ×4)', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value, x = AAP.E.paguitaValue; return v(0) === 0 && v(1) === 120 && v(7) < v(6) && v(7) === 56 && v(15) === v(7) && x(7) === 1 && x(8) === 2 && x(11) === 3 && x(14) === 4 && x(15) === 4 && /×4/.test(AAP.E.CARDS.paguitas.effect(15)); }));
+check('Paguitas: caen 3 monedas cada 75 s y lo que suman sube en todos los niveles (de 3 a 24)', await page.evaluate(() => { const v = AAP.E.CARDS.paguitas.value, T = AAP.E.paguitaTotal, C = AAP.E.paguitaCoins; return v(0) === 0 && v(1) === 75 && v(15) === 75 && Array.from({ length: 15 }, (_, i) => T(i + 1)).every((t, i, a) => !i || t > a[i - 1]) && T(1) === 3 && T(15) === 24 && C(5).join() === '3,3,2' && /24 pesetas cada 75 s/.test(AAP.E.CARDS.paguitas.effect(15)); }));
 await give(page, { cards: { paguitas: { level: 15, frags: 0 }, hacienda: { level: 0, frags: 0 }, puerta: { level: 0, frags: 0 }, plusultra: { level: 0, frags: 0 } } });
 await page.evaluate(() => { AAP.paguitaTest.every = 12; });
 before = await S(page); await page.waitForSelector('.pg-coin', { timeout: 30000 }); await page.waitForTimeout(1500);
 const pgc = await page.evaluate(() => { const c = document.querySelector(".pg-coin"); return { w: c.offsetWidth, anim: getComputedStyle(c.querySelector('.pg-spin')).animationName, n: document.querySelectorAll('.pg-coin').length, x: c.querySelector('.pg-x')?.textContent }; });
-check("Paguitas: caen 3 monedas que giran, marcadas ×4 en el nivel 15", pgc.n === 3 && pgc.w >= 36 && pgc.w <= 48 && pgc.anim === "pgspin" && pgc.x === '×4', JSON.stringify(pgc));
+check("Paguitas: caen 3 monedas que giran, marcadas ×8 en el nivel 15", pgc.n === 3 && pgc.w >= 36 && pgc.w <= 48 && pgc.anim === "pgspin" && pgc.x === '×8', JSON.stringify(pgc));
 s = await S(page); check('si no las tocas no se cobran', s.paguitasPesetas === (before.paguitasPesetas || 0));
 for (const c of await page.locator('.pg-coin').all()) await c.dispatchEvent('pointerdown');
 await page.waitForTimeout(300); s = await S(page);
-check('tocándolas: +12 pesetas (3 monedas ×4)', s.paguitasPesetas === (before.paguitasPesetas || 0) + 12 && s.pesetas === before.pesetas + 12, `(${before.pesetas} → ${s.pesetas})`);
+check('tocándolas: +24 pesetas (3 monedas de 8)', s.paguitasPesetas === (before.paguitasPesetas || 0) + 24 && s.pesetas === before.pesetas + 24, `(${before.pesetas} → ${s.pesetas})`);
 await give(page, { cards: { paguitas: { level: 0, frags: 0 } } }); await page.evaluate(() => { AAP.paguitaTest.every = 0; });
 console.log('19. Pedro habla mientras pulsas');
 check('Pedro habla menos: como mucho una frase cada 25 s al pulsar y cada 50–80 s sin pulsar', await page.evaluate(() => AAP.CHAT.gap >= 25000 && AAP.CHAT.taps[0] >= 120 && AAP.CHAT.idle[0] >= 50000));
@@ -583,12 +583,12 @@ console.log('30. Abrir varios cofres a la vez');
 
 console.log('31. Racha de lanzamientos y peineta');
 {
-  const st = await page.evaluate(async () => { const S = await import('./js/streak.js'); return { b: [1, 2, 3, 4, 5, 8, 10, 12, 20, 40, 100].map(s => S.bonus(s, 1)).join(), big: [[2, 100], [10, 100], [10, 1], [35, 300], [10, 250]].map(([s, p]) => S.bonus(s, p)).join(), t: [1, 2, 5, 10, 20, 35].map(s => S.tierOf(s)?.name || '-').join('|'),
+  const st = await page.evaluate(async () => { const S = await import('./js/streak.js'); return { b: [1, 2, 3, 4, 5, 8, 10, 12, 20, 40, 100].map(s => S.bonus(s, 1)).join(), big: [[2, 100], [10, 100], [10, 1], [35, 300], [10, 250]].map(([s, p]) => S.bonus(s, p)).join(), t: [1, 2, 5, 10, 20, 35, 50].map(s => S.tierOf(s)?.name || '-').join('|'), m50: S.bonus(50, 10),
     // en una racha larga de lanzamientos ×1 nunca se pasa de lo que admite el servidor (15 por caída)
     max: Math.max(...Array.from({ length: 300 }, (_, i) => Array.from({ length: i + 1 }, (_, k) => S.bonus(k + 1, 3)).reduce((a, b) => a + b, 0) / (i + 1))) }; });
-  check('pesetas de racha con ×1: al menos 1 por acierto y premios a los 5, 10, 15...', st.b === '0,1,1,1,6,1,11,1,26,41,41', st.b);
-  check('la racha es un % de lo que ganas: ×100 da 100 veces más (10 % → 50 % → 100 %)', st.big === '10,60,11,340,135', st.big);
-  check('la racha cambia de nombre: Racha, En llamas, Imparable, Legendaria, Dios del tomate', st.t === '-|RACHA|¡EN LLAMAS!|¡IMPARABLE!|¡LEGENDARIA!|¡DIOS DEL TOMATE!', st.t);
+  check('pesetas de racha (más moderadas): un % pequeño de lo que ganas y premios a los 5, 10, 15...', st.b === '0,0,0,0,3,0,5,0,8,12,13', st.b);
+  check('la racha es un % de lo que ganas: ×100 da 100 veces más (5 % → 15 % → 50 %)', st.big === '5,20,5,117,43', st.big);
+  check('la racha cambia de nombre hasta la de ×50: «¡AL AGUA, PEDRO!» (con el premio más gordo)', st.t === '-|RACHA|¡EN LLAMAS!|¡IMPARABLE!|¡LEGENDARIA!|¡DIOS DEL TOMATE!|¡AL AGUA, PEDRO!' && st.m50 === 5 + 30, st.t + ' · ' + st.m50);
   check('nunca da más de lo que admite el servidor (15 por caída)', st.max < 15, st.max.toFixed(2));
   const c8 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p8 = await c8.newPage(); const e8 = watchErrors(p8); await mockTime(p8);
   await open(p8, undefined, { streak: true });
@@ -599,7 +599,7 @@ console.log('31. Racha de lanzamientos y peineta');
   let s8 = await S(p8);
   const ui8 = await p8.evaluate(() => ({ x: document.querySelector('#st-x').textContent, name: document.querySelector('#st-name').textContent, cls: document.querySelector('#streak').className, aura: document.querySelector('#app').dataset.streak, ban: !!document.querySelector('.streak-ban') }));
   check('5 aciertos seguidos: racha ×5 «¡EN LLAMAS!», aura roja y cartel', ui8.x === '×5' && ui8.name === '¡EN LLAMAS!' && /t2/.test(ui8.cls) && ui8.aura === '2' && ui8.ban, JSON.stringify(ui8));
-  check('y da sus pesetas extra (1 + 1 + 1 + 6 = 9) además de las de cada caída', s8.streakPesetas === 9 && s8.pesetas === p0 + 9 + (s8.pesetasEarned - b8.pesetasEarned), JSON.stringify({ sp: s8.streakPesetas, p0, p: s8.pesetas }));
+  check('y da sus pesetas extra (3 del premio de la 5.ª) además de las de cada caída', s8.streakPesetas === 3 && s8.pesetas === p0 + 3 + (s8.pesetasEarned - b8.pesetasEarned), JSON.stringify({ sp: s8.streakPesetas, p0, p: s8.pesetas }));
   // al fallar: la peineta (siempre) y la racha se pierde
   await p8.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p8, 120, 220, 'R');
   await p8.waitForFunction(() => AAP.scene.clipName === 'peineta', null, { timeout: 6000 }).catch(() => {});
@@ -607,6 +607,15 @@ console.log('31. Racha de lanzamientos y peineta');
   const lost = await p8.evaluate(() => ({ s: AAP.state.streak, name: document.querySelector('#st-name').textContent, aura: document.querySelector('#app').dataset.streak }));
   check('al fallar, Pedro hace la peineta', clip === 'peineta', clip);
   check('y la racha se pierde («RACHA PERDIDA»)', lost.s === 0 && lost.name === 'RACHA PERDIDA' && lost.aura === '0', JSON.stringify(lost));
+  await p8.evaluate(async () => { AAP.state.cards.pegasus = { level: 20, frags: 0 }; AAP.state.streak = 7; (await import('./js/state.js')).changed(false); });
+  await p8.evaluate(() => { AAP.testRng.fn = () => 0.01; });   // 1 %: por debajo de la probabilidad de Pegasus (y no lo perdona la Amnistía, que no tiene)
+  await p8.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p8, 120, 220, 'R');
+  await p8.waitForSelector('.streak-ban.pegasus', { timeout: 6000 }).catch(() => {}); const peg = await p8.evaluate(() => ({ s: AAP.state.streak, ban: document.querySelector('.streak-ban.pegasus')?.textContent }));
+  await idle(p8); await p8.evaluate(() => { AAP.testRng.fn = () => 0.99; });
+  check('Chantaje Pegasus: al fallar, a veces salva la racha (con aviso)', peg.s === 7 && /CHANTAJE PEGASUS/.test(peg.ban || ''), JSON.stringify(peg));
+  await p8.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p8, 120, 220, 'R'); await idle(p8);
+  check('si no sale la probabilidad, la racha se pierde igual', await p8.evaluate(() => AAP.state.streak) === 0);
+  await p8.evaluate(() => { AAP.testRng.fn = null; });
   check('racha: sin errores en consola', e8.length === 0, e8.join(' | '));
   await c8.close();
 }

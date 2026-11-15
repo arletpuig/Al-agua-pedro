@@ -1188,3 +1188,11 @@ svg { display: block; }
 .google-alt { align-self: center; margin-top: -2px; padding: 4px 8px; font: 700 13px 'Baloo 2'; color: #9fd0ff; text-decoration: underline; }
 .google-alt.hidden, .note.inapp.hidden { display: none; }
 .note.inapp { padding: 8px 10px; border-radius: 12px; background: #ff9a1a22; border: 2px solid #ff9a1a88; color: #ffe1b0; font-size: 13px; }
+
+/* v44: racha ×50 y Chantaje Pegasus */
+.streak.t6 { --sc: #2fe0ff; --sc2: #0a5a8a; animation: strainbow 3s linear infinite; }
+.streak.t6 .st-fire::before { background: radial-gradient(circle at 50% 75%, #fff 0 22%, #b8f6ff 38%, #2fe0ff 60%, #2fe0ff00 72%); }
+#app[data-streak="6"] .streak-aura { opacity: .36; --ac: #2fe0ff; animation: aura .5s ease-in-out infinite alternate, strainbow 2.4s linear infinite; }
+.streak-ban.t6 { --sc: #2fe0ff; } .streak-ban.t6 b { animation: strainbow 1.2s linear infinite; }
+.streak-ban.pegasus { --sc: #8dff6a; top: 40%; }
+.streak-ban.pegasus b { font-size: 22px; }

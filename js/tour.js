@@ -12,8 +12,8 @@ const STEPS = [
   { at: ['#basket'], title: '2 · Tus tomates', text: 'Aquí ves los tomates que tienes. Cuando tengas, aparecen los botones <b>×1, ×3, ×5…</b> para elegir cuántos lanzar de golpe.' },
   { at: AREA, title: '3 · Apunta al centro', text: 'El tomate va <b>de lado a lado</b> por delante de la diana. Pulsa el botón grande cuando esté en el <b>centro</b>: cuanto más centrado, más pesetas. ¡Y Pedro, al agua!' },
   { at: ['#pill-pesetas'], title: '4 · Gana pesetas', text: 'Cada vez que Pedro cae al agua ganas <b>pesetas</b> 🪙, el dinero del juego.' },
-  { at: ['#tabs [data-panel="shop"]', '#tabs [data-panel="cards"]'], title: '5 · Cofres y cartas', text: 'En la <b>Tienda</b> gastas pesetas en cofres. Dentro hay <b>cartas con poderes</b>: más tomates por toque, pesetas que caen del cielo, el Falcón… Mejóralas en <b>Cartas</b>.' },
-  { at: ['#btn-daily'], title: '6 · Cofre diario gratis', text: 'Cada día tienes aquí un <b>cofre gratis</b>. ¡Vuelve mañana a por otro!' },
+  { at: ['#tabs [data-panel="shop"]', '#tabs [data-panel="cards"]'], title: '5 · Cofres y cartas', text: 'En la <b>Tienda</b> gastas pesetas en cofres. Dentro hay <b>cartas con poderes</b>: más tomates por toque, pesetas que caen del cielo, el Falcón… Mejóralas en <b>Cartas</b>. Y cada día, ¡un <b>cofre gratis</b> en la Tienda!' },
+  { at: ['#lvl-chip'], title: '6 · Tu nivel', text: 'Cada tomate te da <b>experiencia</b>. Al subir de nivel giras la <b>ruleta de premios</b>, y cada 10 niveles, ¡la <b>legendaria</b>!' },
   { at: ['#tabs [data-panel="rank"]'], title: '7 · Ranking', text: 'Compite con toda España a ver quién tira más veces a Pedro al agua. ¿Listo?', last: true },
 ];
 let el = null, i = 0, waiting = null;

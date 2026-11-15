@@ -7,6 +7,7 @@
 //   STRIPE_PRICE_CALDERILLA   id del precio de 1,99 € (price_...)
 //   STRIPE_PRICE_MALETIN      id del precio de 3,99 €
 //   STRIPE_PRICE_CAMARA       id del precio de 9,95 €
+//   STRIPE_PRICE_RULETA       id del precio de 0,99 € (una tirada de la ruleta legendaria)
 //   STRIPE_AUTOMATIC_TAX      «true» solo cuando tengas un registro de impuestos activo en Stripe Tax
 // SUPABASE_URL y SUPABASE_ANON_KEY los pone Supabase solo.
 import Stripe from 'npm:stripe@23.1.0';
@@ -17,6 +18,7 @@ const PRICES: Record<string, string | undefined> = {
   calderilla: Deno.env.get('STRIPE_PRICE_CALDERILLA'),
   maletin: Deno.env.get('STRIPE_PRICE_MALETIN'),
   camara: Deno.env.get('STRIPE_PRICE_CAMARA'),
+  ruleta: Deno.env.get('STRIPE_PRICE_RULETA'),
 };
 // Páginas desde las que se puede comprar (y a las que se vuelve tras pagar)
 const ORIGINS = ['https://alaguapedro.es', 'https://www.alaguapedro.es', 'https://arletpuig.github.io', 'http://localhost:8080'];
@@ -47,7 +49,8 @@ Deno.serve(async (req) => {
     // 2. ¿Qué pack? El precio lo decide el servidor, nunca el navegador
     const { pack, returnUrl } = await req.json().catch(() => ({}));
     const price = PRICES[String(pack)];
-    if (!price) return json(req, 400, { message: 'Ese pack no existe' });
+    if (!(String(pack) in PRICES)) return json(req, 400, { message: 'Ese pack no existe' });
+    if (!price) return json(req, 400, { message: `Ese pack todavía no está a la venta (falta el secreto STRIPE_PRICE_${String(pack).toUpperCase()})` });
     const back = typeof returnUrl === 'string' && ORIGINS.some((o) => returnUrl.startsWith(o + '/')) ? returnUrl.split(/[?#]/)[0] : HOME;
 
     // 3. Página de pago de Stripe
@@ -62,7 +65,7 @@ Deno.serve(async (req) => {
       invoice_creation: { enabled: true },                       // factura para cada compra (Stripe Invoicing)
       locale: 'es',
       custom_text: {
-        submit: { message: 'Contenido digital: las pesetas se entregan al momento en tu cuenta del juego. Al pagar aceptas las condiciones de compra y la pérdida del derecho de desistimiento una vez entregadas.' },
+        submit: { message: 'Contenido digital: se entrega al momento en tu cuenta del juego. Al pagar aceptas las condiciones de compra y la pérdida del derecho de desistimiento una vez entregadas.' },
       },
       success_url: `${back}?pago=ok&sesion={CHECKOUT_SESSION_ID}`,
       cancel_url: `${back}?pago=cancelado`,

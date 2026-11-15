@@ -473,11 +473,60 @@ console.log('29. Niveles de jugador y ruleta');
   await p7.evaluate(() => { AAP.state.wheelLevel = AAP.E && 99; }); await p7.evaluate(() => import('./js/state.js').then(m => { AAP.state.wheelLevel = 50; m.changed(false); }));
   await p7.click('#lvl-chip'); await p7.waitForTimeout(400);
   const list = await p7.evaluate(() => ({ rows: document.querySelectorAll('#levels-body .lv').length, cur: document.querySelector('#levels-body .lv.cur .nm')?.textContent, last: document.querySelector('#levels-body .lv:last-child .nm').textContent, head: document.querySelector('.lv-head h3').textContent }));
-  check('lista de niveles: los 50, el actual marcado y Caudillo Supremo al final', list.rows === 50 && list.cur === list.head && list.last === 'Caudillo Supremo', JSON.stringify(list));
+  check('lista de niveles: los 50, el actual marcado y Caudillo Supremo al final', list.rows === 50 && list.cur === list.head && list.last.startsWith('Caudillo Supremo') && list.last.endsWith('RULETA LEGENDARIA'), JSON.stringify(list));
   await p7.screenshot({ path: 'tests/out/29-niveles.png' }); await p7.click('#panel-levels [data-close]');
   await p7.click('#tabs [data-panel="profile"]'); await p7.waitForTimeout(300);
   check('el perfil enseña el nivel', (await p7.locator('#prof-lvl').textContent()).endsWith(list.head));
+  await p7.click('#panel-profile [data-close]'); await p7.waitForTimeout(200);
   check('con el servidor sin actualizar se ven los niveles pero la ruleta espera', await p7.evaluate(async () => { const m = await import('./js/levelup.js'); AAP.state.wheelLevel = 1; const a = m.pending() > 0; AAP.state.noWheel = true; const b = m.pending() === 0; AAP.state.noWheel = false; AAP.state.wheelLevel = 50; return a && b; }));
+  // ruleta legendaria en el nivel 10, ruleta de la tienda con pesetas y tirada legendaria comprada
+  const lg = await p7.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats;
+    const legend10 = [1, 9, 10, 11, 20, 50].map(L.isLegendLevel).join(), ids = L.WHEELS.legend.segs.map(s => s.id).join();
+    st.tomatoesThrown = 800; st.hits = 700; st.falls = 0; AAP.state.wheelLevel = 9; (await import('./js/state.js')).changed(false);
+    const a = await AAP.backend.spinWheel(() => 0.01);
+    const p0 = AAP.state.pesetas, price = L.shopSpinPrice(L.levelOf(st)); const b = await AAP.backend.buySpin(() => 0.5); const paid = p0 - AAP.state.pesetas;
+    const leg0 = AAP.backend.spinLegend(() => 0.1).then(() => 'dejó', e => e.message);
+    const noLeg = await leg0; AAP.state.legendSpins = 2; const c = await AAP.backend.spinLegend(() => 0.99);
+    return { legend10, ids, a: [a.wheel, a.reward.id, a.reward.pesetas], b: [b.wheel, b.reward.id], paid, price, bExtra: b.reward.pesetas, noLeg, c: [c.wheel, c.reward.id, c.reward.pesetas], left: AAP.state.legendSpins }; });
+  check('cada 10 niveles toca la ruleta legendaria', lg.legend10 === 'false,false,true,false,true,true' && lg.a[0] === 'legend' && lg.a[1] === 'l_pes' && lg.a[2] === 300 + 10 * 10, JSON.stringify(lg.a));
+  check('ruleta de la tienda: cobra 40 + 3 por nivel y da su premio', lg.b[0] === 'normal' && lg.price === 40 + 3 * 10 && lg.paid === lg.price - lg.bExtra, JSON.stringify(lg));
+  check('tirada legendaria comprada: solo si la tienes, y se gasta una', /No tienes tiradas legendarias/.test(lg.noLeg) && lg.c[0] === 'legend' && lg.c[1] === 'l_bote' && lg.c[2] === 2500 + 50 * 10 && lg.left === 1, JSON.stringify(lg));
+  // todos los premios de las dos ruletas se entregan (cada casilla, en local)
+  const all = await p7.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats, out = [];
+    for (const kind of ['normal', 'legend']) { const segs = L.WHEELS[kind].segs, tot = segs.reduce((a, s) => a + s.weight, 0); let acc = 0;
+      for (const s of segs) { const r = (acc + s.weight / 2) / tot; acc += s.weight; AAP.state.legendSpins = 1;
+        const b = { p: AAP.state.pesetas, t: st.chestTomatoes, f: AAP.state.falconUntil, c: JSON.stringify(AAP.state.cards) };
+        const x = kind === 'legend' ? await AAP.backend.spinLegend(() => r) : (st.chestPesetas += 500, (await import('./js/state.js')).changed(false), b.p = AAP.state.pesetas, await AAP.backend.buySpin(() => r));
+        const w = x.reward, ok = x.reward.id === s.id && AAP.state.pesetas === b.p + w.pesetas - (x.cost || 0) && st.chestTomatoes === b.t + w.tomatoes
+          && (s.kind !== 'falcon' || AAP.state.falconUntil >= Math.max(Date.now(), b.f) + s.minutes * 60000 - 2000)
+          && (s.kind !== 'chest' || (w.cards.length === (s.chest === 'premium' ? 4 : s.chest === 'diamond' ? 3 * s.times : 1) && JSON.stringify(AAP.state.cards) !== b.c));
+        out.push(kind + ':' + s.id + (ok ? '' : ':MAL')); } }
+    return out; });
+  check('todos los premios de las dos ruletas llegan al jugador (16 casillas)', all.length === 16 && all.every(x => !x.endsWith(':MAL')), all.join(' '));
+  await p7.evaluate(() => { AAP.state.wheelLevel = 50; AAP.state.legendSpins = 0; });
+  // en la tienda: ruleta de la suerte con pesetas (pantalla real)
+  await p7.evaluate(async () => { AAP.state.stats.chestPesetas += 300; (await import('./js/state.js')).changed(false); });
+  await p7.click('#tabs [data-panel="shop"]'); await p7.waitForTimeout(300);
+  const sh = await p7.evaluate(() => ({ cards: document.querySelectorAll('.wheels .wheel-card').length, price: document.querySelector('[data-wheel="shop"]')?.textContent.trim(), leg: document.querySelector('.wheel-card.legend [data-pack="ruleta"]')?.textContent.trim(), daily: !!document.querySelector('#shop-body [data-daily]') }));
+  const lvNow = await p7.evaluate(() => import('./js/levels.js').then(L => L.levelOf(AAP.state.stats)));
+  check('tienda: ruleta de la suerte (con pesetas) y legendaria (0,99 €); el cofre diario sigue en la tienda', sh.cards === 2 && sh.price === String(40 + 3 * lvNow) && sh.leg === '0,99 €' && sh.daily, JSON.stringify(sh));
+  let bp = (await S(p7)).pesetas;
+  await p7.evaluate(() => { AAP.levelTest.rng = () => 0.01; }); await p7.click('[data-wheel="shop"]', { force: true }); await p7.waitForSelector('#wheel-overlay.open');
+  check('se abre la ruleta de la suerte con su precio en el botón', (await p7.locator('#wheel-title').textContent()) === 'RULETA DE LA SUERTE' && (await p7.locator('#wheel-btn').textContent()).includes(String(40 + 3 * lvNow)));
+  await p7.click('#wheel-btn', { force: true }); await p7.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 10000 });
+  let sp = await S(p7);
+  check('al girar cobra el precio y da el premio', sp.pesetas === bp - (40 + 3 * lvNow) + (10 + 2 * lvNow) && /OTRA/.test(await p7.locator('#wheel-btn').textContent()), `(${bp} → ${sp.pesetas})`);
+  await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300);
+  check('se puede cerrar cuando quieras', await p7.locator('#wheel-overlay.open').count() === 0);
+  await p7.evaluate(() => { AAP.state.legendSpins = 1; AAP.levelTest.rng = () => 0.5; }); await p7.click('#tabs [data-panel="shop"]'); await p7.waitForTimeout(300);
+  await p7.click('[data-wheel="legend"]', { force: true }); await p7.waitForSelector('#wheel-overlay.open.legend');
+  check('con una tirada legendaria comprada, la tienda abre la ruleta legendaria (corona y 32 luces)', (await p7.locator('#wheel-title').textContent()) === 'RULETA LEGENDARIA' && await p7.locator('.wheel-crown').isVisible() && await p7.locator('#wheel-lights i').count() === 32);
+  await p7.click('#wheel-btn', { force: true }); await p7.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 10000 });
+  check('premio legendario: 6 cartas → se abre el cofre', /6 cartas/.test(await p7.locator('#wheel-prize').textContent()) && (await p7.locator('#wheel-btn').textContent()) === '¡ABRIR!' && await p7.evaluate(() => AAP.state.legendSpins) === 0);
+  await p7.click('#wheel-btn', { force: true }); await p7.waitForSelector('#chest-overlay.open'); await p7.click('#chest-btn');
+  await p7.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 10000 });
+  check('el cofre enseña las 6 cartas', await p7.locator('#chest-rewards .reward').count() >= 6); await p7.click('#chest-btn'); await p7.waitForTimeout(300);
+  await p7.evaluate(() => { AAP.levelTest.rng = null; });
   check('niveles: sin errores en consola', e7.length === 0, e7.join(' | '));
   await c7.close();
 }

@@ -21,7 +21,7 @@ export function initLevels(uiRef, busyFn, failFn) {
   ui = uiRef; isBusy = busyFn; fail = failFn;
   fxUp = createFx($('#lvlup-overlay')); fxWheel = createFx($('#wheel-overlay'));
   $('#lvl-chip').addEventListener('click', () => { SFX.ui(); openLevels(); });
-  $('#levels-body').addEventListener('click', e => { if (e.target.closest('[data-spin]')) { ui.closeAll(); queueCelebrate({ mode: 'wheel' }); } });
+  $('#levels-body').addEventListener('click', e => { if (e.target.closest('[data-spin]')) openWheelFrom('level'); else if (e.target.closest('[data-legend]')) openWheelFrom('legend'); });
   $('#wheel-close').addEventListener('click', () => { if (!spinning) closeWheel(); });
   buildLights();
   syncChip();
@@ -67,11 +67,11 @@ export function checkPending() { if (pending() > 0) queueCelebrate({ mode: 'pend
 const screenBusy = () => !!document.querySelector('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour') || isBusy?.() || ui.gated();
 async function whenFree() { let ok = 0; while (ok < 2) { await sleep(levelTest.fast ? 50 : 300); ok = screenBusy() ? 0 : ok + 1; } }
 function queueCelebrate(opts) {
-  if (levelTest.off) return queue;
+  if (levelTest.off && opts.mode !== 'wheel') return queue;
   queue = queue.then(async () => {
-    if (opts.mode !== 'up' && !pending()) return;
+    if (opts.mode === 'wheel' ? !SOURCES[opts.src || 'level'].can() : opts.mode !== 'up' && !pending()) return;
     await whenFree(); running = true;
-    try { if (opts.mode === 'wheel') await wheelSession(); else await celebrate(opts); } catch (e) { fail?.(e); }
+    try { if (opts.mode === 'wheel') await wheelSession(opts.src || 'level'); else await celebrate(opts); } catch (e) { fail?.(e); }
     running = false; syncChip();
   });
   return queue;
@@ -86,8 +86,12 @@ async function celebrate({ mode, from, to }) {
   $('#lvlup-name').textContent = LV.levelName(L);
   $('#lvlup-sub').textContent = `Nivel ${L} de ${LV.MAX_LEVEL}`;
   $('#lvlup-next').innerHTML = intro ? 'Cada tomate te da experiencia.<br>¡Cada nivel, <b>un giro de ruleta</b>!' : L < LV.MAX_LEVEL ? `Siguiente: <b>${esc(LV.levelName(L + 1))}</b>` : '¡Has llegado a lo más alto!';
-  const p = pending(); $('#lvlup-cnt').textContent = '×' + p; $('#lvlup-cnt').classList.toggle('hidden', p < 2);
-  $('#lvlup-spin span').textContent = p ? '¡GIRAR LA RULETA!' : '¡SEGUIR!';
+  const p = pending(), legNext = p > 0 && LV.isLegendLevel(state.wheelLevel + 1), legAny = Array.from({ length: p }, (_, i) => state.wheelLevel + 1 + i).some(LV.isLegendLevel);
+  $('#lvlup-cnt').textContent = '×' + p; $('#lvlup-cnt').classList.toggle('hidden', p < 2);
+  $('#lvlup-spin span').textContent = !p ? '¡SEGUIR!' : legNext ? '¡GIRAR LA LEGENDARIA!' : '¡GIRAR LA RULETA!';
+  $('#lvlup-spin').classList.toggle('legend', legNext);
+  if (legAny && !intro) $('#lvlup-next').innerHTML = '¡Este nivel trae la <b>RULETA LEGENDARIA</b>!';
+  ov.classList.toggle('has-legend', legAny);
   ov.classList.add('open');
   // redoble y la medalla gira; luego el número nuevo con fanfarria y confeti
   SFX.drumroll(fast ? 0.1 : 0.9);
@@ -102,15 +106,27 @@ async function celebrate({ mode, from, to }) {
   await sleep(fast ? 20 : 700); ov.classList.add('ready');
   await new Promise(res => { $('#lvlup-spin').onclick = () => { SFX.ui(); res(); }; });
   ov.classList.remove('open'); fxUp.clear();
-  if (pending()) await wheelSession();
+  if (pending()) await wheelSession('level');
 }
 
-// ---------- ruleta ----------
-const N = LV.WHEEL.length, SEG = 360 / N;
+// ---------- ruletas ----------
+// Tres formas de girar: por subir de nivel (los múltiplos de 10, legendaria), en la tienda pagando pesetas y la legendaria comprada.
+const SOURCES = {
+  level:  { wheel: () => (LV.isLegendLevel(state.wheelLevel + 1) ? 'legend' : 'normal'), L: () => state.wheelLevel + 1, can: () => pending() > 0, left: () => pending(), go: rng => backend.spinWheel(rng) },
+  shop:   { wheel: () => 'normal', L: () => LV.levelOf(state.stats), can: () => state.pesetas >= LV.shopSpinPrice(LV.levelOf(state.stats)), left: () => Math.floor(state.pesetas / LV.shopSpinPrice(LV.levelOf(state.stats))), go: rng => backend.buySpin(rng) },
+  legend: { wheel: () => 'legend', L: () => LV.levelOf(state.stats), can: () => state.legendSpins > 0, left: () => state.legendSpins, go: rng => backend.spinLegend(rng) },
+};
+// Abrir una ruleta desde la tienda o la lista de niveles
+export function openWheelFrom(src) {
+  if (!SOURCES[src].can()) { if (src === 'shop') fail?.(new Error('No tienes pesetas suficientes')); return; }
+  ui.closeAll(); queueCelebrate({ mode: 'wheel', src });
+}
+const N = 8, SEG = 360 / N;
 let angle = 0;
 function wedge(i, r) { const a0 = (i * SEG - 90) * Math.PI / 180, a1 = ((i + 1) * SEG - 90) * Math.PI / 180; return `M0 0 L${(r * Math.cos(a0)).toFixed(2)} ${(r * Math.sin(a0)).toFixed(2)} A${r} ${r} 0 0 1 ${(r * Math.cos(a1)).toFixed(2)} ${(r * Math.sin(a1)).toFixed(2)}Z`; }
-function buildWheel(L) {
-  const segs = LV.WHEEL.map((s, i) => {
+function buildWheel(kind, L) {
+  const W = LV.WHEELS[kind].segs, leg = kind === 'legend';
+  const segs = W.map((s, i) => {
     const mid = i * SEG + SEG / 2, txt = LV.segText(s, L);
     return `<g class="seg${s.jackpot ? ' jackpot' : ''}" data-i="${i}">
       <path d="${wedge(i, 180)}" fill="${s.color}" class="fill"/>
@@ -121,49 +137,58 @@ function buildWheel(L) {
         <text y="-80" class="amt" style="font-size:${Math.min(24, Math.floor(118 / Math.max(3, txt.length)))}px">${txt}</text>
       </g></g>`;
   }).join('');
+  const rim = leg ? '<stop offset="0" stop-color="#fffbe0"/><stop offset=".25" stop-color="#ffd23f"/><stop offset=".5" stop-color="#ff9a1a"/><stop offset=".75" stop-color="#ffe766"/><stop offset="1" stop-color="#8a4a00"/>'
+    : '<stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffb21a"/><stop offset="1" stop-color="#9a5600"/>';
+  const gems = leg ? W.map((_, i) => { const a = (i * SEG - 90) * Math.PI / 180; return `<circle cx="${(188 * Math.cos(a)).toFixed(1)}" cy="${(188 * Math.sin(a)).toFixed(1)}" r="7" fill="${['#ff3b6b', '#3fd2ff', '#8dff6a', '#d18bff'][i % 4]}" stroke="#0a0b18" stroke-width="2.5"/>`; }).join('') : '';
   $('#wheel-svg').innerHTML = `<defs><radialGradient id="wShade" cx="0" cy="0" r="180" gradientUnits="userSpaceOnUse"><stop offset=".25" stop-color="#000" stop-opacity=".35"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset=".97" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></radialGradient>
-    <linearGradient id="wRim" x1="0" y1="-1" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffb21a"/><stop offset="1" stop-color="#9a5600"/></linearGradient></defs>
-    <circle r="196" fill="url(#wRim)" stroke="#0a0b18" stroke-width="5"/>
+    <linearGradient id="wRim" x1="0" y1="-1" x2="1" y2="1">${rim}</linearGradient></defs>
+    <circle r="198" fill="url(#wRim)" stroke="#0a0b18" stroke-width="5"/>
     ${segs}
-    ${LV.WHEEL.map((_, i) => `<line x1="0" y1="0" x2="0" y2="-180" transform="rotate(${i * SEG})" stroke="#0a0b18" stroke-width="4"/>`).join('')}
-    <circle r="180" fill="none" stroke="#0a0b18" stroke-width="5"/>`;
+    ${W.map((_, i) => `<line x1="0" y1="0" x2="0" y2="-180" transform="rotate(${i * SEG})" stroke="#0a0b18" stroke-width="${leg ? 7 : 4}"/>${leg ? `<line x1="0" y1="-30" x2="0" y2="-178" transform="rotate(${i * SEG})" stroke="#ffd23f" stroke-width="2.5"/>` : ''}`).join('')}
+    <circle r="180" fill="none" stroke="#0a0b18" stroke-width="5"/>${gems}`;
 }
-function buildLights() { $('#wheel-lights').innerHTML = Array.from({ length: 20 }, (_, i) => `<i style="transform:rotate(${i * 18}deg) translateY(calc(var(--wr) * -1))"></i>`).join(''); }
+function buildLights(n) { $('#wheel-lights').innerHTML = Array.from({ length: n }, (_, i) => `<i style="transform:rotate(${i * 360 / n}deg) translateY(calc(var(--wr) * -1))"></i>`).join(''); }
 function setAngle(a) { angle = a; $('#wheel').style.transform = `rotate(${a}deg)`; }
-function openWheel() {
-  const L = state.wheelLevel + 1, ov = $('#wheel-overlay');
-  buildWheel(L); setAngle(angle % 360);
-  $('#wheel-title').textContent = `RULETA · NIVEL ${L}`;
-  const p = pending(); $('#wheel-sub').textContent = p > 1 ? `Tienes ${p} tiradas: ¡a por todas!` : '¡Gira y llévate un premio!';
+const coin = '<svg class="ci"><use href="#ic-coin"/></svg>';
+function openWheel(src) {
+  const S = SOURCES[src], kind = S.wheel(), L = S.L(), ov = $('#wheel-overlay'), leg = kind === 'legend', price = LV.shopSpinPrice(L);
+  ov.classList.toggle('legend', leg); buildWheel(kind, L); buildLights(leg ? 32 : 20); setAngle(angle % 360);
+  $('#wheel-title').textContent = src === 'level' ? `${leg ? 'RULETA LEGENDARIA' : 'RULETA'} · NIVEL ${L}` : src === 'shop' ? 'RULETA DE LA SUERTE' : 'RULETA LEGENDARIA';
+  const n = S.left();
+  $('#wheel-sub').textContent = src === 'shop' ? `Premios de nivel ${L} · ${price} pesetas la tirada` : n > 1 ? `Tienes ${n} tiradas: ¡a por todas!` : leg ? '¡Los mejores premios del juego!' : '¡Gira y llévate un premio!';
   $('#wheel-prize').classList.add('hidden'); $('#wheel-prize').innerHTML = '';
   ov.classList.remove('spinning', 'won'); $$('#wheel-svg .seg').forEach(g => g.classList.remove('win'));
-  const btn = $('#wheel-btn'); btn.disabled = false; btn.classList.remove('hidden'); $('#wheel-btn span').textContent = '¡GIRAR!';
+  const btn = $('#wheel-btn'); btn.disabled = false; btn.classList.remove('hidden');
+  $('#wheel-btn span').innerHTML = src === 'shop' ? `¡GIRAR! · ${coin}${price}` : '¡GIRAR!';
   ov.classList.add('open'); fxWheel.resize();
+  if (leg) { SFX.chestOpen(); fxWheel.rain(40, 'star', ['#ffe766', '#ffffff', '#ffb21a']); }
 }
 const $$ = s => [...document.querySelectorAll(s)];
-function closeWheel() { $('#wheel-overlay').classList.remove('open'); fxWheel.clear(); if (waitingSpin) { const w = waitingSpin; waitingSpin = null; w('close'); } }
-// Una sesión de ruleta: gira tantas veces como tiradas haya; se puede cerrar y seguir luego desde la barra de nivel
-async function wheelSession() {
-  while (pending()) {
-    openWheel();
+function closeWheel() { $('#wheel-overlay').classList.remove('open', 'legend'); fxWheel.clear(); if (waitingSpin) { const w = waitingSpin; waitingSpin = null; w('close'); } }
+// Una sesión de ruleta: gira mientras queden tiradas (o pesetas); se puede cerrar cuando quieras
+async function wheelSession(src = 'level') {
+  const S = SOURCES[src];
+  while (S.can()) {
+    openWheel(src);
     const act = await new Promise(res => { waitingSpin = res; $('#wheel-btn').onclick = () => res('spin'); $('#wheel-hub').onclick = () => res('spin'); });
     waitingSpin = null;
     if (act === 'close') return;
-    const out = await spin();
+    const out = await spin(src);
     if (!out) { closeWheel(); return; }
-    const next = await showPrize(out);
+    const next = await showPrize(out, src);
+    const chest = out.reward.cards?.length || ['wood', 'diamond', 'premium'].includes(out.reward.kind);
+    if (chest && next !== 'close') { closeWheel(); await ui.chestOpening(out.reward.kind, out.reward); ui.hud(); }
     if (next === 'close') { closeWheel(); return; }
-    if (out.reward.cards?.length || out.reward.kind === 'wood' || out.reward.kind === 'diamond') { closeWheel(); await ui.chestOpening(out.reward.kind, out.reward); ui.hud(); }
   }
   closeWheel(); ui.hud();
 }
 // Gira: arranca enseguida y, cuando el servidor dice el premio, frena justo en esa casilla
-async function spin() {
-  const ov = $('#wheel-overlay'), btn = $('#wheel-btn'); btn.disabled = true; spinning = true; ov.classList.add('spinning');
-  SFX.spin(); if (navigator.vibrate) try { navigator.vibrate(20); } catch (e) {}
+async function spin(src) {
+  const ov = $('#wheel-overlay'), btn = $('#wheel-btn'), leg = ov.classList.contains('legend'); btn.disabled = true; spinning = true; ov.classList.add('spinning');
+  SFX.spin(); if (leg) SFX.drumroll(1.6); if (navigator.vibrate) try { navigator.vibrate(20); } catch (e) {}
   let result = null, error = null;
-  const req = backend.spinWheel(levelTest.rng).then(r => { result = r; }, e => { error = e; });
-  const fast = levelTest.fast, MAXV = 900;              // grados por segundo
+  const req = SOURCES[src].go(levelTest.rng).then(r => { result = r; }, e => { error = e; });
+  const fast = levelTest.fast, MAXV = leg ? 1100 : 900;   // grados por segundo
   let v = 0, t0 = performance.now(), last = t0, lastSeg = Math.floor(angle / SEG);
   const tick = a => { const s = Math.floor(a / SEG); if (s !== lastSeg) { lastSeg = s; SFX.tick(); const p = $('#wheel-pointer'); p.classList.remove('kick'); void p.offsetWidth; p.classList.add('kick'); } };
   // 1) acelera y gira mientras llega el premio (mínimo 1,2 s)
@@ -176,14 +201,14 @@ async function spin() {
     requestAnimationFrame(step);
   });
   await req;
-  if (error) {                                            // sin premio: frena y avisa
-    await decel(angle + 200, 1.2, tick); spinning = false; ov.classList.remove('spinning'); btn.disabled = false; fail?.(error); return null;
+  if (error) {                                            // sin premio (y sin cobrar): frena y avisa
+    await decel(angle + 200, fast ? 0.05 : 1.2, tick); spinning = false; ov.classList.remove('spinning'); btn.disabled = false; fail?.(error); return null;
   }
-  // 2) frena con suavidad hasta la casilla ganadora (con un poco de suspense al final)
+  // 2) frena con suavidad hasta la casilla ganadora (con suspense al final; la legendaria, más vueltas)
   const i = result.seg, within = (0.18 + Math.random() * 0.64) * SEG;
   const target = -(i * SEG + within);                     // ángulo final (módulo 360) para que la flecha quede en esa casilla
-  let end = target + 360 * Math.ceil((angle - target) / 360); end += 360 * (fast ? 0 : 3);
-  await decel(end, fast ? 0.05 : Math.max(3.2, 3 * (end - angle) / MAXV), tick);
+  let end = target + 360 * Math.ceil((angle - target) / 360); end += 360 * (fast ? 0 : leg ? 4 : 3);
+  await decel(end, fast ? 0.05 : Math.max(leg ? 4.2 : 3.2, 3 * (end - angle) / MAXV), tick);
   spinning = false; ov.classList.remove('spinning');
   return result;
 }
@@ -199,38 +224,39 @@ function decel(end, T, tick) {
   });
 }
 // Premio: casilla brillando, explosión, monedas o tomates saltando y el cartel
-async function showPrize(out) {
-  const { seg, reward } = out, s = LV.WHEEL[seg], ov = $('#wheel-overlay'), box = $('#wheel-prize'), p = out.pending;
+async function showPrize(out, src) {
+  const kind = out.wheel || SOURCES[src].wheel(), { seg, reward } = out, s = LV.WHEELS[kind].segs[seg], ov = $('#wheel-overlay'), box = $('#wheel-prize'), leg = kind === 'legend';
   $(`#wheel-svg .seg[data-i="${seg}"]`)?.classList.add('win'); ov.classList.add('won');
-  const big = !!s.jackpot || s.kind === 'falcon' || s.chest === 'diamond';
-  SFX.prize(big); if (navigator.vibrate) try { navigator.vibrate(big ? [40, 60, 120] : 40); } catch (e) {}
+  const big = leg || !!s.jackpot || s.kind === 'falcon' || s.chest === 'diamond';
+  if (leg) SFX.levelUp(); SFX.prize(big); if (navigator.vibrate) try { navigator.vibrate(big ? [40, 60, 120] : 40); } catch (e) {}
   const w = $('#wheel-wrap').getBoundingClientRect(), o = ov.getBoundingClientRect(), cx = w.left - o.left + w.width / 2, cy = w.top - o.top + w.height / 2;
-  fxWheel.resize(); fxWheel.burst(cx, cy, big ? 160 : 90);
-  if (reward.pesetas && s.kind === 'pesetas') fxWheel.fountain(cx, cy, s.jackpot ? 60 : 26, 'coin');
-  if (reward.tomatoes && s.kind === 'tomatoes') fxWheel.fountain(cx, cy, 24, 'tomato');
-  if (s.jackpot) setTimeout(() => fxWheel.rain(90, 'coin'), 400);
-  const line = s.kind === 'pesetas' ? `<b>+${fmt(reward.pesetas)}</b> pesetas` : s.kind === 'tomatoes' ? `<b>+${fmt(reward.tomatoes)}</b> tomates`
-    : s.kind === 'falcon' ? '<b>×5 clics</b> durante 10 minutos' : s.chest === 'diamond' ? '<b>3 cartas</b> del cofre de diamante' : '<b>1 carta</b> del cofre de madera';
-  box.className = 'wheel-prize' + (big ? ' big' : ''); box.style.setProperty('--pc', s.color);
-  box.innerHTML = `<span class="tag">${s.jackpot ? '¡¡BOTE!!' : '¡PREMIO!'}</span><svg><use href="#${s.icon}"/></svg><p>${line}</p>`;
+  fxWheel.resize(); fxWheel.burst(cx, cy, big ? 170 : 90, leg ? { colors: ['#ffe766', '#ffffff', '#ffb21a', '#ff5ad1', '#3fd2ff'] } : {});
+  if (reward.pesetas && s.kind === 'pesetas') fxWheel.fountain(cx, cy, s.jackpot ? 70 : leg ? 45 : 26, 'coin');
+  if (reward.tomatoes && s.kind === 'tomatoes') fxWheel.fountain(cx, cy, leg ? 40 : 24, 'tomato');
+  if (s.jackpot || leg) setTimeout(() => fxWheel.rain(s.jackpot ? 110 : 60, s.jackpot ? 'coin' : 'star', ['#ffe766', '#ffffff', '#ffb21a']), 400);
+  box.className = 'wheel-prize' + (big ? ' big' : '') + (leg ? ' legend' : ''); box.style.setProperty('--pc', s.color);
+  box.innerHTML = `<span class="tag">${s.jackpot ? '¡¡BOTE!!' : leg ? '¡LEGENDARIO!' : '¡PREMIO!'}</span><svg><use href="#${s.icon}"/></svg><p>${LV.prizeText(s, reward)}</p>`;
   ui.hud(); syncChip();
   const btn = $('#wheel-btn'); await sleep(levelTest.fast ? 10 : 600); btn.disabled = false;
-  const chest = s.kind === 'chest';
-  $('#wheel-btn span').textContent = chest ? '¡ABRIR!' : p ? `¡OTRA TIRADA! (${p})` : '¡A JUGAR!';
-  return new Promise(res => { waitingSpin = res; btn.onclick = () => { waitingSpin = null; SFX.ui(); res(chest || p ? 'next' : 'close'); }; $('#wheel-hub').onclick = null; });
+  const S = SOURCES[src], chest = s.kind === 'chest', more = S.can(), n = S.left();
+  $('#wheel-btn span').innerHTML = chest ? '¡ABRIR!' : !more ? (src === 'level' ? '¡A JUGAR!' : '¡GENIAL!') : src === 'shop' ? `OTRA · ${coin}${LV.shopSpinPrice(S.L())}` : `¡OTRA TIRADA! (${n})`;
+  return new Promise(res => { waitingSpin = res; btn.onclick = () => { waitingSpin = null; SFX.ui(); res(chest || more ? 'next' : 'close'); }; $('#wheel-hub').onclick = null; });
 }
 
 // ---------- lista de niveles ----------
 function openLevels() { renderLevels(); ui.openPanel('#panel-levels'); setTimeout(() => $('#levels-body .lv.cur')?.scrollIntoView({ block: 'center' }), 60); }
 export function renderLevels() {
-  const info = LV.levelInfo(state.stats), p = pending();
+  const info = LV.levelInfo(state.stats), p = pending(), nl = LV.nextLegendLevel(info.level), ls = state.legendSpins;
+  const crown = '<svg><use href="#ic-crown"/></svg>';
   const head = `<div class="lv-head t${info.tier}">
       <span class="lvl-medal xl"><svg><use href="#ic-medal"/></svg><b>${info.level}</b></span>
       <div><small>NIVEL ${info.level} DE ${LV.MAX_LEVEL}</small><h3>${esc(info.name)}</h3>
         <div class="lvl-bar big"><i style="width:${(info.pct * 100).toFixed(1)}%"></i><small>${info.max ? 'NIVEL MÁXIMO' : `${fmt(info.into)} / ${fmt(info.need)} XP`}</small></div></div></div>
     ${p ? `<button class="btn-gold spin-cta" data-spin><span>¡TIENES ${p} TIRADA${p > 1 ? 'S' : ''} DE RULETA!</span></button>` : ''}
-    <p class="lv-how"><b>Experiencia:</b> +${LV.XP.thrown} por tomate lanzado · +${LV.XP.hit} por impacto · +${LV.XP.fall} cada vez que Pedro cae al agua. <b>Cada nivel = un giro de ruleta.</b></p>`;
-  const rows = LV.LEVEL_NAMES.map((n, k) => { const L = k + 1, st = L < info.level ? 'done' : L === info.level ? 'cur' : 'lock';
-    return `<li class="lv ${st} t${LV.tierOf(L)}"><span class="lvl-medal"><svg><use href="#ic-medal"/></svg><b>${L}</b></span><span class="nm">${esc(n)}</span><span class="xp">${st === 'done' ? '✔' : fmt(LV.XP_AT[k]) + ' XP'}</span></li>`; }).join('');
+    ${ls ? `<button class="btn-gold spin-cta legend" data-legend><span>¡${ls} TIRADA${ls > 1 ? 'S' : ''} LEGENDARIA${ls > 1 ? 'S' : ''}!</span></button>` : ''}
+    ${info.level < LV.MAX_LEVEL || !LV.isLegendLevel(info.level) ? `<div class="lv-next-leg">${crown}<span>Próxima <b>ruleta legendaria</b>: nivel ${nl}${nl > info.level ? ` · faltan ${nl - info.level}` : ''}</span></div>` : ''}
+    <p class="lv-how"><b>Experiencia:</b> +${LV.XP.thrown} por tomate lanzado · +${LV.XP.hit} por impacto · +${LV.XP.fall} cada vez que Pedro cae al agua. <b>Cada nivel = un giro de ruleta; cada 10, la legendaria.</b></p>`;
+  const rows = LV.LEVEL_NAMES.map((n, k) => { const L = k + 1, st = L < info.level ? 'done' : L === info.level ? 'cur' : 'lock', leg = LV.isLegendLevel(L);
+    return `<li class="lv ${st} t${LV.tierOf(L)}${leg ? ' leg' : ''}"><span class="lvl-medal"><svg><use href="#ic-medal"/></svg><b>${L}</b></span><span class="nm">${esc(n)}${leg ? `<em class="lv-leg">${crown}RULETA LEGENDARIA</em>` : ''}</span><span class="xp">${st === 'done' ? '✔' : fmt(LV.XP_AT[k]) + ' XP'}</span></li>`; }).join('');
   $('#levels-body').innerHTML = head + `<ol class="lv-list">${rows}</ol>`;
 }

@@ -22,17 +22,19 @@ for (const [name, opts] of cases) {
   }
   const r = await page.evaluate(() => {
     const vw = innerWidth, vh = innerHeight, box = s => { const b = document.querySelector(s).getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
-    const main = { click: box('#btn-click'), throws: box('#throws'), nav: box('#tabs'), top: box('.top') };
+    const main = { click: box('#btn-click'), throws: box('#throws'), nav: box('#tabs'), top: box('.top'), level: box('#lvl-chip') };
     const inside = Object.entries(main).filter(([, b]) => b.l < -1 || b.t < -1 || b.r > vw + 1 || b.b > vh + 1).map(([k]) => k);
     const keys = Object.keys(main), overlaps = [];
     for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) { const a = main[keys[i]], b = main[keys[j]]; if (a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1) overlaps.push(keys[i] + '×' + keys[j]); }
     const small = [...document.querySelectorAll('#throws button,#tabs .tab,.sq,#btn-click,#btn-daily')].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.width < 34 || b.height < 34); }).length;
     const c = document.querySelector('#game canvas').getBoundingClientRect(), g = document.querySelector('#game').getBoundingClientRect();
-    return { inside, overlaps, small, scroll: document.documentElement.scrollHeight > vh + 1 || document.documentElement.scrollWidth > vw + 1, canvasFits: Math.abs(c.width - g.width) < 2 && Math.abs(c.height - g.height) < 2, gameW: Math.round(g.width), vw, vh };
+    const free = main.level.b <= main.top.t + 1 && main.top.b <= g.top + 92 + 1 && !document.querySelector('#btn-daily');   // Pedro empieza debajo (createArena top: 92)
+    return { free, inside, overlaps, small, scroll: document.documentElement.scrollHeight > vh + 1 || document.documentElement.scrollWidth > vw + 1, canvasFits: Math.abs(c.width - g.width) < 2 && Math.abs(c.height - g.height) < 2, gameW: Math.round(g.width), vw, vh };
   });
   check(`${name} (${r.vw}x${r.vh}): todo dentro de pantalla, sin desplazamiento`, r.inside.length === 0 && !r.scroll, r.inside.join(','));
   check(`${name}: sin elementos superpuestos`, r.overlaps.length === 0, r.overlaps.join(','));
   check(`${name}: botones de tamaño táctil suficiente`, r.small === 0);
+  check(`${name}: barra de nivel arriba del todo, sin tapar a Pedro (y sin cofre diario en la pantalla)`, r.free);
   check(`${name}: el escenario ocupa toda la pantalla de juego (${r.gameW}px)`, r.canvasFits && r.gameW >= 300);
   // el panel de cartas y el de cofres caben y se pueden cerrar
   await page.click('#tabs [data-panel="cards"]'); await page.waitForTimeout(250);

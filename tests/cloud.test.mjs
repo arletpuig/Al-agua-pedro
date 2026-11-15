@@ -204,6 +204,27 @@ console.log('K. Niveles y ruleta en el servidor');
   if (db(email).wheel_level < lvl) psql(`update public.profiles set wheel_level = ${lvl} where user_id = '${row.user_id}'`);
   check('sin tiradas pendientes, el servidor no deja girar', await page.evaluate(() => AAP.backend.spinWheel().then(() => false, e => /No tienes tiradas/.test(e.message))));
   check('un jugador no puede cambiarse las tiradas', (() => { try { psql(`update public.profiles set wheel_level = 0`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
+  // ruleta de la tienda (pesetas) y tirada legendaria pagada, en el servidor
+  psql(`update public.profiles set chest_pesetas = chest_pesetas + 500 where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  before = db(email);
+  const buy = await page.evaluate(() => AAP.backend.buySpin().then(r => ({ cost: r.cost, p: r.reward.pesetas, t: r.reward.tomatoes, w: r.wheel }), e => ({ err: e.message })));
+  row = db(email); s = await S(page);
+  const lvNow = +psql(`select public.fn_player_level(${row.tomatoes_thrown}, ${row.hits}, ${row.falls})`);
+  check('ruleta de la tienda en el servidor: cobra 40 + 3 por nivel y entrega el premio', buy.w === 'normal' && buy.cost === 40 + 3 * lvNow && row.pesetas_spent === before.pesetas_spent + buy.cost
+    && row.chest_pesetas === before.chest_pesetas + buy.p && row.chest_tomatoes === before.chest_tomatoes + buy.t && s.pesetas === row.pesetas, JSON.stringify(buy));
+  check('sin tirada legendaria pagada, el servidor no deja girarla', await page.evaluate(() => AAP.backend.spinLegend().then(() => false, e => /No tienes tiradas legendarias/.test(e.message))));
+  psql(`select public.grant_pack('cs_test_ruleta', '${row.user_id}', 'ruleta', 99, 'eur')`, 'service_role');
+  check('pagar la tirada legendaria (0,99 €) da 1 tirada, una sola vez', db(email).legend_spins === 1 && psql(`select public.grant_pack('cs_test_ruleta', '${row.user_id}', 'ruleta', 99, 'eur')`, 'service_role') === 'f' && db(email).legend_spins === 1);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(400);
+  check('la tienda enseña la tirada comprada', /GIRAR! \(1\)/.test(await page.locator('[data-wheel="legend"]').textContent()));
+  before = db(email);
+  const leg = await page.evaluate(() => AAP.backend.spinLegend().then(r => ({ w: r.wheel, p: r.reward.pesetas, t: r.reward.tomatoes, n: r.reward.cards.length, m: r.reward.minutes, id: r.reward.id }), e => ({ err: e.message })));
+  row = db(email); s = await S(page);
+  check('tirada legendaria en el servidor: se gasta y entrega su premio', leg.w === 'legend' && row.legend_spins === 0 && row.chest_pesetas === before.chest_pesetas + leg.p && row.chest_tomatoes === before.chest_tomatoes + leg.t && s.pesetas === row.pesetas
+    && (!leg.m || Date.parse(row.falcon_until) > Date.now() + (leg.m - 1) * 60000), JSON.stringify(leg));
+  await page.click('#panel-shop [data-close]'); await page.waitForTimeout(200);
   await page.evaluate(() => { AAP.levelTest.off = true; });
 }
 

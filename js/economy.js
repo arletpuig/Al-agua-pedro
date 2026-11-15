@@ -45,6 +45,8 @@ export const CHESTS = {
   diamond: { id: 'diamond', name: 'Cofre de diamante', price: 40, cards: 3, tomatoes: [10, 25], pesetaChance: 0.6, pesetas: [3, 8] },
   // regalo de bienvenida (no se vende): llega la primera vez que Pedro cae al agua y se abre con un vídeo
   welcome: { id: 'welcome', name: 'Regalo de bienvenida', price: 0, cards: 2, tomatoes: [30, 40], pesetaChance: 1, pesetas: [50, 60] },
+  // cartas top (pack grande y ruleta legendaria): solo épicas y legendarias (como fn_roll_chest('premium'))
+  premium: { id: 'premium', name: 'Cartas legendarias', price: 0, cards: 4, tomatoes: [0, 0], pesetaChance: 0, pesetas: [0, 0] },
 };
 export const WELCOME_MINUTES = 10;
 // Packs de pesetas de pago (Stripe). Un jugador normal gana unas 25–40 pesetas al día.
@@ -55,6 +57,7 @@ export const PACKS = {
   camara: { id: 'camara', name: 'Financiación ilegal PSOE', price: '9,95', pesetas: 5000, base: 2000, tomatoes: 2000, cards: 4, icon: 'ic-pack-vault', best: true },
 };
 const WELCOME_WEIGHTS = { common: 60, rare: 30, epic: 10, legendary: 0 };
+const PREMIUM_WEIGHTS = { common: 0, rare: 0, epic: 65, legendary: 35 };
 export const FALCON = { mult: 5, minutes: 10 };
 export const SOBRE = { pesetas: 25 };
 
@@ -100,7 +103,7 @@ export function perfectRadius(cards, base) { return base * (1 + CARDS.apagon.val
 // Amnistía: probabilidad de que un fallo (o un casi) se perdone y Pedro caiga igual.
 export function forgiveChance(cards) { return CARDS.amnistia.value(level(cards, 'amnistia')); }
 export function rarityWeights(kind, cards = {}) {
-  const w = {}; for (const r in RARITIES) w[r] = kind === 'wood' ? RARITIES[r].weightWood : kind === 'welcome' ? WELCOME_WEIGHTS[r] : RARITIES[r].weightDiamond;
+  const w = {}; for (const r in RARITIES) w[r] = kind === 'wood' ? RARITIES[r].weightWood : kind === 'welcome' ? WELCOME_WEIGHTS[r] : kind === 'premium' ? PREMIUM_WEIGHTS[r] : RARITIES[r].weightDiamond;
   // las cartas al nivel máximo ya no salen: su rareza desaparece si todas las de esa rareza están al máximo
   for (const r in w) if (CARD_IDS.filter(id => CARDS[id].rarity === r).every(id => level(cards, id) >= CARDS[id].max)) w[r] = 0;
   return w;

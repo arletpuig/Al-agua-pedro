@@ -10,6 +10,20 @@ let timeOffset = 0, nextMidnight = null, serverChecked = false, flush = async ()
 async function cloudOp(fn) { await flush(); const sent = snapshot(); const r = await fn(); return { r, sent }; }
 const madridDate = ms => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
 
+async function cloudSpin(fn) { const { r, sent } = await cloudOp(fn); applyServer(r.profile, sent); return { seg: r.seg, wheel: r.wheel, reward: r.reward, pending: r.pending, cost: r.cost }; }
+// Tirada en local (invitado): mismas reglas que fn_wheel_roll
+function localSpin(wheel, L, cost, rng, use = () => {}) {
+  rng = rng || Math.random;
+  const segs = LV.WHEELS[wheel].segs, seg = LV.wheelIndex(rng(), segs), s = segs[seg], st = state.stats;
+  const reward = { kind: 'wheel', id: s.id, wheel, level: L, pesetas: 0, tomatoes: 0, cards: [], falcon: false, minutes: 0 };
+  if (s.kind === 'pesetas') reward.pesetas = s.amount(L);
+  else if (s.kind === 'tomatoes') reward.tomatoes = s.amount(L);
+  else if (s.kind === 'falcon') { state.falconUntil = Math.max(Date.now(), state.falconUntil) + s.minutes * 60000; reward.falcon = true; reward.minutes = s.minutes; }
+  else for (let i = 0; i < s.times; i++) { const c = E.rollChest(s.chest, state.cards); E.applyChestCards(state.cards, c.cards); reward.kind = s.chest; reward.cards.push(...c.cards); reward.pesetas += c.pesetas; reward.tomatoes += c.tomatoes; }
+  use();                                                  // la tirada se gasta solo si todo ha ido bien
+  st.chestPesetas += reward.pesetas; st.chestTomatoes += reward.tomatoes; st.pesetasSpent += cost; changed(false);
+  return { seg, wheel, reward, pending: Math.max(0, LV.levelOf(st) - state.wheelLevel), cost };
+}
 export const backend = {
   get cloud() { return !!sb.auth.user; },
   setFlush(fn) { flush = fn; },
@@ -71,18 +85,23 @@ export const backend = {
     if (!this.welcomeLeftMs()) throw new Error('El regalo de bienvenida ha caducado');
     const reward = E.rollChest('welcome', state.cards); E.applyChestCards(state.cards, reward.cards); state.welcomeClaimed = true; applyChestLocal(reward, 0); return reward;
   },
-  // Ruleta de nivel: una tirada por cada nivel subido. Con cuenta decide el servidor (spin_level_wheel).
+  // Ruletas. Con cuenta decide y entrega el servidor (schema_v14.sql); sin cuenta, igual pero en local.
+  // Nivel: una tirada por cada nivel subido (los múltiplos de 10, legendaria). Tienda: pagando pesetas. Legendaria: tirada comprada.
   async spinWheel(rng) {
-    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.spinWheel()); applyServer(r.profile, sent); return { seg: r.seg, reward: r.reward, pending: r.pending }; }
+    if (this.cloud) return cloudSpin(sb.spinWheel);
     const lvl = LV.levelOf(state.stats); if (state.wheelLevel >= lvl) throw new Error('No tienes tiradas de ruleta pendientes');
-    const L = state.wheelLevel + 1, seg = LV.wheelIndex((rng || Math.random)()), s = LV.WHEEL[seg], st = state.stats;
-    const reward = { kind: 'wheel', id: s.id, level: L, pesetas: 0, tomatoes: 0, cards: [], falcon: false };
-    if (s.kind === 'pesetas') reward.pesetas = s.amount(L);
-    else if (s.kind === 'tomatoes') reward.tomatoes = s.amount(L);
-    else if (s.kind === 'falcon') { state.falconUntil = Math.max(Date.now(), state.falconUntil) + LV.FALCON_MINUTES * 60000; reward.falcon = true; }
-    else { const c = E.rollChest(s.chest, state.cards); E.applyChestCards(state.cards, c.cards); Object.assign(reward, { kind: s.chest, cards: c.cards, pesetas: c.pesetas, tomatoes: c.tomatoes }); }
-    st.chestPesetas += reward.pesetas; st.chestTomatoes += reward.tomatoes; state.wheelLevel = L; changed(false);
-    return { seg, reward, pending: lvl - L };
+    const L = state.wheelLevel + 1, out = localSpin(LV.isLegendLevel(L) ? 'legend' : 'normal', L, 0, rng, () => { state.wheelLevel = L; });
+    return out;
+  },
+  async buySpin(rng) {
+    if (this.cloud) return cloudSpin(sb.buySpin);
+    const L = LV.levelOf(state.stats), cost = LV.shopSpinPrice(L); if (state.pesetas < cost) throw new Error('No tienes pesetas suficientes');
+    return localSpin('normal', L, cost, rng);
+  },
+  async spinLegend(rng) {
+    if (this.cloud) return cloudSpin(sb.spinLegend);
+    if (state.legendSpins < 1) throw new Error('No tienes tiradas legendarias');
+    return localSpin('legend', LV.levelOf(state.stats), 0, rng, () => { state.legendSpins--; });
   },
   // Vídeo recompensado de la tienda (El Falcón o Sobre de la Moncloa). Con cuenta lo concede el servidor, con límite diario.
   async watchAd(placement) {

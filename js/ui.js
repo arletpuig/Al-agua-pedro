@@ -28,10 +28,9 @@ export function init(handlers) {
   $('#btn-help').addEventListener('click', () => { closePanel($('#panel-settings')); H.onHelp ? H.onHelp() : showTutorial(null); });
   $('#pill-pesetas').addEventListener('click', () => openPanel('#panel-shop'));
   $('#throws').addEventListener('click', e => { const b = e.target.closest('button[data-n]'); if (b && !b.disabled) { unlock(); H.onThrow(+b.dataset.n); } });
-  $('#btn-daily').addEventListener('click', () => { unlock(); backend.dailyAvailable() ? H.onClaimDaily() : openPanel('#panel-shop'); });
   $('#shop-body').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.pack) H.onPack?.(b.dataset.pack); else if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
+    if (b.dataset.wheel) H.onWheel?.(b.dataset.wheel); else if (b.dataset.pack) H.onPack?.(b.dataset.pack); else if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
     else if ('probs' in b.dataset) { const on = b.parentElement.querySelector('.probs').classList.toggle('open'); on ? openProbs.add(b.dataset.probs) : openProbs.delete(b.dataset.probs); }
   });
   // perfil: bandera, nombre e imagen para compartir
@@ -82,9 +81,6 @@ export function hud(pop = false) {
   const daily = backend.dailyAvailable();
   $('#chest-dot').classList.toggle('hidden', !daily);
   $('#cards-dot').classList.toggle('hidden', !newCards().length);
-  $('#btn-daily').classList.toggle('off', !daily);
-  if (daily) $('#daily-rib').textContent = 'GRATIS';
-  else { const ms = backend.msToNextDaily(), h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000), s = Math.floor(ms % 60000 / 1000); $('#daily-rib').textContent = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
   void pop;
 }
 function setNum(sel2, v, bumpSel) { const el = $(sel2); if (el.textContent !== fmt(v)) { el.textContent = fmt(v); const b = $(bumpSel); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); } }
@@ -189,13 +185,13 @@ function packCard(p) {
 // Con la tienda abierta, cada segundo solo se actualizan los textos que cambian (no se redibuja todo).
 const openProbs = new Set(); let shopKey = '';
 export function shopTick() {
-  const daily = backend.dailyAvailable(), key = [daily, falconActive(), state.pesetas].join('|');
+  const daily = backend.dailyAvailable(), key = [daily, falconActive(), state.pesetas, state.legendSpins, LV.levelOf(state.stats)].join('|');
   if (key !== shopKey) return renderShop();
   const ms = backend.msToNextDaily(), el = $('#daily-sub'); if (el && !daily) el.textContent = `Vuelve en ${Math.floor(ms / 3600000)} h ${String(Math.floor(ms % 3600000 / 60000)).padStart(2, '0')} min`;
   const fs = $('#falcon-state'); if (fs && falconActive()) fs.textContent = 'ACTIVO · ' + $('#falcon-time').textContent;
 }
 export function renderShop() {
-  shopKey = [backend.dailyAvailable(), falconActive(), state.pesetas].join('|');
+  shopKey = [backend.dailyAvailable(), falconActive(), state.pesetas, state.legendSpins, LV.levelOf(state.stats)].join('|');
   const daily = backend.dailyAvailable(), ms = backend.msToNextDaily(), h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000);
   const probs = kind => { const p = E.rarityPercents(kind, state.cards), d = E.CHESTS[kind]; return `<div class="probs">
     ${Object.keys(p).map(r => `<div><span><i class="gem" style="background:${E.RARITIES[r].color}"></i>${E.RARITIES[r].name}</span><b>${p[r].toFixed(1)}%</b></div>`).join('')}
@@ -216,6 +212,8 @@ export function renderShop() {
     <div class="packs">${Object.values(E.PACKS).map(packCard).join('')}</div>
     <h4 class="sec"><span>COFRES</span></h4>
     <div class="grid2">${card('wood', 'POPULAR')}${card('diamond', 'MEJOR VALOR')}</div>
+    <h4 class="sec legend"><span>RULETAS</span></h4>
+    <div class="wheels">${wheelCard('normal')}${wheelCard('legend')}</div>
     <h4 class="sec"><span>OFERTAS ESPECIALES</span></h4>
     <div class="offer falcon"><i class="ribbon">GRATIS</i><div class="offer-art"><svg><use href="#ic-plane"/></svg></div>
       <div class="offer-info"><h3>El Falcón</h3><p>Cada pulsación vale <b>×5</b> durante <b>10 minutos</b>. Hasta 6 al día.</p><div id="falcon-state" class="offer-state ${fal ? 'on' : ''}">${fal ? 'ACTIVO · ' + $('#falcon-time').textContent : 'Con un vídeo'}</div></div>
@@ -226,6 +224,19 @@ export function renderShop() {
     <div class="wallet">${icon('ic-coin')}<div><b>${fmt(state.pesetas)}</b> pesetas<small>Gana más tirando a Pedro al agua</small></div></div>`;
 }
 export const renderChests = renderShop;
+// Ruletas de la tienda: la normal con pesetas (sube con el nivel) y la legendaria con dinero real
+function wheelCard(kind) {
+  const W = LV.WHEELS[kind], L = LV.levelOf(state.stats), leg = kind === 'legend', price = LV.shopSpinPrice(L), n = state.legendSpins;
+  const total = W.segs.reduce((a, s) => a + s.weight, 0);
+  const probs = `<div class="probs${openProbs.has('w-' + kind) ? ' open' : ''}">${W.segs.map(s => `<div><span>${s.label === '¡BOTE!' ? '¡Bote!' : s.label[0] + s.label.slice(1).toLowerCase()} ${LV.segText(s, L)}</span><b>${(s.weight / total * 100).toFixed(0)}%</b></div>`).join('')}<div><span>Cantidades para tu nivel (${L})</span><b></b></div></div>`;
+  const btn = !leg ? `<button class="price" data-wheel="shop" ${state.pesetas >= price ? '' : 'disabled'}>${icon('ic-coin')}<b>${price}</b></button>`
+    : n ? `<button class="btn-gold sm" data-wheel="legend"><span>¡GIRAR! (${n})</span></button>` : `<button class="pk-buy leg" data-pack="${LV.LEGEND_OFFER.id}">${LV.LEGEND_OFFER.price} €</button>`;
+  return `<div class="wheel-card ${kind}"><i class="ribbon">${leg ? '¡LA MEJOR!' : 'CON PESETAS'}</i>${leg ? '<i class="wc-rays"></i><i class="sparkle s1"></i><i class="sparkle s2"></i><i class="sparkle s3"></i>' : ''}
+    <h3>${leg ? 'Ruleta<br>legendaria' : 'Ruleta de<br>la suerte'}</h3><div class="wc-art">${icon(leg ? 'ic-wheel-legend' : 'ic-wheel')}</div>
+    <ul>${leg ? `<li>${icon('ic-coin')}<b>${fmt(W.segs[0].amount(L))}–${fmt(W.segs[7].amount(L))}</b></li><li>${icon('ic-cards')}<b>4–6</b> cartas top</li><li>${icon('ic-plane')}<b>×5</b> 30 min</li>`
+      : `<li>${icon('ic-coin')}<b>${W.segs[0].amount(L)}–${W.segs[7].amount(L)}</b></li><li>${icon('ic-cards')}<b>1–3</b> cartas</li><li>${icon('ic-plane')}<b>×5</b> 10 min</li>`}</ul>
+    ${btn}<button class="probs-btn" data-probs="w-${kind}">Probabilidades</button>${probs}</div>`;
+}
 // Cartas ordenadas por rareza: comunes primero y legendarias al final
 const RAR_ORDER = ['common', 'rare', 'epic', 'legendary'];
 const byRarity = () => [...E.CARD_IDS].sort((a, b) => RAR_ORDER.indexOf(E.CARDS[a].rarity) - RAR_ORDER.indexOf(E.CARDS[b].rarity));

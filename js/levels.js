@@ -26,20 +26,49 @@ export function levelInfo(stats) {
   return { level: L, name: levelName(L), tier: tierOf(L), xp, into: xp - from, need: to - from, pct: max ? 1 : (xp - from) / (to - from), max, next: max ? null : levelName(L + 1) };
 }
 
-// ---------- ruleta: una tirada por cada nivel que subes ----------
-// En el orden en que se ven en la ruleta. Las cantidades crecen con el nivel conseguido (L).
-export const WHEEL = [
-  { id: 'pes_s',   weight: 22, kind: 'pesetas',  amount: L => 10 + 2 * L,  label: 'PESETAS',   color: '#ffb21a', icon: 'ic-coin' },
-  { id: 'tom_s',   weight: 20, kind: 'tomatoes', amount: L => 10 + 3 * L,  label: 'TOMATES',   color: '#ff4b3a', icon: 'ic-tomato' },
-  { id: 'card',    weight: 14, kind: 'chest',    chest: 'wood',            label: 'CARTA',     color: '#3fa2ff', icon: 'ic-cards' },
-  { id: 'x5',      weight: 10, kind: 'falcon',                             label: '×5 CLICS',  color: '#13d1c4', icon: 'ic-plane' },
-  { id: 'pes_m',   weight: 12, kind: 'pesetas',  amount: L => 30 + 5 * L,  label: 'PESETAS',   color: '#ffd23f', icon: 'ic-coin' },
-  { id: 'tom_l',   weight: 10, kind: 'tomatoes', amount: L => 30 + 8 * L,  label: 'TOMATES',   color: '#e3262c', icon: 'ic-tomato' },
-  { id: 'cards3',  weight: 8,  kind: 'chest',    chest: 'diamond',         label: 'CARTAS',    color: '#b163ff', icon: 'ic-chest-dia' },
-  { id: 'jackpot', weight: 4,  kind: 'pesetas',  amount: L => 100 + 20 * L, label: '¡BOTE!',   color: '#1b1033', icon: 'ic-coin', jackpot: true },
-];
+// ---------- ruletas: una tirada por cada nivel que subes (cada 10 niveles, la legendaria) ----------
+// En el orden en que se ven. Las cantidades crecen con el nivel (L). Deben coincidir con fn_wheel_roll (schema_v14.sql).
+export const WHEELS = {
+  normal: { id: 'normal', name: 'Ruleta', segs: [
+    { id: 'pes_s',   weight: 22, kind: 'pesetas',  amount: L => 10 + 2 * L,   label: 'PESETAS',  color: '#ffb21a', icon: 'ic-coin' },
+    { id: 'tom_s',   weight: 20, kind: 'tomatoes', amount: L => 10 + 3 * L,   label: 'TOMATES',  color: '#ff4b3a', icon: 'ic-tomato' },
+    { id: 'card',    weight: 14, kind: 'chest', chest: 'wood', times: 1,       label: 'CARTA',    color: '#3fa2ff', icon: 'ic-cards', text: '+1' },
+    { id: 'x5',      weight: 10, kind: 'falcon', minutes: 10,                  label: '×5 CLICS', color: '#13d1c4', icon: 'ic-plane' },
+    { id: 'pes_m',   weight: 12, kind: 'pesetas',  amount: L => 30 + 5 * L,   label: 'PESETAS',  color: '#ffd23f', icon: 'ic-coin' },
+    { id: 'tom_l',   weight: 10, kind: 'tomatoes', amount: L => 30 + 8 * L,   label: 'TOMATES',  color: '#e3262c', icon: 'ic-tomato' },
+    { id: 'cards3',  weight: 8,  kind: 'chest', chest: 'diamond', times: 1,    label: 'CARTAS',   color: '#b163ff', icon: 'ic-chest-dia', text: '+3' },
+    { id: 'jackpot', weight: 4,  kind: 'pesetas',  amount: L => 100 + 20 * L, label: '¡BOTE!',   color: '#1b1033', icon: 'ic-coin', jackpot: true },
+  ] },
+  legend: { id: 'legend', name: 'Ruleta legendaria', segs: [
+    { id: 'l_pes',  weight: 22, kind: 'pesetas',  amount: L => 300 + 10 * L,  label: 'PESETAS',  color: '#ffb21a', icon: 'ic-coin' },
+    { id: 'l_tom',  weight: 20, kind: 'tomatoes', amount: L => 250 + 10 * L,  label: 'TOMATES',  color: '#e3262c', icon: 'ic-tomato' },
+    { id: 'l_dia',  weight: 14, kind: 'chest', chest: 'diamond', times: 2,     label: 'CARTAS',   color: '#2f7cf0', icon: 'ic-chest-dia', text: '+6' },
+    { id: 'l_x5',   weight: 12, kind: 'falcon', minutes: 30,                   label: '×5 CLICS', color: '#0fb5a9', icon: 'ic-plane' },
+    { id: 'l_top',  weight: 10, kind: 'chest', chest: 'premium', times: 1,     label: 'ÉPICAS',   color: '#9b3df0', icon: 'ic-cards', text: '+4' },
+    { id: 'l_pesx', weight: 10, kind: 'pesetas',  amount: L => 800 + 20 * L,  label: 'PESETAS',  color: '#ffd23f', icon: 'ic-coin' },
+    { id: 'l_tomx', weight: 8,  kind: 'tomatoes', amount: L => 800 + 20 * L,  label: 'TOMATES',  color: '#c4121b', icon: 'ic-tomato' },
+    { id: 'l_bote', weight: 4,  kind: 'pesetas',  amount: L => 2500 + 50 * L, label: '¡BOTE!',   color: '#120a24', icon: 'ic-crown', jackpot: true },
+  ] },
+};
+export const WHEEL = WHEELS.normal.segs;                // (compatibilidad)
 export const WHEEL_TOTAL = WHEEL.reduce((a, s) => a + s.weight, 0);
 export const FALCON_MINUTES = 10;
-export function wheelIndex(r) { let x = r * WHEEL_TOTAL; for (let i = 0; i < WHEEL.length; i++) { x -= WHEEL[i].weight; if (x < 0) return i; } return WHEEL.length - 1; }
+export const isLegendLevel = L => L % 10 === 0;         // los niveles 10, 20, 30, 40 y 50 traen la ruleta legendaria
+export const nextLegendLevel = L => Math.min(MAX_LEVEL, (Math.floor(L / 10) + 1) * 10);
+// En la tienda: la ruleta normal se paga con pesetas (sube con tu nivel, siempre por encima de lo que da de media);
+// la legendaria, con dinero real (Stripe). Ver supabase/schema_v14.sql.
+export const shopSpinPrice = L => 40 + 3 * L;
+export const LEGEND_OFFER = { id: 'ruleta', name: 'Tirada legendaria', price: '0,99', icon: 'ic-wheel-legend' };
+export function wheelIndex(r, segs = WHEEL) { const t = segs.reduce((a, s) => a + s.weight, 0); let x = r * t; for (let i = 0; i < segs.length; i++) { x -= segs[i].weight; if (x < 0) return i; } return segs.length - 1; }
 // Texto corto de cada casilla para el nivel L (lo que se ve en la ruleta)
-export function segText(seg, L) { return seg.kind === 'falcon' ? `${FALCON_MINUTES} MIN` : seg.kind === 'chest' ? (seg.chest === 'diamond' ? '+3' : '+1') : '+' + seg.amount(L); }
+export function segText(seg, L) { return seg.kind === 'falcon' ? `${seg.minutes} MIN` : seg.kind === 'chest' ? seg.text : '+' + seg.amount(L); }
+// Texto largo del premio
+export function prizeText(seg, reward) {
+  const fmt = n => n.toLocaleString('es-ES');
+  if (seg.kind === 'pesetas') return `<b>+${fmt(reward.pesetas)}</b> pesetas`;
+  if (seg.kind === 'tomatoes') return `<b>+${fmt(reward.tomatoes)}</b> tomates`;
+  if (seg.kind === 'falcon') return `<b>×5 clics</b> durante ${seg.minutes} minutos`;
+  if (seg.chest === 'premium') return '<b>4 cartas</b> épicas o legendarias';
+  if (seg.chest === 'diamond') return `<b>${3 * seg.times} cartas</b> de diamante`;
+  return '<b>1 carta</b> del cofre de madera';
+}

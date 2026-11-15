@@ -11,3 +11,4 @@ Necesitan Node y Playwright (`npm i -D playwright`) y el juego servido en http:/
 | `node tests/sim-economy.mjs` | Simulación de 30 días de progresión |
 
 Las capturas se guardan en `tests/out/`.
+| `sh tests/pg-reset.sh && psql -h /tmp -p 5433 -U postgres -d aap -f tests/sql-ruletas.sql` | Que todos los premios de las ruletas (nivel, tienda y legendaria pagada) se entregan, cientos de tiradas |

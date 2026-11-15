@@ -141,8 +141,11 @@ console.log('I. Título del perfil y regalo de bienvenida en el servidor');
 await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400);
 await page.click('#region-grid button[data-region="valencia"]', { force: true }); await page.waitForTimeout(600);
 check('la comunidad se guarda en el servidor', db(email).region === 'valencia' && (await page.locator('#prof-title').textContent()) === 'Comunidad Valenciana');
+check('elegida la comunidad, la lista se esconde y se ve solo su nombre', await page.locator('#region-grid.hidden').count() === 1);
+await page.click('#prof-title'); await page.waitForTimeout(300);
 await page.click('#region-grid button[data-region="madrid"]', { force: true }); await page.waitForTimeout(600);
-check('la primera vez se puede corregir enseguida', db(email).region === 'madrid');
+check('la primera vez se puede corregir enseguida (tocando su nombre)', db(email).region === 'madrid');
+await page.click('#prof-title'); await page.waitForTimeout(300);
 await page.click('#region-grid button[data-region="galicia"]', { force: true }); await page.waitForTimeout(600);
 check('después, solo una vez por semana (avisa)', db(email).region === 'madrid' && /una vez por semana/.test(await page.locator('#toast').textContent()));
 check('una comunidad inventada: rechazada', await page.evaluate(() => import('./js/supabase.js').then(m => m.setRegion('narnia')).then(() => false, e => /no existe/.test(e.message))));
@@ -238,7 +241,8 @@ console.log('K. Niveles y ruleta en el servidor');
 }
 
 console.log('F. Ranking');
-await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#rank-list');
+await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#panel-rank .sheet-body');
+check('ranking con podio para los tres primeros', await page.locator('#rank-podium .pd:not(.empty)').count() >= 2 && await page.locator('#rank-podium .crown').count() === 1);
 check('el ranking enseña el nivel de cada jugador', /Nv \d+ · /.test(rank), rank.replace(/\n/g, ' ').slice(0, 80));
 await page.click('#rank-tabs [data-rt="regions"]'); await page.waitForTimeout(700);
 const regs = await page.evaluate(() => [...document.querySelectorAll('#region-list > li')].map(li => li.dataset.region + ':' + li.querySelector('.sc').textContent + (li.classList.contains('me') ? ':me' : '')));
@@ -278,7 +282,7 @@ await p3.waitForSelector('#panel-profile.open', { timeout: 3000 }).catch(() => {
 check('y se le invita a elegir bandera', await p3.evaluate(() => document.querySelector('#panel-profile').classList.contains('open')));
 await p3.click('#flag-grid [data-flag="gadsden"]'); await p3.waitForTimeout(500); await p3.click('#panel-profile [data-close]');
 await p3.click('#tabs [data-panel="rank"]'); await p3.waitForTimeout(700);
-check('el ranking enseña la bandera de cada jugador', await p3.locator('#rank-list li .av').count() >= 2);
+check('el ranking enseña la bandera de cada jugador', await p3.locator('#rank-podium .av, #rank-list li .av').count() >= 2);
 await p3.screenshot({ path: 'tests/out/15-ranking-banderas.png' }); await ctx3.close();
 errors.push(...errors3);
 check('sin errores de consola (salvo los 400 esperados)', [...errors, ...errors2].every(e => /status of 400/.test(e)), [...errors, ...errors2].filter(e => !/status of 400/.test(e)).join('|'));

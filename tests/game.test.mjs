@@ -275,6 +275,11 @@ check('ya no hay títulos inventados: en su lugar, la comunidad autónoma', awai
 check('se puede elegir entre las 17 comunidades y Ceuta y Melilla', await page.locator('#region-grid button').count() === 19);
 await page.click('#region-grid button[data-region="madrid"]', { force: true }); await page.waitForTimeout(300);
 check('elegir comunidad: se ve bajo el nombre', (await page.locator('#prof-title').textContent()) === 'Comunidad de Madrid' && await page.locator('#region-grid button.on').getAttribute('data-region') === 'madrid', await page.locator('#prof-title').textContent());
+check('elegida, la lista de comunidades se esconde', !(await page.locator('#region-grid').isVisible()));
+await page.click('#prof-title'); await page.waitForTimeout(250);
+check('tocando su nombre se vuelve a abrir para cambiarla', await page.locator('#region-grid').isVisible());
+await page.click('#region-grid button[data-region="cataluna"]', { force: true }); await page.waitForTimeout(300);
+check('y al elegir otra se vuelve a cerrar', (await page.locator('#prof-title').textContent()) === 'Cataluña' && !(await page.locator('#region-grid').isVisible()));
 await shot('12-perfil');
 await page.click('#btn-share'); await page.waitForFunction(() => document.querySelector('#share-img').naturalWidth > 0, null, { timeout: 15000 });
 check('imagen para compartir de 1080×1920', await page.evaluate(() => { const i = document.querySelector('#share-img'); return i.naturalWidth === 1080 && i.naturalHeight === 1920; }));
@@ -545,6 +550,25 @@ console.log('29. Niveles de jugador y ruleta');
   check('ganancias: «+7» de pesetas y «+5» de tomates junto al marcador, sin textos', gn.tags.includes('+7') && gn.tags.includes('+5') && !/Hacienda|Puerta/.test(gn.toast), JSON.stringify(gn));
   check('niveles: sin errores en consola', e7.length === 0, e7.join(' | '));
   await c7.close();
+}
+
+console.log('30. Abrir varios cofres a la vez');
+{
+  await page.evaluate(async () => { AAP.state.stats.chestPesetas += 1000; (await import('./js/state.js')).changed(false); });
+  await page.click('#tabs [data-panel="shop"]'); await page.waitForTimeout(300);
+  const mx = await page.evaluate(() => [...document.querySelectorAll('.chest-card.wood .mx')].map(b => b.dataset.n + ':' + b.textContent.trim()).join(' '));
+  check('con pesetas de sobra salen los botones ×3 y ×10 junto al precio', /^3:×3\s*24 10:×10\s*80$/.test(mx), mx);
+  const b0 = await S(page);
+  await page.click('.chest-card.wood .mx[data-n="3"]', { force: true }); await page.waitForSelector('#chest-overlay.open', { timeout: 10000 });
+  check('se abren 3 cofres juntos', (await page.locator('#chest-title').textContent()) === '3 × Cofre de madera' && (await page.locator('.chest-x').textContent()) === '×3');
+  await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 });
+  const b1 = await S(page);
+  check('cobra los 3 cofres (24 pesetas) y los cuenta', b1.chestsOpened === b0.chestsOpened + 3 && b1.pesetasSpent === b0.pesetasSpent + 24, JSON.stringify({ o: b1.chestsOpened - b0.chestsOpened, sp: b1.pesetasSpent - b0.pesetasSpent }));
+  await page.click('#chest-btn'); await page.waitForTimeout(300);
+  await page.evaluate(async () => { AAP.state.stats.pesetasSpent += AAP.state.pesetas - 30; (await import('./js/state.js')).changed(false); });
+  await page.click('#tabs [data-panel="shop"]').catch(() => {}); await page.evaluate(() => AAP.ui.renderShop()); await page.waitForTimeout(200);
+  check('si no llega para 3, no sale el botón', await page.locator('.chest-card.diamond .mx').count() === 0 && await page.locator('.chest-card.wood .mx[data-n="10"]').count() === 0);
+  await page.evaluate(() => AAP.ui.closeAll());
 }
 
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));

@@ -65,9 +65,26 @@ if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, 
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
-async function buyChest(kind) {
+// Abrir 1, 3 o 10 cofres seguidos: se enseñan juntos (las cartas repetidas se suman)
+function mergeRewards(kind, list) {
+  const out = { kind, cards: [], tomatoes: 0, pesetas: 0, refund: 0, count: list.length }, by = new Map();
+  for (const r of list) {
+    out.tomatoes += r.tomatoes || 0; out.pesetas += r.pesetas || 0; out.refund += r.refund || 0;
+    for (const c of r.cards || []) { const p = by.get(c.id); if (!p) by.set(c.id, { ...c }); else { p.frags = (p.frags || 0) + (c.frags || 0); p.isNew = p.isNew || c.isNew; p.locked = c.locked; p.have = c.have; p.need = c.need; } }
+  }
+  out.cards = [...by.values()]; return out;
+}
+async function buyChest(kind, n = 1) {
   if (opening || isBusy()) return; opening = true;
-  try { const reward = await backend.openChest(kind); ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-shop'); if (reward.refund) ui.pesetaGain(reward.refund); } catch (e) { fail(e); ui.renderShop(); }
+  const got = [];
+  try {
+    if (n > 1) ui.showToast(`📦 Abriendo ${n} cofres…`, 1800);
+    for (let i = 0; i < n; i++) got.push(await backend.openChest(kind));
+  } catch (e) { fail(e); }
+  if (got.length) {
+    const reward = got.length > 1 ? mergeRewards(kind, got) : got[0];
+    ui.closeAll(); await ui.chestOpening(kind, reward); ui.openPanel('#panel-shop'); if (reward.refund) ui.pesetaGain(reward.refund);
+  } else ui.renderShop();
   opening = false;
 }
 async function claimDaily() {
@@ -108,7 +125,10 @@ async function showRegionPlayers(region) {
 async function showRank() {
   ui.rankTab('players');
   ui.renderRank([], 'Cargando...');
-  try { ui.renderRank(await sb.leaderboard(), null, profile.name); } catch (e) { ui.renderRank([], 'No se pudo cargar el ranking. Inténtalo más tarde.'); }
+  try {
+    const rows = await sb.leaderboard(); ui.renderRank(rows, null, profile.name);
+    if (sb.auth.user && !rows.some(r => r.username === profile.name)) try { profile.rank = await sb.myRank(); ui.renderRank(rows, null, profile.name, profile.rank); } catch (e) {}
+  } catch (e) { ui.renderRank([], 'No se pudo cargar el ranking. Inténtalo más tarde.'); }
 }
 
 // ---------- sincronización con la nube ----------

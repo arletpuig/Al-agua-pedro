@@ -29,17 +29,18 @@ export function init(handlers) {
   $('#throws').addEventListener('click', e => { const b = e.target.closest('button[data-n]'); if (b && !b.disabled) { unlock(); H.onThrow(+b.dataset.n); } });
   $('#shop-body').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.wheel) H.onWheel?.(b.dataset.wheel); else if (b.dataset.pack) H.onPack?.(b.dataset.pack); else if (b.dataset.buy) H.onBuyChest(b.dataset.buy); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
+    if (b.dataset.wheel) H.onWheel?.(b.dataset.wheel); else if (b.dataset.pack) H.onPack?.(b.dataset.pack); else if (b.dataset.buy) H.onBuyChest(b.dataset.buy, +(b.dataset.n || 1)); else if ('daily' in b.dataset) H.onClaimDaily(); else if (b.dataset.ad) H.onAd(b.dataset.ad);
     else if ('probs' in b.dataset) { const on = b.parentElement.querySelector('.probs').classList.toggle('open'); on ? openProbs.add(b.dataset.probs) : openProbs.delete(b.dataset.probs); }
   });
   // perfil: bandera, nombre e imagen para compartir
   $('#flag-grid').addEventListener('click', e => { const b = e.target.closest('button[data-flag]'); if (b) H.onAvatar?.(b.dataset.flag); });
   $('#prof-av').addEventListener('click', () => $('#flags-title').scrollIntoView({ behavior: 'smooth', block: 'start' }));
   $('#form-name').addEventListener('submit', e => { e.preventDefault(); H.onRename?.($('#name-input').value); });
-  $('#region-grid').addEventListener('click', e => { const b = e.target.closest('button[data-region]'); if (b) H.onRegion?.(b.dataset.region); });
-  $('#prof-title').addEventListener('click', () => $('#region-title').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  $('#region-grid').addEventListener('click', e => { const b = e.target.closest('button[data-region]'); if (!b) return; regionOpen = false; H.onRegion?.(b.dataset.region); if (b.dataset.region === lastProfile?.region) renderProfile(lastProfile); });
+  $('#prof-title').addEventListener('click', () => { regionOpen = !regionOpen || !lastProfile?.region; SFX.ui(); renderProfile(lastProfile); if (regionOpen) setTimeout(() => $('#region-title').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); });
   // ranking: jugadores o comunidades; al tocar una comunidad, sus mejores jugadores
   $('#rank-tabs').addEventListener('click', e => { const b = e.target.closest('button[data-rt]'); if (b) rankTab(b.dataset.rt, true); });
+  $('#rank-podium').addEventListener('click', e => { const d = e.target.closest('.pd[data-region]'); if (!d) return; const li = document.querySelector(`#region-list li[data-region="${d.dataset.region}"]`); if (li && !li.classList.contains('open')) li.click(); li?.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
   $('#region-list').addEventListener('click', e => { const li = e.target.closest('li[data-region]'); if (!li) return; const open = !li.classList.contains('open'); $$('#region-list li.open').forEach(x => x.classList.remove('open')); if (open) { li.classList.add('open'); H.onRegionOpen?.(li.dataset.region); } SFX.ui(); });
   $('#btn-share').addEventListener('click', () => H.onShare?.());
   $('#share-close').addEventListener('click', () => hideShare());
@@ -224,6 +225,7 @@ export function renderShop() {
       ${gems(kind)}
       <ul><li>${icon('ic-cards')}<b>${d.cards}</b> carta${d.cards > 1 ? 's' : ''}</li><li>${icon('ic-tomato')}<b>${d.tomatoes[0]}–${d.tomatoes[1]}</b> tomates</li><li>${icon('ic-coin')}<b>${Math.round(d.pesetaChance * 100)}%</b> pesetas extra</li></ul>
       <button class="price" data-buy="${kind}" ${ok ? '' : 'disabled'}>${icon('ic-coin')}<b>${d.price}</b></button>
+      ${[3, 10].some(n => state.pesetas >= d.price * n) ? `<div class="multi">${[3, 10].filter(n => state.pesetas >= d.price * n).map(n => `<button class="mx" data-buy="${kind}" data-n="${n}"><b>×${n}</b><small>${icon('ic-coin')}${fmt(d.price * n)}</small></button>`).join('')}</div>` : ''}
       <button class="probs-btn" data-probs="${kind}">Probabilidades</button>${probs(kind).replace('class="probs"', `class="probs${openProbs.has(kind) ? ' open' : ''}"`)}</div>`; };
   const adOk = p => canShowVideo(p), fal = falconActive();
   $('#shop-body').innerHTML = `
@@ -283,32 +285,62 @@ export function renderCards(upgradedId) {
     </div>`;
   }).join('');
 }
-export const REGIONS = AVATARS.filter(a => a.group === 'c');
+let rankMode = 'players', rankRows = [], regionRows = [], rankMe = { name: null, region: null, rank: null };
 export function rankTab(mode, user = false) {
+  rankMode = mode;
   $$('#rank-tabs button').forEach(b => b.classList.toggle('on', b.dataset.rt === mode));
   $('#rank-list').classList.toggle('hidden', mode !== 'players'); $('#region-list').classList.toggle('hidden', mode !== 'regions');
-  $('#rank-note').textContent = mode === 'players' ? 'Tomates conseguidos por los jugadores con cuenta.' : 'Tomates de todos los jugadores de cada comunidad. Toca una para ver sus mejores jugadores.';
+  $('#rank-podium').innerHTML = ''; $('#rank-me').classList.add('hidden');
   if (user) { SFX.ui(); if (mode === 'regions') H.onRegions?.(); else H.onRank?.(); }
 }
-// Ranking de comunidades: salen todas (las que aún no tienen jugadores, al final)
+const tomatoIcon = (s = 20) => icon('ic-tomato').replace('<svg', `<svg width="${s}" height="${s}"`);
+const lvlTag = L => (L ? `<em class="rk-lvl t${LV.tierOf(L)}">Nv ${L} · ${esc(LV.levelName(L))}</em>` : '');
+// Podio de los tres primeros (2.º, 1.º, 3.º)
+function podium(items) {
+  if (!items.length) return '';
+  return [1, 0, 2].map(i => { const it = items[i]; if (!it) return '<div class="pd empty"></div>';
+    return `<div class="pd p${i + 1}${it.me ? ' me' : ''}"${it.region ? ` data-region="${it.region}"` : ''}>
+      ${i === 0 ? '<i class="crown"><svg><use href="#ic-crown"/></svg></i>' : ''}
+      <span class="av">${avatarSVG(it.avatar, i === 0 ? 62 : 50)}</span>
+      <b class="pn">${esc(it.name)}</b>${it.sub}
+      <div class="ped"><span class="num">${i + 1}</span><span class="sc">${tomatoIcon(18)}${fmt(it.tomatoes)}</span></div></div>`; }).join('');
+}
+// Ranking de jugadores: podio + lista desde el 4.º + tu posición abajo
+export function renderRank(rows, err, myName, myRank = null) {
+  const list = $('#rank-list'), pod = $('#rank-podium'), me = $('#rank-me');
+  rankRows = rows || []; rankMe.name = myName; rankMe.rank = myRank;
+  if (rankMode !== 'players') return;
+  if (err) { pod.innerHTML = ''; list.innerHTML = `<li class="empty">${err}</li>`; me.classList.add('hidden'); return; }
+  if (!rankRows.length) { pod.innerHTML = ''; list.innerHTML = '<li class="empty">Todavía no hay nadie. ¡Sé el primero!</li>'; me.classList.add('hidden'); return; }
+  pod.innerHTML = podium(rankRows.slice(0, 3).map(r => ({ name: r.username || 'Anónimo', avatar: r.avatar, tomatoes: r.tomatoes_earned, sub: lvlTag(r.level), me: r.username === myName })));
+  list.style.counterReset = 'r 3';
+  list.innerHTML = rankRows.slice(3).map(r => `<li class="${r.username === myName ? 'me' : ''}"><span class="av">${avatarSVG(r.avatar, 30)}</span><span class="nm">${esc(r.username || 'Anónimo')}${lvlTag(r.level)}</span><span class="sc">${fmt(r.tomatoes_earned)}</span>${tomatoIcon(22)}</li>`).join('');
+  const mine = rankRows.findIndex(r => r.username === myName);
+  if (myName && (myRank || mine >= 0)) {
+    const pos = mine >= 0 ? mine + 1 : myRank, row = rankRows[mine];
+    me.innerHTML = `<span class="pos">#${fmt(pos)}</span><span class="nm">TU POSICIÓN<small>${pos <= 3 ? '¡Estás en el podio!' : pos <= 10 ? '¡Estás en el top 10!' : `A ${fmt(pos - 1)} puesto${pos > 2 ? 's' : ''} del primero`}</small></span>${row ? `<span class="sc">${fmt(row.tomatoes_earned)}</span>${tomatoIcon(22)}` : ''}`;
+    me.classList.remove('hidden');
+  } else me.classList.add('hidden');
+}
+export const REGIONS = AVATARS.filter(a => a.group === 'c');
+// Ranking de comunidades: podio de las tres primeras y todas en la lista (al tocar una, sus mejores jugadores)
 export function renderRegions(rows, err, myRegion) {
-  const list = $('#region-list');
-  if (err) { list.innerHTML = `<li class="empty">${err}</li>`; return; }
-  const by = Object.fromEntries((rows || []).map(r => [r.region, r]));
+  const list = $('#region-list'), pod = $('#rank-podium'); regionRows = rows || []; rankMe.region = myRegion;
+  if (rankMode !== 'regions') return;
+  if (err) { pod.innerHTML = ''; list.innerHTML = `<li class="empty">${err}</li>`; return; }
+  const by = Object.fromEntries(regionRows.map(r => [r.region, r]));
   const all = REGIONS.map(r => ({ ...r, players: +(by[r.id]?.players || 0), tomatoes: +(by[r.id]?.tomatoes || 0) })).sort((a, b) => b.tomatoes - a.tomatoes || a.name.localeCompare(b.name, 'es'));
+  const top = all.filter(r => r.tomatoes > 0).slice(0, 3);
+  pod.innerHTML = podium(top.map(r => ({ name: r.name, avatar: r.id, region: r.id, tomatoes: r.tomatoes, sub: `<em class="rk-sub">${fmt(r.players)} jugador${r.players > 1 ? 'es' : ''}</em>`, me: r.id === myRegion })));
+  list.style.counterReset = 'r 0';
   list.innerHTML = all.map(r => `<li data-region="${r.id}" class="${r.id === myRegion ? 'me' : ''}${r.players ? '' : ' zero'}"><span class="av">${avatarSVG(r.id, 30)}</span>
     <span class="nm">${esc(r.name)}<em class="rk-sub">${r.players ? `${fmt(r.players)} jugador${r.players > 1 ? 'es' : ''}` : 'Sin jugadores todavía'}${r.id === myRegion ? ' · LA TUYA' : ''}</em></span>
-    <span class="sc">${fmt(r.tomatoes)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}<ol class="rg-top" id="rg-${r.id}"></ol></li>`).join('');
+    <span class="sc">${fmt(r.tomatoes)}</span>${tomatoIcon(22)}<i class="chev">▾</i><ol class="rg-top" id="rg-${r.id}"></ol></li>`).join('');
 }
 export function renderRegionPlayers(region, rows, err, myName) {
   const box = document.getElementById('rg-' + region); if (!box) return;
   box.innerHTML = err ? `<li class="empty">${err}</li>` : !rows?.length ? '<li class="empty">Todavía nadie de aquí ha tirado a Pedro al agua.</li>'
-    : rows.map((r, i) => `<li class="${r.username === myName ? 'me' : ''}"><b class="pos">${i + 1}</b><span class="av">${avatarSVG(r.avatar, 24)}</span><span class="nm">${esc(r.username || 'Anónimo')}${r.level ? `<em class="rk-lvl t${LV.tierOf(r.level)}">Nv ${r.level} · ${esc(LV.levelName(r.level))}</em>` : ''}</span><span class="sc">${fmt(r.tomatoes_earned)}</span></li>`).join('');
-}
-export function renderRank(rows, err, myName) {
-  const list = $('#rank-list');
-  if (err) { list.innerHTML = `<li class="empty">${err}</li>`; return; }
-  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.username === myName ? 'me' : ''}"><span class="av">${avatarSVG(r.avatar, 30)}</span><span class="nm">${esc(r.username || 'Anónimo')}${r.level ? `<em class="rk-lvl t${LV.tierOf(r.level)}">Nv ${r.level} · ${esc(LV.levelName(r.level))}</em>` : ''}</span><span class="sc">${fmt(r.tomatoes_earned)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}</li>`).join('') : '<li class="empty">Todavía no hay nadie. ¡Sé el primero!</li>';
+    : rows.map((r, i) => `<li class="${r.username === myName ? 'me' : ''}"><b class="pos">${i + 1}</b><span class="av">${avatarSVG(r.avatar, 24)}</span><span class="nm">${esc(r.username || 'Anónimo')}${lvlTag(r.level)}</span><span class="sc">${fmt(r.tomatoes_earned)}</span></li>`).join('');
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export function renderStats() {
@@ -320,13 +352,14 @@ export function renderStats() {
 export function chestOpening(kind, reward) {
   return new Promise(res => {
     const ov = $('#chest-overlay'), art = $('#chest-art'), rw = $('#chest-rewards'), btn = $('#chest-btn');
-    $('#chest-title').textContent = E.CHESTS[kind].name; art.innerHTML = icon(kind === 'diamond' ? 'ic-chest-dia' : kind === 'welcome' ? 'ic-chest-gift' : 'ic-chest'); art.className = 'chest-art'; rw.innerHTML = ''; btn.textContent = '¡ABRIR!'; btn.disabled = false;
+    $('#chest-title').textContent = (reward.count > 1 ? reward.count + ' × ' : '') + E.CHESTS[kind].name; art.innerHTML = icon(kind === 'diamond' ? 'ic-chest-dia' : kind === 'welcome' ? 'ic-chest-gift' : 'ic-chest'); art.className = 'chest-art'; if (reward.count > 1) art.insertAdjacentHTML('beforeend', `<i class="chest-x">×${reward.count}</i>`); rw.innerHTML = ''; btn.textContent = '¡ABRIR!'; btn.disabled = false;
     ov.classList.add('open'); SFX.ui();
     btn.onclick = () => {
       btn.disabled = true; art.classList.add('shake'); SFX.chestOpen();
       setTimeout(() => {
         art.classList.remove('shake'); art.classList.add('opened');
         const items = [...reward.cards.map(c => ({ kind: 'card', ...c })), { kind: 'tomatoes', n: reward.tomatoes }, ...(reward.pesetas ? [{ kind: 'pesetas', n: reward.pesetas }] : [])];
+        rw.classList.toggle('many', items.length > 6); art.classList.toggle('small', items.length > 6);
         items.forEach((it, i) => setTimeout(() => {
           const d = document.createElement('div');
           if (it.kind === 'card') { const c = E.CARDS[it.id], r = E.RARITIES[c.rarity]; d.className = 'reward' + (it.isNew ? ' new' : ''); d.style.setProperty('--rc', r.color); const tag = it.isNew ? '¡NUEVA!' : it.locked && it.need ? `${it.have}/${it.need}` : it.frags ? `+${it.frags} FRAG.` : it.bonus ? 'EXTRA' : 'FRAGMENTO';
@@ -362,13 +395,17 @@ export function gate(on) {
 }
 export const gated = () => $('#panel-account').classList.contains('forced');
 // p = { name, avatar, email, rank, logged }
+let regionOpen = false, lastProfile = null;
 export function renderProfile(p) {
+  lastProfile = p;
   const s = state.stats, thrown = s.tomatoesThrown;
   $('#prof-av-img').innerHTML = avatarSVG(p.avatar, 92);
   $('#prof-name').textContent = p.name || 'Jugador';
   const reg = REGIONS.find(r => r.id === p.region);
   $('#prof-title').innerHTML = reg ? `${avatarSVG(reg.id, 18)}<span>${esc(reg.name)}</span>` : '<span>📍 Elige tu comunidad</span>';
-  $('#prof-title').classList.toggle('none', !reg);
+  $('#prof-title').classList.toggle('none', !reg); $('#prof-title').classList.toggle('open', !!reg && regionOpen);
+  const showReg = !reg || regionOpen; ['#region-title', '#region-note', '#region-grid'].forEach(x => $(x).classList.toggle('hidden', !showReg));
+  $('#region-note').textContent = reg ? 'Elige tu nueva comunidad (puedes cambiarla una vez por semana).' : 'Tus tomates suman en el ranking de tu comunidad.';
   $('#region-grid').innerHTML = REGIONS.map(r => `<button type="button" class="${r.id === p.region ? 'on' : ''}" data-region="${r.id}"><span class="av">${avatarSVG(r.id, 26)}</span><em>${esc(r.name)}</em></button>`).join('');
   const lv = LV.levelInfo(s), pl = $('#prof-lvl'); pl.className = 'prof-lvl t' + lv.tier; pl.innerHTML = `<span class="lvl-medal"><svg><use href="#ic-medal"/></svg><b>${lv.level}</b></span>${esc(lv.name)}`;
   $('#prof-mail').textContent = p.email || '';

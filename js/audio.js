@@ -65,6 +65,27 @@ export const SFX = {
   cheer() { if (!enabled) return; [0, 0.1, 0.25, 0.4].forEach(d => noise({ t: 0.6, vol: 0.18, filter: 1500, q: 0.7, type: 'bandpass', delay: d })); [660, 880, 990].forEach((f, i) => tone({ f, type: 'sawtooth', t: 0.4, vol: 0.06, delay: i * 0.1 + 0.1 })); },
   falcon() { if (!enabled) return; noise({ t: 1.6, vol: 0.4, filter: 200, sweep: 4000, type: 'bandpass', q: 2 }); tone({ f: 120, f2: 900, type: 'sawtooth', t: 1.4, vol: 0.12 }); },
   error() { if (!enabled) return; tone({ f: 220, f2: 180, type: 'square', t: 0.2, vol: 0.15 }); },
+  // ---------- niveles y ruleta ----------
+  xp() { if (!enabled) return; tone({ f: 1320, f2: 1980, type: 'triangle', t: 0.12, vol: 0.14 }); tone({ f: 2640, type: 'sine', t: 0.18, vol: 0.08, delay: 0.08 }); },
+  xpFill() { if (!enabled) return; [880, 1047, 1175, 1319, 1568].forEach((f, i) => tone({ f, type: 'triangle', t: 0.09, vol: 0.09, delay: i * 0.05 })); },
+  drumroll(t = 0.9) { if (!enabled) return; for (let i = 0, n = Math.round(t / 0.045); i < n; i++) noise({ t: 0.06, vol: 0.12 + 0.3 * i / n, filter: 260 + 500 * i / n, q: 1.2, type: 'bandpass', delay: i * 0.045 }); },
+  levelUp() {
+    if (!enabled) return;
+    [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.36]].forEach(([f, d]) => { tone({ f, type: 'square', t: 0.16, vol: 0.16, delay: d }); tone({ f: f / 2, type: 'triangle', t: 0.16, vol: 0.2, delay: d }); });
+    [1047, 1319, 1568, 2093].forEach(f => tone({ f, type: 'sawtooth', t: 1.3, vol: 0.06, delay: 0.5, attack: 0.03 }));
+    [262, 392].forEach(f => tone({ f, type: 'triangle', t: 1.3, vol: 0.22, delay: 0.5, attack: 0.02 }));
+    noise({ t: 1.4, vol: 0.32, filter: 5000, type: 'highpass', delay: 0.5 });                 // platillo
+    noise({ t: 0.35, vol: 0.5, filter: 180, delay: 0.5 }); tone({ f: 110, f2: 45, t: 0.4, vol: 0.5, delay: 0.5 });   // bombo
+  },
+  stamp() { if (!enabled) return; tone({ f: 150, f2: 45, type: 'sine', t: 0.3, vol: 0.55 }); noise({ t: 0.18, vol: 0.45, filter: 900 }); },
+  tick() { if (!enabled) return; tone({ f: 1900, f2: 1200, type: 'square', t: 0.03, vol: 0.1 }); },
+  spin() { if (!enabled) return; noise({ t: 0.8, vol: 0.3, filter: 300, sweep: 2500, type: 'bandpass', q: 2 }); tone({ f: 200, f2: 700, type: 'sawtooth', t: 0.6, vol: 0.07 }); },
+  prize(big = false) {
+    if (!enabled) return;
+    [784, 988, 1175, 1568].forEach((f, i) => tone({ f, type: 'square', t: 0.2, vol: 0.16, delay: i * 0.08 }));
+    tone({ f: 2093, type: 'triangle', t: 0.7, vol: 0.18, delay: 0.34 });
+    if (big) { for (let i = 0; i < 12; i++) { tone({ f: 1760, type: 'square', t: 0.06, vol: 0.12, delay: 0.5 + i * 0.07 }); tone({ f: 2349, type: 'square', t: 0.12, vol: 0.12, delay: 0.54 + i * 0.07 }); } noise({ t: 1.5, vol: 0.25, filter: 5000, type: 'highpass', delay: 0.4 }); }
+  },
 };
 
 document.addEventListener('visibilitychange', () => { if (!track) return; if (document.hidden) track.pause(); else if (musicOn) startMusic(); });

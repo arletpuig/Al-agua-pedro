@@ -417,5 +417,70 @@ console.log('28. iPhone: sin zoom ni movimientos al pulsar rápido');
   check('25 toques rapidísimos: cuentan todos y la pantalla no se mueve ni se amplía', after.taps === 25 && after.scale === 1 && after.sx === 0 && after.sy === 0, JSON.stringify(after));
 }
 
+console.log('29. Niveles de jugador y ruleta');
+{
+  const lv = await page.evaluate(async () => { const L = await import('./js/levels.js'); return { n: L.LEVEL_NAMES.length, first: L.LEVEL_NAMES[0], last: L.LEVEL_NAMES[49], l16: L.LEVEL_NAMES[15],
+    mono: L.XP_AT.every((v, i) => !i || v > L.XP_AT[i - 1]), formula: L.XP_AT.every((v, i) => !i || v - L.XP_AT[i - 1] === Math.round((70 * Math.pow(i, 1.65) + 30) / 10) * 10),
+    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 99, 100, 349, 350, 819059, 819060, 1e9].map(L.levelOfXp) }; });
+  check('50 niveles: de Perroflauta a Caudillo Supremo', lv.n === 50 && lv.first === 'Perroflauta' && lv.last === 'Caudillo Supremo' && lv.l16 === 'Sanchista');
+  check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
+  check('límites de nivel exactos y tope en 50', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
+  check('la ruleta suma 100 (probabilidades en %)', lv.w === 100);
+  const c7 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p7 = await c7.newPage(); const e7 = watchErrors(p7); await mockTime(p7);
+  await open(p7, undefined, { levels: true });
+  await p7.evaluate(() => { AAP.giftTest.off = true; AAP.levelTest.fast = true; AAP.state.tutorialSeen = true; AAP.state.stats.chestTomatoes += 40; return import('./js/state.js').then(m => m.changed(false)); }); await noCombo(p7);
+  const chip0 = await p7.evaluate(() => [document.querySelector('#lvl-num').textContent, document.querySelector('#lvl-name').textContent, document.querySelector('#lvl-xp').textContent].join('|'));
+  check('jugador nuevo: barra de nivel 1 «Perroflauta» con 0/100 XP', chip0 === '1|Perroflauta|0 / 100 XP', chip0);
+  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p7, 0, 8); await idle(p7);
+  await p7.waitForSelector('.xp-float', { timeout: 3000 }).catch(() => {});
+  const g1 = await p7.evaluate(() => [document.querySelector('.xp-float')?.textContent, document.querySelector('#lvl-xp').textContent, document.querySelector('#lvl-chip').classList.contains('gain')]);
+  check('al acertar: «+35 XP» sale volando y la barra sube (35/100)', g1[0] === '+35 XP' && g1[1] === '35 / 100 XP' && g1[2], JSON.stringify(g1));
+  check('sin subir de nivel no hay ruleta', await p7.locator('#lvlup-overlay.open').count() === 0);
+  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(10); })); await stopAt(p7, 0, 8); await idle(p7);
+  await p7.waitForSelector('#lvlup-overlay.open', { timeout: 8000 }).catch(() => {});
+  await p7.waitForFunction(() => document.querySelector('#lvlup-overlay').classList.contains('ready'), null, { timeout: 5000 }).catch(() => {});
+  const up = await p7.evaluate(() => ({ num: document.querySelector('#lvlup-num').textContent, name: document.querySelector('#lvlup-name').textContent, banner: document.querySelector('#lvlup-banner').textContent, cnt: document.querySelector('#lvlup-cnt').textContent, conf: !!document.querySelector('#lvlup-overlay .fx-canvas') }));
+  check('subida de 2 niveles de golpe: celebración del nivel 3 «Anticapitalista» y 2 tiradas', up.num === '3' && up.name === 'Anticapitalista' && up.banner === '¡+2 NIVELES!' && up.cnt === '×2' && up.conf, JSON.stringify(up));
+  await p7.screenshot({ path: 'tests/out/29-nivel.png' });
+  // ruleta: primer premio pesetas (casilla 0), segundo una carta (casilla 2)
+  await p7.evaluate(() => { AAP.levelTest.rng = () => 0.01; });
+  let b7 = await S(p7);
+  await p7.click('#lvlup-spin', { force: true }); await p7.waitForSelector('#wheel-overlay.open');
+  const wheel = await p7.evaluate(() => ({ segs: document.querySelectorAll('#wheel-svg .seg').length, title: document.querySelector('#wheel-title').textContent, amt: document.querySelector('#wheel-svg .seg[data-i="0"] .amt').textContent, lights: document.querySelectorAll('#wheel-lights i').length }));
+  check('ruleta de 8 casillas con luces, para el nivel 2: pesetas +14', wheel.segs === 8 && wheel.title === 'RULETA · NIVEL 2' && wheel.amt === '+14' && wheel.lights === 20, JSON.stringify(wheel));
+  const ticks = await p7.evaluate(() => { window.__ticks = 0; const p = document.querySelector('#wheel-pointer'); new MutationObserver(() => { if (p.classList.contains('kick')) window.__ticks++; }).observe(p, { attributes: true }); return 0; });
+  await p7.click('#wheel-btn', { force: true }); await p7.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 10000 });
+  let s7 = await S(p7);
+  const pz = await p7.evaluate(() => ({ txt: document.querySelector('#wheel-prize').textContent, win: document.querySelector('#wheel-svg .seg.win')?.dataset.i, ang: ((-parseFloat(document.querySelector('#wheel').style.transform.replace(/[^-\d.]/g, '')) % 360) + 360) % 360, btn: document.querySelector('#wheel-btn').textContent, ticks: window.__ticks }));
+  check('la flecha se para en la casilla ganadora', pz.win === '0' && pz.ang >= 0 && pz.ang < 45, JSON.stringify(pz));
+  check('premio: +14 pesetas de verdad y tic-tac al pasar las casillas', /\+14 pesetas/.test(pz.txt) && s7.pesetas === b7.pesetas + 14 && pz.ticks >= 1, `(${b7.pesetas} → ${s7.pesetas}, ticks ${pz.ticks})`);
+  check('queda otra tirada', pz.btn === '¡OTRA TIRADA! (1)' && await p7.evaluate(() => AAP.state.wheelLevel) === 2);
+  await p7.evaluate(() => { AAP.levelTest.rng = () => 0.45; });   // casilla 2: carta
+  await p7.click('#wheel-btn', { force: true }); await p7.waitForFunction(() => document.querySelector('#wheel-title').textContent === 'RULETA · NIVEL 3');
+  await p7.click('#wheel-btn', { force: true }); await p7.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 10000 });
+  check('premio carta: botón ¡ABRIR! y se abre el cofre con la carta', /1 carta/.test(await p7.locator('#wheel-prize').textContent()) && (await p7.locator('#wheel-btn').textContent()) === '¡ABRIR!');
+  await p7.click('#wheel-btn', { force: true }); await p7.waitForSelector('#chest-overlay.open'); await p7.click('#chest-btn');
+  await p7.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 10000 }); await p7.click('#chest-btn'); await p7.waitForTimeout(300);
+  s7 = await S(p7);
+  check('después de las dos tiradas no quedan pendientes y se vuelve a jugar', await p7.evaluate(() => AAP.state.wheelLevel) === 3 && await p7.locator('.overlay.open').count() === 0 && await p7.locator('#lvl-dot.hidden').count() === 1 && Object.values(s7.cards).some(c => c.frags || c.level));
+  check('no se puede girar sin tirada pendiente', await p7.evaluate(() => AAP.backend.spinWheel().then(() => false, e => /No tienes tiradas/.test(e.message))));
+  // ×5 durante 10 minutos (casilla 3) y bote (casilla 7)
+  const fx = await p7.evaluate(async () => { const L = await import('./js/levels.js'); AAP.state.stats.tomatoesThrown += 400; (await import('./js/state.js')).changed(false);
+    const a = await AAP.backend.spinWheel(() => 0.6); const t = AAP.state.falconUntil - Date.now(); const b = await AAP.backend.spinWheel(() => 0.99);
+    return { a: L.WHEEL[a.seg].id, falcon: a.reward.falcon, mins: Math.round(t / 60000), b: L.WHEEL[b.seg].id, bp: b.reward.pesetas, lvl: b.reward.level }; });
+  check('premio ×5 clics durante 10 minutos (el Falcón)', fx.a === 'x5' && fx.falcon && fx.mins === 10, JSON.stringify(fx));
+  check('el bote da 100 + 20 por nivel', fx.b === 'jackpot' && fx.bp === 100 + 20 * fx.lvl, JSON.stringify(fx));
+  await p7.evaluate(() => { AAP.state.wheelLevel = AAP.E && 99; }); await p7.evaluate(() => import('./js/state.js').then(m => { AAP.state.wheelLevel = 50; m.changed(false); }));
+  await p7.click('#lvl-chip'); await p7.waitForTimeout(400);
+  const list = await p7.evaluate(() => ({ rows: document.querySelectorAll('#levels-body .lv').length, cur: document.querySelector('#levels-body .lv.cur .nm')?.textContent, last: document.querySelector('#levels-body .lv:last-child .nm').textContent, head: document.querySelector('.lv-head h3').textContent }));
+  check('lista de niveles: los 50, el actual marcado y Caudillo Supremo al final', list.rows === 50 && list.cur === list.head && list.last === 'Caudillo Supremo', JSON.stringify(list));
+  await p7.screenshot({ path: 'tests/out/29-niveles.png' }); await p7.click('#panel-levels [data-close]');
+  await p7.click('#tabs [data-panel="profile"]'); await p7.waitForTimeout(300);
+  check('el perfil enseña el nivel', (await p7.locator('#prof-lvl').textContent()).endsWith(list.head));
+  check('con el servidor sin actualizar se ven los niveles pero la ruleta espera', await p7.evaluate(async () => { const m = await import('./js/levelup.js'); AAP.state.wheelLevel = 1; const a = m.pending() > 0; AAP.state.noWheel = true; const b = m.pending() === 0; AAP.state.noWheel = false; AAP.state.wheelLevel = 50; return a && b; }));
+  check('niveles: sin errores en consola', e7.length === 0, e7.join(' | '));
+  await c7.close();
+}
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

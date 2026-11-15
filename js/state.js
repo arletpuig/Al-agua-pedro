@@ -1,6 +1,7 @@
 // Estado del juego y guardado local. Las cantidades derivadas (tomates, pesetas) se calculan siempre a partir de los totales.
 import { CONFIG } from './config.js';
 import { emptyCards, CARD_IDS, refund } from './economy.js';
+import { levelOf } from './levels.js';
 const KEY = 'alaguapedro.v2', OLD_KEY = 'alaguapedro.v1';
 const listeners = new Set();
 
@@ -10,6 +11,7 @@ export const state = {
   cards: emptyCards(), dailyClaimedOn: null, falconUntil: 0,
   tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null, welcome: false,
   welcomeOfferedAt: null, welcomeClaimed: false,   // regalo de bienvenida (cofre en paracaídas)
+  wheelLevel: 1,                                    // nivel hasta el que ya se ha girado la ruleta (una tirada por nivel)
 };
 // Los tomates conseguidos cuando costaban 100 clics se conservan (legacy); desde entonces cuestan CLICKS_PER_TOMATO.
 export function derive() {
@@ -26,6 +28,8 @@ export function load() {
     if (d) {
       Object.assign(state, { tutorialSeen: !!d.tutorialSeen, sound: d.sound !== false, music: !!d.music, dailyClaimedOn: d.dailyClaimedOn || null, falconUntil: d.falconUntil || 0, welcomeOfferedAt: d.welcomeOfferedAt || null, welcomeClaimed: !!d.welcomeClaimed });
       Object.assign(state.stats, d.stats || {});
+      // partida de antes de los niveles: empieza en su nivel con una tirada de regalo (igual que el servidor)
+      state.wheelLevel = d.wheelLevel || Math.max(1, levelOf(state.stats) - 1);
       // partida guardada cuando un tomate costaba 100 clics: se conserva lo ya ganado
       if (d.cpt !== CONFIG.CLICKS_PER_TOMATO && !state.stats.legacyClicks && state.stats.totalClicks > 0) {
         const t = state.stats.totalClicks; state.stats.legacyClicks = t - (t % 100); state.stats.legacyTomatoes = Math.floor(t / 100);
@@ -40,7 +44,7 @@ export function load() {
   derive(); return state;
 }
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ cpt: CONFIG.CLICKS_PER_TOMATO, stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, welcomeOfferedAt: state.welcomeOfferedAt, welcomeClaimed: state.welcomeClaimed, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ cpt: CONFIG.CLICKS_PER_TOMATO, stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, welcomeOfferedAt: state.welcomeOfferedAt, welcomeClaimed: state.welcomeClaimed, wheelLevel: state.wheelLevel, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
 }
 export function onChange(fn) { listeners.add(fn); }
 export function changed(sync = true) { derive(); if (sync) state.dirty = true; save(); listeners.forEach(f => f(state)); }
@@ -85,6 +89,8 @@ export function applyServer(row, sent) {
   let pending = false; COUNTERS.forEach(k => { if (delta[k]) { s[k] += delta[k]; pending = true; } });
   const c = emptyCards(); CARD_IDS.forEach(id => { if (row.cards?.[id]) c[id] = { level: row.cards[id].level | 0, frags: row.cards[id].frags | 0 }; }); state.cards = c;
   state.dailyClaimedOn = row.daily_claimed_on || null; state.falconUntil = row.falcon_until ? Date.parse(row.falcon_until) : 0;
+  // servidor sin actualizar (falta schema_v13.sql): se ven los niveles, pero la ruleta espera
+  state.noWheel = !('wheel_level' in row); if (!state.noWheel) state.wheelLevel = +row.wheel_level || 1;
   if ('welcome_claimed' in row) { state.welcomeClaimed = !!row.welcome_claimed; state.welcomeOfferedAt = row.welcome_offered_at ? Date.parse(row.welcome_offered_at) : null; }
   state.updatedAt = row.updated_at || null; state.dirty = pending;
   derive(); save(); listeners.forEach(f => f(state));
@@ -92,6 +98,6 @@ export function applyServer(row, sent) {
 export function hasProgress() { const s = state.stats; return s.totalClicks > 0 || s.chestsOpened > 0 || s.tomatoesThrown > 0; }
 // Vacía el progreso local (al cerrar sesión: el progreso queda en la cuenta).
 export function resetProgress() {
-  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false; state.welcomeOfferedAt = null; state.welcomeClaimed = false;
+  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false; state.welcomeOfferedAt = null; state.welcomeClaimed = false; state.wheelLevel = 1; state.noWheel = false;
   derive(); save(); listeners.forEach(f => f(state));
 }

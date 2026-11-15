@@ -3,6 +3,7 @@ import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { state, applyServer, applyChestLocal, changed, snapshot, falconActive } from './state.js';
 import { showVideo, videosOn } from './ads.js';
+import * as LV from './levels.js';
 
 let timeOffset = 0, nextMidnight = null, serverChecked = false, flush = async () => {};
 // Antes de una operación en la nube se envía el progreso pendiente, para que el servidor conozca las pesetas ganadas.
@@ -69,6 +70,19 @@ export const backend = {
     if (state.welcomeClaimed) throw new Error('Ya has abierto el regalo de bienvenida');
     if (!this.welcomeLeftMs()) throw new Error('El regalo de bienvenida ha caducado');
     const reward = E.rollChest('welcome', state.cards); E.applyChestCards(state.cards, reward.cards); state.welcomeClaimed = true; applyChestLocal(reward, 0); return reward;
+  },
+  // Ruleta de nivel: una tirada por cada nivel subido. Con cuenta decide el servidor (spin_level_wheel).
+  async spinWheel(rng) {
+    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.spinWheel()); applyServer(r.profile, sent); return { seg: r.seg, reward: r.reward, pending: r.pending }; }
+    const lvl = LV.levelOf(state.stats); if (state.wheelLevel >= lvl) throw new Error('No tienes tiradas de ruleta pendientes');
+    const L = state.wheelLevel + 1, seg = LV.wheelIndex((rng || Math.random)()), s = LV.WHEEL[seg], st = state.stats;
+    const reward = { kind: 'wheel', id: s.id, level: L, pesetas: 0, tomatoes: 0, cards: [], falcon: false };
+    if (s.kind === 'pesetas') reward.pesetas = s.amount(L);
+    else if (s.kind === 'tomatoes') reward.tomatoes = s.amount(L);
+    else if (s.kind === 'falcon') { state.falconUntil = Math.max(Date.now(), state.falconUntil) + LV.FALCON_MINUTES * 60000; reward.falcon = true; }
+    else { const c = E.rollChest(s.chest, state.cards); E.applyChestCards(state.cards, c.cards); Object.assign(reward, { kind: s.chest, cards: c.cards, pesetas: c.pesetas, tomatoes: c.tomatoes }); }
+    st.chestPesetas += reward.pesetas; st.chestTomatoes += reward.tomatoes; state.wheelLevel = L; changed(false);
+    return { seg, reward, pending: lvl - L };
   },
   // Vídeo recompensado de la tienda (El Falcón o Sobre de la Moncloa). Con cuenta lo concede el servidor, con límite diario.
   async watchAd(placement) {

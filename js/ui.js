@@ -8,6 +8,7 @@ import { backend } from './backend.js';
 import { canShowVideo, PLACEMENTS } from './ads.js';
 import { AVATARS, avatarSVG } from './avatars.js';
 import { DEFAULT_TITLES } from './share.js';
+import * as LV from './levels.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => n.toLocaleString('es-ES');
 const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
@@ -250,7 +251,7 @@ export function renderCards(upgradedId) {
 export function renderRank(rows, err, myName) {
   const list = $('#rank-list');
   if (err) { list.innerHTML = `<li class="empty">${err}</li>`; return; }
-  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.username === myName ? 'me' : ''}"><span class="av">${avatarSVG(r.avatar, 30)}</span><span class="nm">${esc(r.username || 'Anónimo')}</span><span class="sc">${fmt(r.tomatoes_earned)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}</li>`).join('') : '<li class="empty">Todavía no hay nadie. ¡Sé el primero!</li>';
+  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.username === myName ? 'me' : ''}"><span class="av">${avatarSVG(r.avatar, 30)}</span><span class="nm">${esc(r.username || 'Anónimo')}${r.level ? `<em class="rk-lvl t${LV.tierOf(r.level)}">Nv ${r.level} · ${esc(LV.levelName(r.level))}</em>` : ''}</span><span class="sc">${fmt(r.tomatoes_earned)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}</li>`).join('') : '<li class="empty">Todavía no hay nadie. ¡Sé el primero!</li>';
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export function renderStats() {
@@ -309,6 +310,7 @@ export function renderProfile(p) {
   $('#prof-av-img').innerHTML = avatarSVG(p.avatar, 92);
   $('#prof-name').textContent = p.name || 'Jugador';
   $('#prof-title').textContent = p.title;
+  const lv = LV.levelInfo(s), pl = $('#prof-lvl'); pl.className = 'prof-lvl t' + lv.tier; pl.innerHTML = `<span class="lvl-medal"><svg><use href="#ic-medal"/></svg><b>${lv.level}</b></span>${esc(lv.name)}`;
   const ti = $('#title-input'); if (document.activeElement !== ti) ti.value = p.title || '';
   $('#title-chips').innerHTML = DEFAULT_TITLES.map(t => `<button type="button" data-title="${esc(t)}" class="${t === p.title ? 'on' : ''}">${esc(t)}</button>`).join('');
   $('#prof-mail').textContent = p.email || '';

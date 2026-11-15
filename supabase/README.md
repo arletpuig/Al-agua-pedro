@@ -24,6 +24,9 @@ El botón «Entrar con Google» ya está en el juego; solo hay que activarlo (un
 
 Mientras no esté activado, el botón avisa de que Google todavía no está disponible y se puede entrar con el correo.
 
+## Si ya tenías la versión 12
+Solo ejecuta `schema_v13.sql` (o `schema_todo.sql`): niveles de jugador del 1 al 50 y ruleta de premios en cada nivel. Los jugadores que ya tenían progreso empiezan en su nivel con una tirada de regalo.
+
 ## Si ya tenías la versión 9
 Solo ejecuta `schema_v10.sql` (o `schema_todo.sql`): vídeos de El Falcón y del Sobre de la Moncloa con límite diario.
 

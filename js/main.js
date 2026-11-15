@@ -15,6 +15,7 @@ import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
 import { showVideo, PLACEMENTS, videosOn } from './ads.js';
 import { initPayments, openPack, consumeReturn, awaitPurchase } from './payments.js';
 import { maybeTour, startTour, tourTest } from './tour.js';
+import { initLevels, afterThrow, syncChip, checkPending, levelTest } from './levelup.js';
 const payReturn = consumeReturn();   // vuelta de la página de pago de Stripe
 
 const $ = s => document.querySelector(s);
@@ -45,20 +46,21 @@ function gatePedro() {
 }
 const start = () => {
   try { gatePedro(); } catch (e) {}
-  window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { pushNow(); if (r?.[0]?.fall) maybeOffer(); } });
-  initGift(ui, e => fail(e)); if (!ui.gated()) { restoreGift(); maybeTour(); }
+  window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { afterThrow(); pushNow(); if (r?.[0]?.fall) maybeOffer(); } });
+  initLevels(ui, isBusy, e => fail(e));
+  initGift(ui, e => fail(e)); if (!ui.gated()) { restoreGift(); maybeTour(); checkPending(); }
   initPayments(ui, e => fail(e), async () => { const row = await sb.getProfile(); state.updatedAt = null; applyServer(row); ui.hud(); });
   if (state.welcome && !ui.gated()) setTimeout(() => ui.showToast(`🎁 ¡Regalo de bienvenida! ${CONFIG.WELCOME.tomatoes} tomates y ${CONFIG.WELCOME.pesetas} pesetas para empezar`, 4200), 900);
 };
 scene.ready ? start() : scene.bus.once('ready', start);
-onChange(() => ui.hud());
+onChange(() => { ui.hud(); syncChip('auto'); });
 backend.syncTime().then(() => ui.hud());
 setInterval(() => {                       // reloj: Falcón, punto de cofre diario
   const on = falconActive(); if (on && !falconWas) { scene.falconFly?.(); ui.showToast('✈️ ¡El Falcón despega! Clics ×5'); } falconWas = on;
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
@@ -124,6 +126,7 @@ async function afterLogin(user) {
       applyServer(row); ui.showToast('☁️ Tu progreso se ha guardado en tu cuenta');
     } else if (row) { applyServer(row); ui.showToast('☁️ Progreso cargado de tu cuenta'); }
     ui.hud(); restoreGift(); maybeTour();   // jugador nuevo: guía de bienvenida
+    syncChip(); checkPending();        // niveles: si hay tiradas de ruleta pendientes, se ofrecen
     if (payReturn && !payReturn.done) { payReturn.done = true;
       if (payReturn.status === 'ok') awaitPurchase(payReturn.session);
       else ui.showToast('Pago cancelado: no se te ha cobrado nada', 2800); }
@@ -174,7 +177,7 @@ onForm('#form-recover', async f => { ui.accMsg('Enviando...'); await sb.recover(
 onForm('#form-newpass', async f => { ui.accMsg('Guardando...'); await sb.updatePassword(f.password.value); const u = await sb.fetchUser(); f.reset(); ui.showTab('login'); ui.accMsg('✅ Contraseña cambiada', 'ok'); await afterLogin(u); });
 $('#btn-logout').addEventListener('click', async () => {
   if (state.dirty) await pushNow();
-  await sb.signOut(); resetProgress(); restoreGift(); setProfile({ name: null, avatar: null, title: null, email: '', rank: null }, null); ui.closeAll(); ui.showTab('login'); ui.hud();
+  await sb.signOut(); resetProgress(); syncChip(); restoreGift(); setProfile({ name: null, avatar: null, title: null, email: '', rank: null }, null); ui.closeAll(); ui.showTab('login'); ui.hud();
   if (!GUEST_OK) ui.gate(true);
   ui.showToast('Sesión cerrada. Tu progreso queda guardado en tu cuenta.');
 });
@@ -182,7 +185,7 @@ function traducir(m = '') {
   const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
   // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
-  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
+  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack|No tienes tiradas)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {

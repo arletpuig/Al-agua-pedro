@@ -35,7 +35,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7829705078320776" crossorigin="anonymous"></script>
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=31">
+<link rel="stylesheet" href="css/style.css?v=32">
 </head>
 <body>
 <div id="app">
@@ -49,6 +49,12 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     <button class="daily" id="btn-daily" aria-label="Cofre diario"><i class="glow"></i><svg><use href="#ic-chest"/></svg><span class="rib" id="daily-rib">GRATIS</span></button>
     <button class="sq" id="btn-settings" aria-label="Ajustes"><svg><use href="#ic-gear"/></svg></button>
   </header>
+  <!-- nivel del jugador: medalla, nombre y barra de experiencia (al tocar: lista de niveles) -->
+  <button class="lvl-chip t1" id="lvl-chip" aria-label="Tu nivel">
+    <span class="lvl-medal"><svg><use href="#ic-medal"/></svg><b id="lvl-num">1</b></span>
+    <span class="lvl-info"><em id="lvl-name">Perroflauta</em><span class="lvl-bar"><i id="lvl-fill"></i><small id="lvl-xp">0 / 100 XP</small></span></span>
+    <i class="lvl-dot hidden" id="lvl-dot">1</i>
+  </button>
   <div id="falcon-badge" class="boost hidden"><svg><use href="#ic-plane"/></svg>FALCÓN ×5 <span class="tm" id="falcon-time">10:00</span></div>
   
   <div id="save-status" class="save-status"></div>
@@ -97,7 +103,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     <div class="sheet-body">
       <div class="prof-head">
         <button class="prof-av" id="prof-av" aria-label="Elegir bandera"><span class="av" id="prof-av-img"></span></button>
-        <div class="prof-id"><b id="prof-name">Jugador</b><small id="prof-title">Recién llegado</small><small id="prof-mail" class="mail"></small></div>
+        <div class="prof-id"><b id="prof-name">Jugador</b><small id="prof-title">Recién llegado</small><span class="prof-lvl t1" id="prof-lvl"></span><small id="prof-mail" class="mail"></small></div>
       </div>
       <form id="form-name" class="name-row" autocomplete="off">
         <input id="name-input" name="name" type="text" placeholder="Tu nombre de jugador" maxlength="20" autocomplete="nickname" aria-label="Nombre de jugador">
@@ -183,6 +189,43 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     </div>
   </div></div>
 
+  <!-- niveles: lista del 1 al 50 -->
+  <div id="panel-levels" class="panel"><div class="sheet">
+    <div class="title">NIVELES</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body"><div id="levels-body" class="levels-body"></div></div>
+  </div></div>
+
+  <!-- subida de nivel -->
+  <div id="lvlup-overlay" class="overlay lvlup-ov t1">
+    <i class="rays"></i><i class="rays r2"></i><i class="lvlup-flash"></i>
+    <div class="lvlup-stage">
+      <h2 class="lvlup-banner" id="lvlup-banner">¡SUBES DE NIVEL!</h2>
+      <div class="lvlup-medal" id="lvlup-medal"><i class="halo"></i><svg><use href="#ic-medal"/></svg><b id="lvlup-num">2</b></div>
+      <div class="lvlup-name" id="lvlup-name">Okupa</div>
+      <div class="lvlup-sub" id="lvlup-sub">Nivel 2 de 50</div>
+      <div class="lvlup-next" id="lvlup-next"></div>
+      <button class="btn-gold big" id="lvlup-spin"><span>¡GIRAR LA RULETA!</span><i class="cnt hidden" id="lvlup-cnt">×2</i></button>
+    </div>
+  </div>
+
+  <!-- ruleta de premios -->
+  <div id="wheel-overlay" class="overlay wheel-ov">
+    <i class="rays"></i>
+    <button class="close" id="wheel-close" aria-label="Cerrar">✕</button>
+    <div class="wheel-stage">
+      <h2 class="t-big" id="wheel-title">RULETA</h2>
+      <p class="wheel-sub" id="wheel-sub">¡Gira y llévate un premio!</p>
+      <div class="wheel-wrap" id="wheel-wrap">
+        <div class="wheel-lights" id="wheel-lights"></div>
+        <div class="wheel" id="wheel"><svg id="wheel-svg" viewBox="-200 -200 400 400"></svg></div>
+        <div class="wheel-pointer" id="wheel-pointer"><svg viewBox="0 0 44 58"><path d="M22 56 L4 16 A19 19 0 1 1 40 16 Z" fill="#e3262c" stroke="#0a0b18" stroke-width="3.5" stroke-linejoin="round"/><circle cx="22" cy="17" r="7" fill="#ffe766" stroke="#0a0b18" stroke-width="3"/><path d="M10 12 Q14 5 22 4" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></svg></div>
+        <button class="wheel-hub" id="wheel-hub" aria-label="Girar"><span>GIRA</span></button>
+      </div>
+      <button class="btn-gold big" id="wheel-btn"><span>¡GIRAR!</span></button>
+    </div>
+    <div class="wheel-prize hidden" id="wheel-prize"></div>
+  </div>
+
   <!-- apertura de cofre -->
   <div id="chest-overlay" class="overlay">
     <i class="rays"></i>
@@ -261,7 +304,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
   <div id="test-badge" class="test-badge hidden">PRUEBAS · DESDE CERO</div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 31</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 32</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -279,6 +322,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <radialGradient id="gGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff7b0"/><stop offset=".45" stop-color="#ffd23f" stop-opacity=".8"/><stop offset="1" stop-color="#ffd23f" stop-opacity="0"/></radialGradient>
 <linearGradient id="gRing" x1="0" x2="1"><stop offset="0" stop-color="#ffe766"/><stop offset="1" stop-color="#ff9d1a"/></linearGradient>
 <symbol id="ic-tomato" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><path d="M32 17 C47 15 58 25 57 39 C56 52 45 59 32 59 C19 59 8 52 7 39 C6 25 17 15 32 17Z" fill="url(#gTom)"/><path d="M16 34 Q15 25 24 21" stroke="#fff" stroke-width="4.5" fill="none" opacity=".65"/><path d="M19 16 Q26 21 32 13 Q38 21 45 16 Q43 25 32 23 Q21 25 19 16Z" fill="#52c24a"/><path d="M32 13 Q33 7 38 5" stroke-width="6" fill="none"/><path d="M32 13 Q33 7 38 5" stroke="#3a9a3a" stroke-width="2.6" fill="none"/></g></symbol>
+<symbol id="ic-medal" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="2.6" stroke-linejoin="round"><path d="M32.0 2.0 L37.0 7.0 L43.5 4.3 L46.2 10.8 L53.2 10.8 L53.2 17.8 L59.7 20.5 L57.0 27.0 L62.0 32.0 L57.0 37.0 L59.7 43.5 L53.2 46.2 L53.2 53.2 L46.2 53.2 L43.5 59.7 L37.0 57.0 L32.0 62.0 L27.0 57.0 L20.5 59.7 L17.8 53.2 L10.8 53.2 L10.8 46.2 L4.3 43.5 L7.0 37.0 L2.0 32.0 L7.0 27.0 L4.3 20.5 L10.8 17.8 L10.8 10.8 L17.8 10.8 L20.5 4.3 L27.0 7.0Z" fill="var(--m3, #ffd23f)"/><circle cx="32" cy="32" r="21" fill="var(--m2, #b5121b)"/><circle cx="32" cy="32" r="17" fill="var(--m1, #ff6b55)" stroke="none"/></g><path d="M18 24 Q24 14 36 13" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".6"/></symbol>
 <symbol id="ic-coin" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="32" cy="35" rx="26" ry="25" fill="#9a5c00"/><circle cx="32" cy="31" r="26" fill="url(#gCoin)"/><circle cx="32" cy="31" r="19" fill="none" stroke="#b97400" stroke-width="2.4"/><path d="M27 43 V20 h8 a7.5 7.5 0 0 1 0 15 h-8 M22 30 h13" fill="none" stroke="#8a5200" stroke-width="5.5"/><path d="M14 22 Q20 12 32 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".75"/></g></symbol>
 <symbol id="ic-gear" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round"><path d="M57.8,28.6 L57.8,35.4 L50.3,36.9 L48.5,41.5 L52.6,47.8 L47.8,52.6 L41.5,48.5 L36.9,50.3 L35.4,57.8 L28.6,57.8 L27.1,50.3 L22.5,48.5 L16.2,52.6 L11.4,47.8 L15.5,41.5 L13.7,36.9 L6.2,35.4 L6.2,28.6 L13.7,27.1 L15.5,22.5 L11.4,16.2 L16.2,11.4 L22.5,15.5 L27.1,13.7 L28.6,6.2 L35.4,6.2 L36.9,13.7 L41.5,15.5 L47.8,11.4 L52.6,16.2 L48.5,22.5 L50.3,27.1 Z" fill="#ffffff"/><circle cx="32" cy="32" r="9" fill="#3567f0"/></g></symbol>
 <symbol id="ic-plane" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M6 36 L28 30 L44 12 Q50 8 52 12 L42 32 L58 36 Q60 40 56 41 L40 40 L32 52 L26 52 L30 40 L10 42Z" fill="#ffffff"/><path d="M28 30 L42 32" stroke="#3567f0" stroke-width="4"/></g></symbol>
@@ -320,7 +364,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 31</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 32</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -335,7 +379,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=31"></script>
+<script type="module" src="js/main.js?v=32"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>
 </html>

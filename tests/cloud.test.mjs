@@ -176,8 +176,40 @@ const fr = c => Object.values(c).reduce((a, x) => a + x.level * 100 + x.frags, 0
 check('Financiación ilegal PSOE: +5.000 pesetas, +2.000 tomates y 4 cartas épicas o legendarias', row.chest_tomatoes === before.chest_tomatoes + 2000 && row.chest_pesetas >= before.chest_pesetas + 5000
   && premium.cards.length === 4 && premium.cards.every(c => ['epic', 'legendary'].includes(c.rarity)) && fr(row.cards) > fr(before.cards), JSON.stringify(premium.cards.map(c => c.id)));
 
+console.log('K. Niveles y ruleta en el servidor');
+{
+  const LVjs = await page.evaluate(async () => { const L = await import('./js/levels.js'); const xs = Array.from({ length: 300 }, (_, i) => Math.floor(Math.pow(i / 299, 2.2) * 900000)); return { xs, lv: xs.map(L.levelOfXp), ids: L.WHEEL.map(w => w.id), ws: L.WHEEL.map(w => w.weight) }; });
+  const lvSql = psql(`select string_agg(public.fn_level_of_xp(x)::text, ',' order by o) from unnest(array[${LVjs.xs.join(',')}]::bigint[]) with ordinality t(x, o)`);
+  check('el nivel se calcula igual en el juego y en el servidor (300 casos)', lvSql === LVjs.lv.join(','));
+  const sqlText = (await import('node:fs')).readFileSync('supabase/schema_v13.sql', 'utf8');
+  const ids = /ids text\[\] := array\[([^\]]+)\]/.exec(sqlText)[1].replace(/'/g, '').split(',').map(x => x.trim()), ws = /weights integer\[\] := array\[([^\]]+)\]/.exec(sqlText)[1].split(',').map(Number);
+  check('la ruleta tiene las mismas casillas y probabilidades en el juego y en el servidor', ids.join() === LVjs.ids.join() && ws.join() === LVjs.ws.join(), ids.join());
+  row = db(email); const lvl = +psql(`select public.fn_player_level(${row.tomatoes_thrown}, ${row.hits}, ${row.falls})`);
+  check('cuenta nueva: empieza sin tiradas gastadas y con tiradas por los niveles subidos', row.wheel_level === 1 && lvl >= 2, `(nivel ${lvl}, ruleta ${row.wheel_level})`);
+  await page.evaluate(() => { AAP.levelTest.off = false; AAP.levelTest.fast = true; });
+  before = db(email); s = await S(page);
+  const spinResp = page.waitForResponse(r => r.url().includes('/rpc/spin_level_wheel'), { timeout: 20000 });
+  await page.evaluate(() => import('./js/levelup.js').then(m => m.checkPending()));
+  await page.waitForFunction(() => document.querySelector('#lvlup-overlay').classList.contains('ready'), null, { timeout: 10000 });
+  check('al entrar con tiradas pendientes se presentan los niveles', /NIVELES|PREMIO PENDIENTE/.test(await txt('#lvlup-banner')) && (await txt('#lvlup-num')) === String(lvl));
+  await page.click('#lvlup-spin', { force: true }); await page.waitForSelector('#wheel-overlay.open'); await page.click('#wheel-btn', { force: true });
+  const out = await (await spinResp).json(); await page.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 10000 });
+  row = db(email); s = await S(page);
+  check('el servidor decide el premio y la ruleta se para en esa casilla', (await page.locator('#wheel-svg .seg.win').getAttribute('data-i')) === String(out.seg), `(casilla ${out.seg}: ${out.reward.id})`);
+  check('premio guardado en el servidor y igual en el juego', row.wheel_level === before.wheel_level + 1 && row.chest_pesetas === before.chest_pesetas + out.reward.pesetas && row.chest_tomatoes === before.chest_tomatoes + out.reward.tomatoes
+    && s.pesetas === row.pesetas && s.tomatoes === row.tomatoes, JSON.stringify(out.reward).slice(0, 120));
+  await page.click('#wheel-btn', { force: true }); await page.waitForTimeout(400);
+  if (await page.locator('#chest-overlay.open').count()) { await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 10000 }); await page.click('#chest-btn'); await page.waitForTimeout(300); }
+  while (await page.locator('#wheel-overlay.open').count()) { await page.click('#wheel-close', { force: true }); await page.waitForTimeout(200); }
+  if (db(email).wheel_level < lvl) psql(`update public.profiles set wheel_level = ${lvl} where user_id = '${row.user_id}'`);
+  check('sin tiradas pendientes, el servidor no deja girar', await page.evaluate(() => AAP.backend.spinWheel().then(() => false, e => /No tienes tiradas/.test(e.message))));
+  check('un jugador no puede cambiarse las tiradas', (() => { try { psql(`update public.profiles set wheel_level = 0`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
+  await page.evaluate(() => { AAP.levelTest.off = true; });
+}
+
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#rank-list');
+check('el ranking enseña el nivel de cada jugador', /Nv \d+ · /.test(rank), rank.replace(/\n/g, ' ').slice(0, 80));
 check('ranking por tomates históricos con el jugador', rank.includes('Arlet') && rank.includes(String(db(email).tomatoes_earned.toLocaleString('es-ES'))), rank.replace(/\n/g, ' ').slice(0, 80));
 await page.screenshot({ path: 'tests/out/12-ranking.png' }); await page.click('#panel-rank .close');
 

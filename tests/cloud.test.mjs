@@ -211,7 +211,7 @@ console.log('K. Niveles y ruleta en el servidor');
   const buy = await page.evaluate(() => AAP.backend.buySpin().then(r => ({ cost: r.cost, p: r.reward.pesetas, t: r.reward.tomatoes, w: r.wheel }), e => ({ err: e.message })));
   row = db(email); s = await S(page);
   const lvNow = +psql(`select public.fn_player_level(${row.tomatoes_thrown}, ${row.hits}, ${row.falls})`);
-  check('ruleta de la tienda en el servidor: cobra 40 + 3 por nivel y entrega el premio', buy.w === 'normal' && buy.cost === 40 + 3 * lvNow && row.pesetas_spent === before.pesetas_spent + buy.cost
+  check('ruleta de la tienda en el servidor: cobra 40 + 3 por nivel y entrega el premio', buy.w === 'normal' && buy.cost === Math.min(120, 40 + 3 * lvNow) && row.pesetas_spent === before.pesetas_spent + buy.cost
     && row.chest_pesetas === before.chest_pesetas + buy.p && row.chest_tomatoes === before.chest_tomatoes + buy.t && s.pesetas === row.pesetas, JSON.stringify(buy));
   check('sin tirada legendaria pagada, el servidor no deja girarla', await page.evaluate(() => AAP.backend.spinLegend().then(() => false, e => /No tienes tiradas legendarias/.test(e.message))));
   check('la tirada legendaria ya no se vende', (() => { try { psql(`select public.grant_pack('cs_test_ruleta', '${row.user_id}', 'ruleta', 99, 'eur')`, 'service_role'); return false; } catch (e) { return /Pack desconocido/.test(String(e.stderr)); } })());

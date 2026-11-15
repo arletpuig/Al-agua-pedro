@@ -57,7 +57,8 @@ export const isLegendLevel = L => L % 10 === 0;         // los niveles 10, 20, 3
 export const nextLegendLevel = L => Math.min(MAX_LEVEL, (Math.floor(L / 10) + 1) * 10);
 // En la tienda: la ruleta normal se paga con pesetas (sube con tu nivel, siempre por encima de lo que da de media);
 // la legendaria, viendo 3 vídeos. Ver supabase/schema_v14.sql y schema_v15.sql.
-export const shopSpinPrice = L => 40 + 3 * L;
+export const SHOP_SPIN_MAX = 120;
+export const shopSpinPrice = L => Math.min(SHOP_SPIN_MAX, 40 + 3 * L);   // como mucho 120 pesetas (igual que buy_wheel_spin)
 export const LEGEND_ADS = 3;                            // vídeos para una tirada legendaria en la tienda (como mucho una al día)
 export function wheelIndex(r, segs = WHEEL) { const t = segs.reduce((a, s) => a + s.weight, 0); let x = r * t; for (let i = 0; i < segs.length; i++) { x -= segs[i].weight; if (x < 0) return i; } return segs.length - 1; }
 // Texto corto de cada casilla para el nivel L (lo que se ve en la ruleta)

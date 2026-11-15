@@ -28,7 +28,7 @@ begin
     ok := a.chest_pesetas = b.chest_pesetas + (rw->>'pesetas')::int and a.chest_tomatoes = b.chest_tomatoes + (rw->>'tomatoes')::int;
     if not ok then why := why || 'pesetas/tomates '; end if;
     if a.pesetas_spent <> b.pesetas_spent + (r->>'cost')::int then ok := false; why := why || 'coste '; end if;
-    if src = 'tienda' and (r->>'cost')::int <> 40 + 3 * 50 then ok := false; why := why || 'precio '; end if;
+    if src = 'tienda' and (r->>'cost')::int <> 120 then ok := false; why := why || 'precio '; end if;
     if (rw->>'minutes')::int > 0 and not (a.falcon_until >= greatest(now(), coalesce(b.falcon_until, now())) + make_interval(mins => (rw->>'minutes')::int) - interval '1 second') then ok := false; why := why || 'falcon '; end if;
     if (rw->>'minutes')::int = 0 and a.falcon_until is distinct from b.falcon_until then ok := false; why := why || 'falcon-sin-premio '; end if;
     if rw->>'id' in ('card', 'cards3', 'l_dia', 'l_top') and ncards <> (case (rw->>'id') when 'card' then 1 when 'cards3' then 3 when 'l_dia' then 6 else 4 end) then ok := false; why := why || 'num-cartas '; end if;

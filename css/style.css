@@ -1103,3 +1103,7 @@ svg { display: block; }
 
 /* el juego nunca se desplaza (ni por programa ni al enfocar un campo) */
 #app { overflow: hidden; overflow: clip; }
+
+/* cofres: el letrero (POPULAR, MEJOR VALOR) dentro de la tarjeta, para que no se corte */
+.chest-card { padding-top: 32px; }
+.chest-card .ribbon { top: 6px; z-index: 3; font-size: 13px; padding: 1px 10px 2px; }

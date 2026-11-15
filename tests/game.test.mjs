@@ -449,10 +449,20 @@ console.log('29. Niveles de jugador y ruleta');
   const up = await p7.evaluate(() => ({ num: document.querySelector('#lvlup-num').textContent, name: document.querySelector('#lvlup-name').textContent, banner: document.querySelector('#lvlup-banner').textContent, cnt: document.querySelector('#lvlup-cnt').textContent, conf: !!document.querySelector('#lvlup-overlay .fx-canvas') }));
   check('subida de 2 niveles de golpe: celebración del nivel 3 «Anticapitalista» y 2 tiradas', up.num === '3' && up.name === 'Anticapitalista' && up.banner === '¡+2 NIVELES!' && up.cnt === '×2' && up.conf, JSON.stringify(up));
   await p7.screenshot({ path: 'tests/out/29-nivel.png' });
+  // si se cierra con la ✕, la tirada no se pierde: tocar la barra la abre y tras el siguiente lanzamiento se vuelve a ofrecer
+  await p7.click('#lvlup-spin', { force: true }); await p7.waitForSelector('#wheel-overlay.open'); await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300);
+  check('cerrar la ruleta con la ✕ no gasta la tirada', await p7.evaluate(() => AAP.state.wheelLevel) === 1 && await p7.locator('#lvl-dot:not(.hidden)').count() === 1);
+  await p7.click('#lvl-chip'); await p7.waitForSelector('#wheel-overlay.open', { timeout: 5000 }).catch(() => {});
+  check('con una tirada pendiente, tocar la barra de nivel abre la ruleta', await p7.locator('#wheel-overlay.open').count() === 1 && (await p7.locator('#wheel-title').textContent()) === 'RULETA · NIVEL 2');
+  await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300);
+  await p7.evaluate(() => import('./js/levelup.js').then(m => m.levelTestReset?.()));
+  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p7, 0, 8); await idle(p7);
+  await p7.waitForSelector('#wheel-overlay.open', { timeout: 6000 }).catch(() => {});
+  check('y tras el siguiente lanzamiento se vuelve a ofrecer sola', await p7.locator('#wheel-overlay.open').count() === 1);
   // ruleta: primer premio pesetas (casilla 0), segundo una carta (casilla 2)
   await p7.evaluate(() => { AAP.levelTest.rng = () => 0.01; });
   let b7 = await S(p7);
-  await p7.click('#lvlup-spin', { force: true }); await p7.waitForSelector('#wheel-overlay.open');
+  if (!(await p7.locator('#wheel-overlay.open').count())) { await p7.click('#lvl-chip'); await p7.waitForSelector('#wheel-overlay.open'); }
   const wheel = await p7.evaluate(() => ({ segs: document.querySelectorAll('#wheel-svg .seg').length, title: document.querySelector('#wheel-title').textContent, amt: document.querySelector('#wheel-svg .seg[data-i="0"] .amt').textContent, lights: document.querySelectorAll('#wheel-lights i').length }));
   check('ruleta de 8 casillas con luces, para el nivel 2: pesetas +14', wheel.segs === 8 && wheel.title === 'RULETA · NIVEL 2' && wheel.amt === '+14' && wheel.lights === 20, JSON.stringify(wheel));
   const ticks = await p7.evaluate(() => { window.__ticks = 0; const p = document.querySelector('#wheel-pointer'); new MutationObserver(() => { if (p.classList.contains('kick')) window.__ticks++; }).observe(p, { attributes: true }); return 0; });

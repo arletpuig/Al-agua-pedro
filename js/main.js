@@ -48,7 +48,7 @@ function gatePedro() {
 const start = () => {
   try { gatePedro(); } catch (e) {}
   window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { afterThrow(); pushNow(); if (r?.[0]?.fall) maybeOffer(); } });
-  initLevels(ui, isBusy, e => fail(e));
+  initLevels(ui, isBusy, e => fail(e), async () => { if (!sb.auth.user) return; await pushNow(); const row = await sb.getProfile(); state.updatedAt = null; applyServer(row); ui.hud(); });
   initGift(ui, e => fail(e)); if (!ui.gated()) { restoreGift(); maybeTour(); checkPending(); }
   initPayments(ui, e => fail(e), async () => { const row = await sb.getProfile(); state.updatedAt = null; applyServer(row); ui.hud(); }, pack => { if (pack === 'ruleta') openWheelFrom('legend'); });
   if (state.welcome && !ui.gated()) setTimeout(() => ui.showToast(`🎁 ¡Regalo de bienvenida! ${CONFIG.WELCOME.tomatoes} tomates y ${CONFIG.WELCOME.pesetas} pesetas para empezar`, 4200), 900);
@@ -226,7 +226,7 @@ function traducir(m = '') {
   const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
   // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
-  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack|No tienes tiradas|No tienes pesetas|Esa comunidad|Solo puedes)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
+  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack|No tienes tiradas|No tienes pesetas|Esa comunidad|Solo puedes|Esta tirada)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {

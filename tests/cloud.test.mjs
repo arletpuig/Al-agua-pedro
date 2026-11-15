@@ -240,6 +240,44 @@ console.log('K. Niveles y ruleta en el servidor');
   await page.evaluate(() => { AAP.levelTest.off = true; });
 }
 
+console.log('K2. Subir de nivel jugando (con cuenta): siempre sale la ruleta');
+{
+  await page.evaluate(() => { AAP.levelTest.off = false; AAP.levelTest.fast = true; AAP.giftTest.off = true; });
+  const res = [];
+  for (let round = 0; round < 4; round++) {
+    // tomates para lanzar justo lo necesario para subir 1 nivel
+    const need = await page.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats, i = L.levelInfo(st); return Math.ceil((i.need - i.into) / 35) + 1; });
+    row = db(email);
+    psql(`update public.profiles set chest_tomatoes = chest_tomatoes + ${need} where user_id = '${row.user_id}'`);
+    await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+    const lv0 = await page.evaluate(() => import('./js/levels.js').then(L => L.levelOf(AAP.state.stats)));
+    await page.evaluate(n => import('./js/play.js').then(m => { m.throwTomatoes(n); }), need); await stopAt(page, 0, 8); await idle(page);
+    const lv1 = await page.evaluate(() => import('./js/levels.js').then(L => L.levelOf(AAP.state.stats)));
+    const shown = await page.waitForFunction(() => document.querySelector('#lvlup-overlay').classList.contains('ready'), null, { timeout: 12000 }).then(() => true, () => false);
+    const btn = shown ? await page.locator('#lvlup-spin').textContent() : '';
+    let prize = '';
+    if (shown) {
+      await page.click('#lvlup-spin', { force: true });
+      const w = await page.waitForSelector('#wheel-overlay.open', { timeout: 8000 }).then(() => true, () => false);
+      if (w) { await page.click('#wheel-btn', { force: true }); prize = await page.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 15000 }).then(() => page.locator('#wheel-prize').textContent(), async () => 'SIN PREMIO: ' + (await page.locator('#toast').textContent())); }
+      for (let k = 0; k < 4; k++) {
+        if (await page.locator('#chest-overlay.open').count()) { await page.click('#chest-btn'); await page.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await page.click('#chest-btn'); await page.waitForTimeout(300); }
+        else if (await page.locator('#wheel-overlay.open').count()) { await page.click('#wheel-close', { force: true }); await page.waitForTimeout(300); }
+      }
+    }
+    const srv = db(email), srvLv = +psql(`select public.fn_player_level(${srv.tomatoes_thrown}, ${srv.hits}, ${srv.falls})`);
+    res.push({ lv0, lv1, shown, btn, prize: prize.slice(0, 40), srvLv, wl: srv.wheel_level });
+  }
+  check('subiendo de nivel jugando, cada vez sale la celebración y la ruleta da su premio (4 veces seguidas)', res.every(r => r.lv1 > r.lv0 && r.shown && /GIRAR/.test(r.btn) && /PREMIO|BOTE|LEGENDARIO/.test(r.prize) && r.wl === r.srvLv), JSON.stringify(res));
+  // el juego cree que hay una tirada pero el servidor ya la dio (p. ej. girada en otro dispositivo): se pone al día sin colgarse
+  await page.evaluate(() => { AAP.state.wheelLevel -= 1; return import('./js/levelup.js').then(m => m.syncChip()); });
+  await page.click('#lvl-chip'); await page.waitForSelector('#wheel-overlay.open', { timeout: 8000 });
+  await page.click('#wheel-btn', { force: true }); await page.waitForTimeout(2500);
+  const stale = await page.evaluate(() => ({ open: document.querySelector('#wheel-overlay').classList.contains('open'), toast: document.querySelector('#toast').textContent, dot: !document.querySelector('#lvl-dot').classList.contains('hidden'), wl: AAP.state.wheelLevel }));
+  check('si el servidor ya había dado esa tirada, el juego se pone al día y avisa (sin colgarse)', !stale.open && /ya estaba girada/.test(stale.toast) && !stale.dot && stale.wl === db(email).wheel_level, JSON.stringify(stale));
+  await page.evaluate(() => { AAP.levelTest.off = true; });
+}
+
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#panel-rank .sheet-body');
 check('ranking con podio para los tres primeros', await page.locator('#rank-podium .pd:not(.empty)').count() >= 2 && await page.locator('#rank-podium .crown').count() === 1);

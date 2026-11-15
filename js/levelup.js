@@ -12,15 +12,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const TIERS = ['t1', 't2', 't3', 't4', 't5', 't6'];
 const setTier = (el, L) => { el.classList.remove(...TIERS); el.classList.add('t' + LV.tierOf(L)); };
 const INTRO_KEY = 'alaguapedro.levelsIntro';
-let ui, isBusy, fail, fxUp = null, fxWheel = null, shownXp = null, queue = Promise.resolve(), running = false, spinning = false, waitingSpin = null;
+let ui, isBusy, fail, reload = null, lastOffer = 0, fxUp = null, fxWheel = null, shownXp = null, queue = Promise.resolve(), running = false, spinning = false, waitingSpin = null;
 export const levelTest = { rng: null, fast: false, off: !!window.__AAP_NOLEVELUP };   // pruebas automáticas: premio fijo, animaciones rápidas o sin celebraciones
+export function levelTestReset() { lastOffer = 0; }
 export const pending = () => (state.noWheel ? 0 : Math.max(0, LV.levelOf(state.stats) - state.wheelLevel));
 export const celebrating = () => running;
 
-export function initLevels(uiRef, busyFn, failFn) {
-  ui = uiRef; isBusy = busyFn; fail = failFn;
+export function initLevels(uiRef, busyFn, failFn, reloadFn) {
+  ui = uiRef; isBusy = busyFn; fail = failFn; reload = reloadFn;
   fxUp = createFx($('#lvlup-overlay')); fxWheel = createFx($('#wheel-overlay'));
-  $('#lvl-chip').addEventListener('click', () => { SFX.ui(); openLevels(); });
+  $('#lvl-chip').addEventListener('click', () => { SFX.ui(); if (pending() > 0 && !running) openWheelFrom('level'); else openLevels(); });
   $('#levels-body').addEventListener('click', e => { if (e.target.closest('[data-spin]')) openWheelFrom('level'); else if (e.target.closest('[data-legend]')) openWheelFrom('legend'); });
   $('#wheel-close').addEventListener('click', () => { if (!spinning) closeWheel(); });
   buildLights();
@@ -48,7 +49,7 @@ export function syncChip(mode = true) {
 // Al terminar un lanzamiento: «+XP» volando a la barra y, si toca, celebración
 export function afterThrow() {
   const before = shownXp ?? LV.xpOf(state.stats), now = LV.xpOf(state.stats), gained = now - before;
-  if (gained <= 0) { syncChip(); return; }
+  if (gained <= 0) { syncChip(); reoffer(); return; }
   const L0 = LV.levelOfXp(before), L1 = LV.levelOfXp(now), chip = $('#lvl-chip');
   xpFloater(gained); SFX.xp();
   chip.classList.remove('gain'); void chip.offsetWidth; chip.classList.add('gain');
@@ -57,8 +58,9 @@ export function afterThrow() {
     shownXp = now; chip.classList.add('full');
     setTimeout(() => { chip.classList.remove('full'); syncChip(true); }, 700);
     queueCelebrate({ mode: 'up', from: L0, to: L1 });
-  } else syncChip(true);
+  } else { syncChip(true); reoffer(); }
 }
+function reoffer() { if (!levelTest.off && pending() > 0 && !running && Date.now() - lastOffer > 120000) { lastOffer = Date.now(); queueCelebrate({ mode: 'wheel', src: 'level' }); } }
 function xpFloater(n) {
   const r = $('#lvl-chip .lvl-bar').getBoundingClientRect(), el = document.createElement('div');
   el.className = 'xp-float'; el.textContent = `+${fmt(n)} XP`;
@@ -156,6 +158,7 @@ function buildLights(n) { $('#wheel-lights').innerHTML = Array.from({ length: n 
 function setAngle(a) { angle = a; $('#wheel').style.transform = `rotate(${a}deg)`; }
 const coin = '<svg class="ci"><use href="#ic-coin"/></svg>';
 function openWheel(src) {
+  if (src === 'level') lastOffer = Date.now();
   const S = SOURCES[src], kind = S.wheel(), L = S.L(), ov = $('#wheel-overlay'), leg = kind === 'legend', price = LV.shopSpinPrice(L);
   ov.classList.toggle('legend', leg); buildWheel(kind, L); buildLights(leg ? 32 : 20); setAngle(angle % 360);
   $('#wheel-title').textContent = src === 'level' ? `${leg ? 'RULETA LEGENDARIA' : 'RULETA'} · NIVEL ${L}` : src === 'shop' ? 'RULETA DE LA SUERTE' : 'RULETA LEGENDARIA';
@@ -192,7 +195,11 @@ async function spin(src) {
   const ov = $('#wheel-overlay'), btn = $('#wheel-btn'), leg = ov.classList.contains('legend'); btn.disabled = true; spinning = true; ov.classList.add('spinning');
   SFX.spin(); if (leg) SFX.drumroll(1.6); if (navigator.vibrate) try { navigator.vibrate(20); } catch (e) {}
   let result = null, error = null;
-  const req = SOURCES[src].go(levelTest.rng).then(r => { result = r; }, e => { error = e; });
+  const go = () => SOURCES[src].go(levelTest.rng);
+  const req = go().catch(async e => {
+    if (src !== 'level' || !reload || !/No tienes tiradas/.test(e.message)) throw e;
+    await reload(); if (!pending()) throw new Error('Esta tirada ya estaba girada'); return go();
+  }).then(r => { result = r; }, e => { error = e; });
   const fast = levelTest.fast, MAXV = leg ? 1100 : 900;   // grados por segundo
   let v = 0, t0 = performance.now(), last = t0, lastSeg = Math.floor(angle / SEG);
   const tick = a => { const s = Math.floor(a / SEG); if (s !== lastSeg) { lastSeg = s; SFX.tick(); const p = $('#wheel-pointer'); p.classList.remove('kick'); void p.offsetWidth; p.classList.add('kick'); } };

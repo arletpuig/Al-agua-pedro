@@ -7,8 +7,9 @@ export const LEVEL_NAMES = ['Perroflauta', 'Okupa', 'Anticapitalista', 'Anarquis
   'Patriota', 'Españolista', 'Derechista', 'Carlista', 'Anticomunista', 'Soberanista', 'Tradicionalista', 'Nacional-conservador', 'Voxista', 'Imperialista español',
   'Ultrapatriota', 'Ultraderechista', 'Reaccionario', 'Nacionalista radical', 'Falangista', 'Nacional-sindicalista', 'Nacionalcatólico', 'Legionario', 'Franquista', 'Caudillo Supremo'];
 export const MAX_LEVEL = LEVEL_NAMES.length;
-// XP total para llegar a cada nivel: XP_AT[L - 1]. Subir del nivel k al k+1 cuesta 70·k^1.65 + 30 (redondeado a decenas).
-export const XP_AT = [0, 100, 350, 810, 1530, 2560, 3940, 5710, 7900, 10560, 13720, 17410, 21660, 26510, 31990, 38120, 44940, 52470, 60750, 69800, 79640, 90310, 101820,
+// XP total para llegar a cada nivel: XP_AT[L - 1]. Del nivel 10 en adelante, subir del k al k+1 cuesta 70·k^1.65 + 30 (redondeado a decenas).
+// Los primeros niveles cuestan algo más (300, 500, 700... XP) para que un jugador nuevo no esté todo el rato en la ruleta.
+export const XP_AT = [0, 300, 800, 1500, 2400, 3500, 4800, 6400, 8300, 10560, 13720, 17410, 21660, 26510, 31990, 38120, 44940, 52470, 60750, 69800, 79640, 90310, 101820,
   114210, 127500, 141710, 156870, 173000, 190130, 208280, 227470, 247720, 269060, 291510, 315090, 339830, 365740, 392850, 421180, 450750, 481580, 513690, 547100,
   581830, 617900, 655330, 694140, 734350, 775990, 819060];
 export const XP = { thrown: 10, hit: 5, fall: 20 };
@@ -31,11 +32,11 @@ export function levelInfo(stats) {
 export const WHEELS = {
   normal: { id: 'normal', name: 'Ruleta', segs: [
     { id: 'pes_s',   weight: 22, kind: 'pesetas',  amount: L => 10 + 2 * L,   label: 'PESETAS',  color: '#ffb21a', icon: 'ic-coin' },
-    { id: 'tom_s',   weight: 20, kind: 'tomatoes', amount: L => 10 + 3 * L,   label: 'TOMATES',  color: '#ff4b3a', icon: 'ic-tomato' },
+    { id: 'tom_s',   weight: 20, kind: 'tomatoes', amount: L => 8 + 2 * L,    label: 'TOMATES',  color: '#ff4b3a', icon: 'ic-tomato' },
     { id: 'card',    weight: 14, kind: 'chest', chest: 'wood', times: 1,       label: 'CARTA',    color: '#3fa2ff', icon: 'ic-cards', text: '+1' },
     { id: 'x5',      weight: 10, kind: 'falcon', minutes: 10,                  label: '×5 CLICS', color: '#13d1c4', icon: 'ic-plane' },
     { id: 'pes_m',   weight: 12, kind: 'pesetas',  amount: L => 30 + 5 * L,   label: 'PESETAS',  color: '#ffd23f', icon: 'ic-coin' },
-    { id: 'tom_l',   weight: 10, kind: 'tomatoes', amount: L => 30 + 8 * L,   label: 'TOMATES',  color: '#e3262c', icon: 'ic-tomato' },
+    { id: 'tom_l',   weight: 10, kind: 'tomatoes', amount: L => 20 + 6 * L,   label: 'TOMATES',  color: '#e3262c', icon: 'ic-tomato' },
     { id: 'cards3',  weight: 8,  kind: 'chest', chest: 'diamond', times: 1,    label: 'CARTAS',   color: '#b163ff', icon: 'ic-chest-dia', text: '+3' },
     { id: 'jackpot', weight: 4,  kind: 'pesetas',  amount: L => 100 + 20 * L, label: '¡BOTE!',   color: '#1b1033', icon: 'ic-coin', jackpot: true },
   ] },

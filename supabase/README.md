@@ -24,6 +24,9 @@ El botón «Entrar con Google» ya está en el juego; solo hay que activarlo (un
 
 Mientras no esté activado, el botón avisa de que Google todavía no está disponible y se puede entrar con el correo.
 
+## Si ya tenías la versión 17
+Solo ejecuta `schema_v18.sql` (o `schema_todo.sql`): los primeros niveles cuestan algo más y la ruleta normal da algo menos de tomates.
+
 ## Si ya tenías la versión 16
 Solo ejecuta `schema_v17.sql` (o `schema_todo.sql`): racha de lanzamientos con pesetas extra.
 

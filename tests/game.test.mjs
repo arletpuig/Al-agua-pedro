@@ -427,23 +427,23 @@ console.log('28. iPhone: sin zoom ni movimientos al pulsar rápido');
 console.log('29. Niveles de jugador y ruleta');
 {
   const lv = await page.evaluate(async () => { const L = await import('./js/levels.js'); return { n: L.LEVEL_NAMES.length, first: L.LEVEL_NAMES[0], last: L.LEVEL_NAMES[49], l16: L.LEVEL_NAMES[15],
-    mono: L.XP_AT.every((v, i) => !i || v > L.XP_AT[i - 1]), formula: L.XP_AT.every((v, i) => !i || v - L.XP_AT[i - 1] === Math.round((70 * Math.pow(i, 1.65) + 30) / 10) * 10),
-    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 99, 100, 349, 350, 819059, 819060, 1e9].map(L.levelOfXp) }; });
+    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round((70 * Math.pow(i, 1.65) + 30) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,300,800,1500,2400,3500,4800,6400,8300,10560',
+    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 299, 300, 799, 800, 819059, 819060, 1e9].map(L.levelOfXp) }; });
   check('50 niveles: de Perroflauta a Caudillo Supremo', lv.n === 50 && lv.first === 'Perroflauta' && lv.last === 'Caudillo Supremo' && lv.l16 === 'Sanchista');
-  check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
+  check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más (los primeros, algo más que antes)', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
   check('límites de nivel exactos y tope en 50', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
   check('la ruleta suma 100 (probabilidades en %)', lv.w === 100);
   const c7 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p7 = await c7.newPage(); const e7 = watchErrors(p7); await mockTime(p7);
   await open(p7, undefined, { levels: true });
   await p7.evaluate(() => { AAP.giftTest.off = true; AAP.levelTest.fast = true; AAP.state.tutorialSeen = true; AAP.state.stats.chestTomatoes += 40; return import('./js/state.js').then(m => m.changed(false)); }); await noCombo(p7);
   const chip0 = await p7.evaluate(() => [document.querySelector('#lvl-num').textContent, document.querySelector('#lvl-name').textContent, document.querySelector('#lvl-xp').textContent].join('|'));
-  check('jugador nuevo: barra de nivel 1 «Perroflauta» con 0/100 XP', chip0 === '1|Perroflauta|0 / 100 XP', chip0);
+  check('jugador nuevo: barra de nivel 1 «Perroflauta» con 0/300 XP', chip0 === '1|Perroflauta|0 / 300 XP', chip0);
   await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p7, 0, 8); await idle(p7);
   await p7.waitForSelector('.xp-float', { timeout: 3000 }).catch(() => {});
   const g1 = await p7.evaluate(() => [document.querySelector('.xp-float')?.textContent, document.querySelector('#lvl-xp').textContent, document.querySelector('#lvl-chip').classList.contains('gain')]);
-  check('al acertar: «+35 XP» sale volando y la barra sube (35/100)', g1[0] === '+35 XP' && g1[1] === '35 / 100 XP' && g1[2], JSON.stringify(g1));
+  check('al acertar: «+35 XP» sale volando y la barra sube (35/300)', g1[0] === '+35 XP' && g1[1] === '35 / 300 XP' && g1[2], JSON.stringify(g1));
   check('sin subir de nivel no hay ruleta', await p7.locator('#lvlup-overlay.open').count() === 0);
-  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(10); })); await stopAt(p7, 0, 8); await idle(p7);
+  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(30); })); await stopAt(p7, 0, 8); await idle(p7);
   await p7.waitForSelector('#lvlup-overlay.open', { timeout: 8000 }).catch(() => {});
   await p7.waitForFunction(() => document.querySelector('#lvlup-overlay').classList.contains('ready'), null, { timeout: 5000 }).catch(() => {});
   const up = await p7.evaluate(() => ({ num: document.querySelector('#lvlup-num').textContent, name: document.querySelector('#lvlup-name').textContent, banner: document.querySelector('#lvlup-banner').textContent, cnt: document.querySelector('#lvlup-cnt').textContent, conf: !!document.querySelector('#lvlup-overlay .fx-canvas') }));

@@ -25,7 +25,7 @@ El botón «Entrar con Google» ya está en el juego; solo hay que activarlo (un
 Mientras no esté activado, el botón avisa de que Google todavía no está disponible y se puede entrar con el correo.
 
 ## Si ya tenías la versión 15
-Solo ejecuta `schema_v16.sql` (o `schema_todo.sql`): la ruleta de la suerte cuesta como mucho 120 pesetas.
+Solo ejecuta `schema_v16.sql` (o `schema_todo.sql`): comunidad autónoma de cada jugador y ranking por comunidades.
 
 ## Si ya tenías la versión 14
 Solo ejecuta `schema_v15.sql` (o `schema_todo.sql`): paguitas que valen más desde el nivel 8 de la carta y ruleta legendaria de la tienda con 3 vídeos (ya no se vende).

@@ -7,7 +7,6 @@ import { CARD_ART } from './cards-art.js';
 import { backend } from './backend.js';
 import { canShowVideo, PLACEMENTS } from './ads.js';
 import { AVATARS, avatarSVG } from './avatars.js';
-import { DEFAULT_TITLES } from './share.js';
 import * as LV from './levels.js';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => n.toLocaleString('es-ES');
@@ -37,8 +36,11 @@ export function init(handlers) {
   $('#flag-grid').addEventListener('click', e => { const b = e.target.closest('button[data-flag]'); if (b) H.onAvatar?.(b.dataset.flag); });
   $('#prof-av').addEventListener('click', () => $('#flags-title').scrollIntoView({ behavior: 'smooth', block: 'start' }));
   $('#form-name').addEventListener('submit', e => { e.preventDefault(); H.onRename?.($('#name-input').value); });
-  $('#form-title').addEventListener('submit', e => { e.preventDefault(); H.onTitle?.($('#title-input').value); });
-  $('#title-chips').addEventListener('click', e => { const b = e.target.closest('button[data-title]'); if (b) H.onTitle?.(b.dataset.title); });
+  $('#region-grid').addEventListener('click', e => { const b = e.target.closest('button[data-region]'); if (b) H.onRegion?.(b.dataset.region); });
+  $('#prof-title').addEventListener('click', () => $('#region-title').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  // ranking: jugadores o comunidades; al tocar una comunidad, sus mejores jugadores
+  $('#rank-tabs').addEventListener('click', e => { const b = e.target.closest('button[data-rt]'); if (b) rankTab(b.dataset.rt, true); });
+  $('#region-list').addEventListener('click', e => { const li = e.target.closest('li[data-region]'); if (!li) return; const open = !li.classList.contains('open'); $$('#region-list li.open').forEach(x => x.classList.remove('open')); if (open) { li.classList.add('open'); H.onRegionOpen?.(li.dataset.region); } SFX.ui(); });
   $('#btn-share').addEventListener('click', () => H.onShare?.());
   $('#share-close').addEventListener('click', () => hideShare());
   $('#share-go').addEventListener('click', () => H.onShareGo?.());
@@ -281,6 +283,28 @@ export function renderCards(upgradedId) {
     </div>`;
   }).join('');
 }
+export const REGIONS = AVATARS.filter(a => a.group === 'c');
+export function rankTab(mode, user = false) {
+  $$('#rank-tabs button').forEach(b => b.classList.toggle('on', b.dataset.rt === mode));
+  $('#rank-list').classList.toggle('hidden', mode !== 'players'); $('#region-list').classList.toggle('hidden', mode !== 'regions');
+  $('#rank-note').textContent = mode === 'players' ? 'Tomates conseguidos por los jugadores con cuenta.' : 'Tomates de todos los jugadores de cada comunidad. Toca una para ver sus mejores jugadores.';
+  if (user) { SFX.ui(); if (mode === 'regions') H.onRegions?.(); else H.onRank?.(); }
+}
+// Ranking de comunidades: salen todas (las que aún no tienen jugadores, al final)
+export function renderRegions(rows, err, myRegion) {
+  const list = $('#region-list');
+  if (err) { list.innerHTML = `<li class="empty">${err}</li>`; return; }
+  const by = Object.fromEntries((rows || []).map(r => [r.region, r]));
+  const all = REGIONS.map(r => ({ ...r, players: +(by[r.id]?.players || 0), tomatoes: +(by[r.id]?.tomatoes || 0) })).sort((a, b) => b.tomatoes - a.tomatoes || a.name.localeCompare(b.name, 'es'));
+  list.innerHTML = all.map(r => `<li data-region="${r.id}" class="${r.id === myRegion ? 'me' : ''}${r.players ? '' : ' zero'}"><span class="av">${avatarSVG(r.id, 30)}</span>
+    <span class="nm">${esc(r.name)}<em class="rk-sub">${r.players ? `${fmt(r.players)} jugador${r.players > 1 ? 'es' : ''}` : 'Sin jugadores todavía'}${r.id === myRegion ? ' · LA TUYA' : ''}</em></span>
+    <span class="sc">${fmt(r.tomatoes)}</span>${icon('ic-tomato').replace('<svg', '<svg width="22" height="22"')}<ol class="rg-top" id="rg-${r.id}"></ol></li>`).join('');
+}
+export function renderRegionPlayers(region, rows, err, myName) {
+  const box = document.getElementById('rg-' + region); if (!box) return;
+  box.innerHTML = err ? `<li class="empty">${err}</li>` : !rows?.length ? '<li class="empty">Todavía nadie de aquí ha tirado a Pedro al agua.</li>'
+    : rows.map((r, i) => `<li class="${r.username === myName ? 'me' : ''}"><b class="pos">${i + 1}</b><span class="av">${avatarSVG(r.avatar, 24)}</span><span class="nm">${esc(r.username || 'Anónimo')}${r.level ? `<em class="rk-lvl t${LV.tierOf(r.level)}">Nv ${r.level} · ${esc(LV.levelName(r.level))}</em>` : ''}</span><span class="sc">${fmt(r.tomatoes_earned)}</span></li>`).join('');
+}
 export function renderRank(rows, err, myName) {
   const list = $('#rank-list');
   if (err) { list.innerHTML = `<li class="empty">${err}</li>`; return; }
@@ -342,10 +366,11 @@ export function renderProfile(p) {
   const s = state.stats, thrown = s.tomatoesThrown;
   $('#prof-av-img').innerHTML = avatarSVG(p.avatar, 92);
   $('#prof-name').textContent = p.name || 'Jugador';
-  $('#prof-title').textContent = p.title;
+  const reg = REGIONS.find(r => r.id === p.region);
+  $('#prof-title').innerHTML = reg ? `${avatarSVG(reg.id, 18)}<span>${esc(reg.name)}</span>` : '<span>📍 Elige tu comunidad</span>';
+  $('#prof-title').classList.toggle('none', !reg);
+  $('#region-grid').innerHTML = REGIONS.map(r => `<button type="button" class="${r.id === p.region ? 'on' : ''}" data-region="${r.id}"><span class="av">${avatarSVG(r.id, 26)}</span><em>${esc(r.name)}</em></button>`).join('');
   const lv = LV.levelInfo(s), pl = $('#prof-lvl'); pl.className = 'prof-lvl t' + lv.tier; pl.innerHTML = `<span class="lvl-medal"><svg><use href="#ic-medal"/></svg><b>${lv.level}</b></span>${esc(lv.name)}`;
-  const ti = $('#title-input'); if (document.activeElement !== ti) ti.value = p.title || '';
-  $('#title-chips').innerHTML = DEFAULT_TITLES.map(t => `<button type="button" data-title="${esc(t)}" class="${t === p.title ? 'on' : ''}">${esc(t)}</button>`).join('');
   $('#prof-mail').textContent = p.email || '';
   const inp = $('#name-input'); if (document.activeElement !== inp) inp.value = p.name || '';
   const stats = [[fmt(s.falls), 'Pedro al agua'], [thrown ? Math.round(100 * s.perfects / thrown) + '%' : '—', 'Puntería'], [fmt(s.tomatoesEarned), 'Tomates'], [p.rank ? '#' + fmt(p.rank) : '—', 'Ranking']];

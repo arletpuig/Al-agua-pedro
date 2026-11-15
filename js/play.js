@@ -8,7 +8,9 @@ import { SFX, unlock } from './audio.js';
 import { LINES, pick } from './game/arena.js';
 
 export const paguitaTest = { every: 0 };   // solo pruebas: segundos entre lluvias
-let scene, ui, hooks, busy = false, taps = 0, idleTimer = null, chatAt = 40, chatTime = 0, paguitaAt = 0;
+// Frases de Pedro: mientras pulsas, como mucho una cada 25 s (y cada 120–200 pulsaciones); sin pulsar, una cada 50–80 s
+export const CHAT = { gap: 25000, taps: [120, 80], idle: [50000, 30000] };
+let scene, ui, hooks, busy = false, taps = 0, idleTimer = null, chatAt = 60, chatTime = 0, paguitaAt = 0;
 const combo = { heat: 0, last: 0, mult: 1 };
 export function isBusy() { return busy; }
 export function comboMult() { return combo.mult; }
@@ -26,7 +28,7 @@ export function initPlay(sceneRef, uiRef, hooksRef = {}) {
 }
 function scheduleIdle() {
   clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => { if (!busy && document.visibilityState === 'visible') scene.tauntIdle(pick(LINES.idle)); scheduleIdle(); }, 20000 + Math.random() * 10000);
+  idleTimer = setTimeout(() => { if (!busy && document.visibilityState === 'visible') scene.tauntIdle(pick(LINES.idle)); scheduleIdle(); }, CHAT.idle[0] + Math.random() * CHAT.idle[1]);
 }
 // ---------- multiplicador por racha ----------
 function levelFor(heat) { let m = 1; for (const l of CONFIG.COMBO.levels) if (heat >= l.heat) m = l.mult; return m; }
@@ -55,7 +57,7 @@ function onTap(e) {
   ui.floater('+' + n, e.clientX || null, e.clientY || null); ui.hud(true); ui.combo(combo.mult, combo.heat, nextHeat());
   if (taps % 10 === 0) scene.peek();
   // mientras pulsas, Pedro suelta de vez en cuando una de sus frases
-  if (taps >= chatAt && performance.now() - chatTime > 7000 && !busy) { chatAt = taps + 35 + Math.floor(Math.random() * 30); chatTime = performance.now(); scene.chatter(pick(LINES.idle)); }
+  if (taps >= chatAt && performance.now() - chatTime > CHAT.gap && !busy) { chatAt = taps + CHAT.taps[0] + Math.floor(Math.random() * CHAT.taps[1]); chatTime = performance.now(); scene.chatter(pick(LINES.idle)); }
   if (earned) { SFX.tomato(); ui.flyTomato(earned); scene.tomatoEarned(); }
   scheduleIdle();
 }

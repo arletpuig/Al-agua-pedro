@@ -7,7 +7,7 @@ import * as sb from './supabase.js';
 import * as E from './economy.js';
 import { backend } from './backend.js';
 import { createArena } from './game/arena.js';
-import { initPlay, throwTomatoes, stopNow, isBusy, testRng, paguitaTest } from './play.js';
+import { initPlay, throwTomatoes, stopNow, isBusy, testRng, paguitaTest, CHAT } from './play.js';
 import { setEnabled, SFX } from './audio.js';
 import { DEFAULT_AVATAR } from './avatars.js';
 import { renderShareCard, canvasBlob, defaultTitle } from './share.js';
@@ -16,6 +16,7 @@ import { showVideo, PLACEMENTS, videosOn } from './ads.js';
 import { initPayments, openPack, consumeReturn, awaitPurchase } from './payments.js';
 import { maybeTour, startTour, tourTest } from './tour.js';
 import { initLevels, afterThrow, syncChip, checkPending, levelTest, openWheelFrom } from './levelup.js';
+import { levelName, levelOf } from './levels.js';
 const payReturn = consumeReturn();   // vuelta de la página de pago de Stripe
 
 const $ = s => document.querySelector(s);
@@ -25,7 +26,7 @@ let saveTimer = null, saving = null, falconWas = false, opening = false, shareFi
 const TEST_HOST = !!window.__AAP_TEST;
 const GUEST_OK = TEST_HOST || (location.search.includes('debug') && /[?&]guest\b/.test(location.search));
 const PROFILE_KEY = 'alaguapedro.profile';
-const profile = { name: null, avatar: null, title: null, email: '', rank: null };
+const profile = { name: null, avatar: null, title: null, region: null, email: '', rank: null };
 try { Object.assign(profile, JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}); } catch (e) {}
 
 window.__aapStep?.('Iniciando');
@@ -33,7 +34,7 @@ load();
 setEnabled(state.sound);
 const { scene } = createArena('game', { top: 92, bottom: 252 });   // arriba: barra de nivel y marcador
 ui.init({ onThrow: n => throwTomatoes(n), onStop: stopNow, onBuyChest: buyChest, onClaimDaily: claimDaily, onUpgrade: upgrade, onAd: watchAd, onRank: showRank,
-  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onTitle: saveTitle, onPack: id => openPack(id), onWheel: src => openWheelFrom(src), onHelp: () => startTour(), onShare: share, onShareGo: shareGo, onShareSave: shareSave });
+  onProfile: showProfile, onAvatar: pickAvatar, onRename: rename, onRegion: saveRegion, onRegions: showRegions, onRegionOpen: showRegionPlayers, onPack: id => openPack(id), onWheel: src => openWheelFrom(src), onHelp: () => startTour(), onShare: share, onShareGo: shareGo, onShareSave: shareSave });
 ui.setAccountUI(null, null, profile.avatar || DEFAULT_AVATAR);
 // con un panel o una ventana delante, el escenario se dibuja más despacio
 new MutationObserver(() => { scene.covered = !!document.querySelector('.panel.open, .overlay.open'); }).observe($('#app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
@@ -60,7 +61,7 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest, CHAT };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
@@ -96,7 +97,16 @@ async function watchAd(placement) {
   catch (e) { fail(e); ui.renderShop(); }
   watching = false;
 }
+async function showRegions() {
+  ui.renderRegions([], 'Cargando...');
+  try { ui.renderRegions(await sb.regionRanking(), null, profile.region); } catch (e) { ui.renderRegions([], 'No se pudo cargar el ranking. Inténtalo más tarde.'); }
+}
+async function showRegionPlayers(region) {
+  ui.renderRegionPlayers(region, [], 'Cargando...');
+  try { ui.renderRegionPlayers(region, await sb.regionLeaders(region), null, profile.name); } catch (e) { ui.renderRegionPlayers(region, [], 'No se pudo cargar. Inténtalo más tarde.'); }
+}
 async function showRank() {
+  ui.rankTab('players');
   ui.renderRank([], 'Cargando...');
   try { ui.renderRank(await sb.leaderboard(), null, profile.name); } catch (e) { ui.renderRank([], 'No se pudo cargar el ranking. Inténtalo más tarde.'); }
 }
@@ -120,10 +130,15 @@ async function afterLogin(user) {
   try {
     ui.gate(false);
     let row = await sb.getProfile();
-    setProfile({ name: row?.username || user.user_metadata?.username || user.user_metadata?.full_name || null, avatar: row?.avatar || null, title: row?.title || null, email: user.email || '', rank: null }, user);
+    setProfile({ name: row?.username || user.user_metadata?.username || user.user_metadata?.full_name || null, avatar: row?.avatar || null, title: row?.title || null, region: row?.region || null, email: user.email || '', rank: null }, user);
     // la primera vez se invita a elegir bandera y nombre
     const askKey = 'alaguapedro.askedFlag.' + user.id;
-    if (row && !row.avatar && !localStorage.getItem(askKey)) { try { localStorage.setItem(askKey, '1'); } catch (e) {} setTimeout(() => { ui.openPanel('#panel-profile'); ui.showToast('🚩 Elige tu bandera y tu nombre de jugador', 3500); }, 700); }
+    const regKey = 'alaguapedro.askedRegion.' + user.id, askFlag = row && !row.avatar && !localStorage.getItem(askKey), askReg = row && !row.region && !localStorage.getItem(regKey);
+    if (askFlag || askReg) {
+      try { if (askFlag) localStorage.setItem(askKey, '1'); if (askReg) localStorage.setItem(regKey, '1'); } catch (e) {}
+      setTimeout(() => { ui.openPanel('#panel-profile'); ui.showToast(askFlag ? '🚩 Elige tu nombre, tu comunidad y tu bandera' : '📍 Elige tu comunidad autónoma para el ranking', 3800);
+        if (!askFlag) setTimeout(() => $('#region-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300); }, 700);
+    }
     const serverEmpty = !row || (+row.total_clicks === 0 && row.chests_opened === 0 && row.tomatoes_thrown === 0);
     state.updatedAt = null;
     if (serverEmpty && hasProgress()) {       // primera vez: se sube el progreso de invitado (una sola vez, validado y con topes)
@@ -183,7 +198,7 @@ onForm('#form-recover', async f => { ui.accMsg('Enviando...'); await sb.recover(
 onForm('#form-newpass', async f => { ui.accMsg('Guardando...'); await sb.updatePassword(f.password.value); const u = await sb.fetchUser(); f.reset(); ui.showTab('login'); ui.accMsg('✅ Contraseña cambiada', 'ok'); await afterLogin(u); });
 $('#btn-logout').addEventListener('click', async () => {
   if (state.dirty) await pushNow();
-  await sb.signOut(); resetProgress(); syncChip(); restoreGift(); setProfile({ name: null, avatar: null, title: null, email: '', rank: null }, null); ui.closeAll(); ui.showTab('login'); ui.hud();
+  await sb.signOut(); resetProgress(); syncChip(); restoreGift(); setProfile({ name: null, avatar: null, title: null, region: null, email: '', rank: null }, null); ui.closeAll(); ui.showTab('login'); ui.hud();
   if (!GUEST_OK) ui.gate(true);
   ui.showToast('Sesión cerrada. Tu progreso queda guardado en tu cuenta.');
 });
@@ -191,7 +206,7 @@ function traducir(m = '') {
   const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
   // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
-  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack|No tienes tiradas|No tienes pesetas)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
+  return /^(No |Ya |Te faltan|La carta|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack|No tienes tiradas|No tienes pesetas|Esa comunidad|Solo puedes)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {
@@ -212,7 +227,7 @@ function traducir(m = '') {
 // ---------- perfil ----------
 function setProfile(p, user = sb.auth.user) {
   Object.assign(profile, p);
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: profile.name, avatar: profile.avatar, title: profile.title })); } catch (e) {}
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: profile.name, avatar: profile.avatar, title: profile.title, region: profile.region })); } catch (e) {}
   ui.setAccountUI(user, profile.name, profile.avatar || DEFAULT_AVATAR);
   if ($('#panel-profile').classList.contains('open')) ui.renderProfile(view());
 }
@@ -237,12 +252,13 @@ async function pickAvatar(id) {
   if (profile.avatar) { try { const v = await showVideo(PLACEMENTS.FLAG); if (!v.completed) throw new Error('No has completado el vídeo'); } catch (e) { fail(e); return; } }
   try { await saveProfile(profile.name || '', id); SFX.upgrade(); ui.showToast('🚩 ¡Bandera puesta!'); } catch (e) { fail(e); }
 }
-async function saveTitle(t) {
-  t = String(t || '').trim().replace(/\s+/g, ' ');
+// Comunidad autónoma (para el ranking por comunidades)
+async function saveRegion(id) {
+  if (id === profile.region) return;
   try {
-    if (sb.auth.user) { const row = await sb.setTitle(t); setProfile({ title: row.title }); }
-    else { if (t.length < 2 || t.length > 28) throw new Error('El título debe tener entre 2 y 28 caracteres'); setProfile({ title: t }); }
-    ui.renderProfile(view()); SFX.upgrade(); ui.showToast('🎖️ Título puesto'); $('#title-input').blur();
+    if (sb.auth.user) { const row = await sb.setRegion(id); setProfile({ region: row.region }); }
+    else setProfile({ region: id });
+    ui.renderProfile(view()); SFX.upgrade(); ui.showToast('📍 ¡Ya juegas por ' + (ui.REGIONS.find(r => r.id === id)?.name || 'tu comunidad') + '!');
   } catch (e) { fail(e); }
 }
 async function rename(name) {
@@ -253,7 +269,7 @@ async function share() {
   ui.showShare();
   try {
     if (sb.auth.user) try { profile.rank = await sb.myRank(); } catch (e) {}
-    const cv = await renderShareCard(scene, { name: profile.name || 'Jugador', avatar: profile.avatar || DEFAULT_AVATAR, title: view().title, stats: state.stats, rank: profile.rank,
+    const cv = await renderShareCard(scene, { name: profile.name || 'Jugador', avatar: profile.avatar || DEFAULT_AVATAR, title: levelName(levelOf(state.stats)), stats: state.stats, rank: profile.rank,
       cardsUnlocked: E.CARD_IDS.filter(id => E.level(state.cards, id) > 0).length, cardsTotal: E.CARD_IDS.length });
     const blob = await canvasBlob(cv);
     shareFile = new File([blob], 'al-agua-pedro.png', { type: 'image/png' });

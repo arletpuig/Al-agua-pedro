@@ -78,7 +78,10 @@ export const claimAdReward = (placement, token) => rpc('claim_ad_reward', { p_pl
 export const serverNow = () => rpc('server_now', {}, { auth: false });         // -> { date, now, next_midnight }
 export const updateProfile = (username, avatar) => rpc('update_profile', { p_username: username, p_avatar: avatar });   // -> profile
 export const myRank = () => rpc('my_rank', {});
-export const setTitle = title => rpc('set_title', { p_title: title });                     // -> profile
+export const setTitle = title => rpc('set_title', { p_title: title });                     // -> profile (ya no se usa)
+export const setRegion = region => rpc('set_region', { p_region: region });                // -> profile
+export const regionRanking = () => req('/rest/v1/region_ranking?select=*', { auth: false });
+export const regionLeaders = region => req(`/rest/v1/region_leaders?select=*&region=eq.${encodeURIComponent(region)}&order=tomatoes_earned.desc,falls.desc`, { auth: false });
 export const offerWelcome = () => rpc('offer_welcome', {});                               // -> { offered_at, claimed, now }
 export const claimWelcome = () => rpc('claim_welcome', {});                               // -> { reward, profile }
 export const spinWheel = () => rpc('spin_level_wheel', {});                               // -> { seg, wheel, level, pending, reward, profile }

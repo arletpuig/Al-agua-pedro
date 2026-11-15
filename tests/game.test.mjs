@@ -225,8 +225,10 @@ await page.waitForTimeout(300); s = await S(page);
 check('tocándolas: +12 pesetas (3 monedas ×4)', s.paguitasPesetas === (before.paguitasPesetas || 0) + 12 && s.pesetas === before.pesetas + 12, `(${before.pesetas} → ${s.pesetas})`);
 await give(page, { cards: { paguitas: { level: 0, frags: 0 } } }); await page.evaluate(() => { AAP.paguitaTest.every = 0; });
 console.log('19. Pedro habla mientras pulsas');
+check('Pedro habla menos: como mucho una frase cada 25 s al pulsar y cada 50–80 s sin pulsar', await page.evaluate(() => AAP.CHAT.gap >= 25000 && AAP.CHAT.taps[0] >= 120 && AAP.CHAT.idle[0] >= 50000));
+await page.evaluate(() => { AAP.CHAT.gap = 0; });
 await page.waitForFunction(() => !AAP.scene.bubble, null, { timeout: 8000 });
-let said = false; for (let i = 0; i < 12 && !said; i++) { await tap(page, 10); await page.waitForTimeout(80); said = await page.evaluate(() => !!AAP.scene.bubble); }
+let said = false; for (let i = 0; i < 30 && !said; i++) { await tap(page, 10); await page.waitForTimeout(80); said = await page.evaluate(() => !!AAP.scene.bubble); }
 check('al ir pulsando, Pedro suelta alguna frase', said, said ? await page.evaluate(() => AAP.scene.bubble.text) : '');
 
 console.log('20. Persistencia'); before = await S(page);
@@ -269,12 +271,10 @@ await page.fill('#name-input', 'Tomatero Pro'); await page.click('#form-name but
 check('cambiar el nombre', (await txt('#prof-name')) === 'Tomatero Pro');
 await page.fill('#name-input', 'ab'); await page.click('#form-name button'); await page.waitForTimeout(200);
 check('nombre demasiado corto rechazado', (await txt('#prof-name')) === 'Tomatero Pro');
-const t0 = await page.locator('#prof-title').textContent();
-check('título de serie: uno de los cuatro', ['Azote de Ferraz', 'Gran anticomunista', 'Conservador', 'Antisanchista'].includes(t0) && await page.locator('#title-chips button').count() === 4, t0);
-await page.click('#title-chips button[data-title="Gran anticomunista"]'); await page.waitForTimeout(250);
-check('elegir un título de la lista', (await page.locator('#prof-title').textContent()) === 'Gran anticomunista' && await page.locator('#title-chips button.on').count() === 1);
-await page.fill('#title-input', 'Rey de los tomates'); await page.click('#form-title button'); await page.waitForTimeout(250);
-check('escribir tu propio título', (await page.locator('#prof-title').textContent()) === 'Rey de los tomates');
+check('ya no hay títulos inventados: en su lugar, la comunidad autónoma', await page.locator('#title-chips, #title-input').count() === 0 && /Elige tu comunidad/.test(await page.locator('#prof-title').textContent()));
+check('se puede elegir entre las 17 comunidades y Ceuta y Melilla', await page.locator('#region-grid button').count() === 19);
+await page.click('#region-grid button[data-region="madrid"]', { force: true }); await page.waitForTimeout(300);
+check('elegir comunidad: se ve bajo el nombre', (await page.locator('#prof-title').textContent()) === 'Comunidad de Madrid' && await page.locator('#region-grid button.on').getAttribute('data-region') === 'madrid', await page.locator('#prof-title').textContent());
 await shot('12-perfil');
 await page.click('#btn-share'); await page.waitForFunction(() => document.querySelector('#share-img').naturalWidth > 0, null, { timeout: 15000 });
 check('imagen para compartir de 1080×1920', await page.evaluate(() => { const i = document.querySelector('#share-img'); return i.naturalWidth === 1080 && i.naturalHeight === 1920; }));
@@ -359,11 +359,12 @@ console.log('27. Guía de bienvenida para jugadores nuevos');
   await p5.screenshot({ path: 'tests/out/27-guia-1.png' });
   const inside = sel => p5.evaluate(sel => { const h = document.querySelector('.tour-hole').getBoundingClientRect(), t = document.querySelector(sel).getBoundingClientRect(); return t.left >= h.left - 1 && t.right <= h.right + 1 && t.top >= h.top - 1 && t.bottom <= h.bottom + 1; }, sel);
   const bubbleOk = () => p5.evaluate(() => { const b = document.querySelector('.tour-bubble').getBoundingClientRect(), a = document.querySelector('#app').getBoundingClientRect(); return b.top >= a.top && b.bottom <= a.bottom && b.left >= a.left && b.right <= a.right; });
-  let okAll = true, ok2;
-  for (let k = 1; k < n; k++) { await p5.click('.tour-next'); await p5.waitForTimeout(900); okAll = okAll && await bubbleOk();
-    if (k === 1) { ok2 = await inside('#btn-click'); await p5.screenshot({ path: 'tests/out/27-guia-2.png' }); }
+  let okAll = true, ok2, dbg;
+  const still = () => p5.waitForFunction(() => { const r = document.querySelector('.tour-hole').getBoundingClientRect(), b = document.querySelector('.tour-bubble').getBoundingClientRect(), k = [r.left, r.top, r.width, r.height, b.top].map(Math.round).join(); const same = window.__holeK === k; window.__holeK = k; return same; }, null, { polling: 200, timeout: 8000 }).catch(() => {});
+  for (let k = 1; k < n; k++) { await p5.click('.tour-next'); await p5.waitForTimeout(400); await still(); okAll = okAll && await bubbleOk();
+    if (k === 1) { ok2 = await inside('#btn-click'); dbg = await p5.evaluate(() => ({ t: document.querySelector('.tour-title')?.textContent, h: JSON.stringify(document.querySelector('.tour-hole').getBoundingClientRect()), b: JSON.stringify(document.querySelector('#btn-click').getBoundingClientRect()), ov: [...document.querySelectorAll('.panel.open,.overlay.open')].map(x => x.id).join() })); await p5.screenshot({ path: 'tests/out/27-guia-2.png' }); }
     if (k === 5) await p5.screenshot({ path: 'tests/out/27-guia-6.png' }); }
-  check('señala el botón ¡DALE!', ok2);
+  check('señala el botón ¡DALE!', ok2, ok2 ? '' : JSON.stringify(dbg));
   check('el bocadillo siempre cabe en la pantalla', okAll);
   check('el último paso es «¡A POR ÉL!» y señala el Ranking', (await p5.locator('.tour-next').textContent()) === '¡A POR ÉL!' && await inside('#tabs [data-panel="rank"]'));
   const blocked = await p5.evaluate(() => { const b = AAP.state.stats.totalClicks; document.querySelector('#tour').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); return AAP.state.stats.totalClicks === b; });
@@ -488,10 +489,10 @@ console.log('29. Niveles de jugador y ruleta');
     const p0 = AAP.state.pesetas, price = L.shopSpinPrice(L.levelOf(st)); const b = await AAP.backend.buySpin(() => 0.5); const paid = p0 - AAP.state.pesetas;
     const leg0 = AAP.backend.spinLegend(() => 0.1).then(() => 'dejó', e => e.message);
     const noLeg = await leg0; AAP.state.legendSpins = 2; const c = await AAP.backend.spinLegend(() => 0.99);
-    const cap = L.shopSpinPrice(1) === 43 && L.shopSpinPrice(26) === 118 && L.shopSpinPrice(27) === 120 && L.shopSpinPrice(28) === 120 && L.shopSpinPrice(50) === 120;
+    const cap = L.shopSpinPrice(1) === 43 && L.shopSpinPrice(28) === 124 && L.shopSpinPrice(50) === 190;
     return { cap, legend10, ids, a: [a.wheel, a.reward.id, a.reward.pesetas], b: [b.wheel, b.reward.id], paid, price, bExtra: b.reward.pesetas, noLeg, c: [c.wheel, c.reward.id, c.reward.pesetas], left: AAP.state.legendSpins }; });
   check('cada 10 niveles toca la ruleta legendaria', lg.legend10 === 'false,false,true,false,true,true' && lg.a[0] === 'legend' && lg.a[1] === 'l_pes' && lg.a[2] === 300 + 10 * 10, JSON.stringify(lg.a));
-  check('ruleta de la tienda: cobra 40 + 3 por nivel (como mucho 120) y da su premio', lg.b[0] === 'normal' && lg.price === 40 + 3 * 10 && lg.cap && lg.paid === lg.price - lg.bExtra, JSON.stringify(lg));
+  check('ruleta de la tienda: cobra 40 + 3 por nivel y da su premio (sin tope)', lg.b[0] === 'normal' && lg.price === 40 + 3 * 10 && lg.cap && lg.paid === lg.price - lg.bExtra, JSON.stringify(lg));
   check('tirada legendaria comprada: solo si la tienes, y se gasta una', /No tienes tiradas legendarias/.test(lg.noLeg) && lg.c[0] === 'legend' && lg.c[1] === 'l_bote' && lg.c[2] === 2500 + 50 * 10 && lg.left === 1, JSON.stringify(lg));
   // todos los premios de las dos ruletas se entregan (cada casilla, en local)
   const all = await p7.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats, out = [];
@@ -511,15 +512,15 @@ console.log('29. Niveles de jugador y ruleta');
   await p7.click('#tabs [data-panel="shop"]'); await p7.waitForTimeout(300);
   const sh = await p7.evaluate(() => ({ cards: document.querySelectorAll('.wheels .wheel-card').length, price: document.querySelector('[data-wheel="shop"]')?.textContent.trim(), leg: document.querySelector('.wheel-card.legend [data-ad="ruleta"]')?.textContent.trim(), legOff: document.querySelector('.wheel-card.legend [data-ad="ruleta"]')?.disabled, dots: document.querySelectorAll('.wheel-card.legend .wc-ads i').length, pay: !!document.querySelector('.wheel-card.legend [data-pack]'), daily: !!document.querySelector('#shop-body [data-daily]') }));
   const lvNow = await p7.evaluate(() => import('./js/levels.js').then(L => L.levelOf(AAP.state.stats)));
-  check('tienda: ruleta de la suerte (con pesetas) y legendaria con 3 vídeos (sin pagar, aún «PRONTO»); el cofre diario sigue en la tienda', sh.cards === 2 && sh.price === String(Math.min(120, 40 + 3 * lvNow)) && sh.leg === 'PRONTO' && sh.legOff && sh.dots === 3 && !sh.pay && sh.daily, JSON.stringify(sh));
+  check('tienda: ruleta de la suerte (con pesetas) y legendaria con 3 vídeos (sin pagar, aún «PRONTO»); el cofre diario sigue en la tienda', sh.cards === 2 && sh.price === String(40 + 3 * lvNow) && sh.leg === 'PRONTO' && sh.legOff && sh.dots === 3 && !sh.pay && sh.daily, JSON.stringify(sh));
   const vids = await p7.evaluate(async () => { const m = await import('./js/ads.js'); m.adsTest.on = true; m.DEMO_AD.seconds = 0; AAP.state.legendAds = 0; AAP.state.legendSpins = 0; const r = []; for (let i = 0; i < 3; i++) { await AAP.backend.watchAd('ruleta'); r.push(AAP.state.legendAds + '/' + AAP.state.legendSpins); } m.adsTest.on = false; AAP.state.legendSpins = 0; return r.join(' '); });
   check('con los vídeos activados: 3 vídeos = 1 tirada legendaria', vids === '1/0 2/0 0/1', vids);
   let bp = (await S(p7)).pesetas;
   await p7.evaluate(() => { AAP.levelTest.rng = () => 0.01; }); await p7.click('[data-wheel="shop"]', { force: true }); await p7.waitForSelector('#wheel-overlay.open');
-  check('se abre la ruleta de la suerte con su precio en el botón', (await p7.locator('#wheel-title').textContent()) === 'RULETA DE LA SUERTE' && (await p7.locator('#wheel-btn').textContent()).includes(String(Math.min(120, 40 + 3 * lvNow))));
+  check('se abre la ruleta de la suerte con su precio en el botón', (await p7.locator('#wheel-title').textContent()) === 'RULETA DE LA SUERTE' && (await p7.locator('#wheel-btn').textContent()).includes(String(40 + 3 * lvNow)));
   await p7.click('#wheel-btn', { force: true }); await p7.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 10000 });
   let sp = await S(p7);
-  check('al girar cobra el precio y da el premio', sp.pesetas === bp - Math.min(120, 40 + 3 * lvNow) + (10 + 2 * lvNow) && /OTRA/.test(await p7.locator('#wheel-btn').textContent()), `(${bp} → ${sp.pesetas})`);
+  check('al girar cobra el precio y da el premio', sp.pesetas === bp - (40 + 3 * lvNow) + (10 + 2 * lvNow) && /OTRA/.test(await p7.locator('#wheel-btn').textContent()), `(${bp} → ${sp.pesetas})`);
   await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300);
   check('se puede cerrar cuando quieras', await p7.locator('#wheel-overlay.open').count() === 0);
   await p7.evaluate(() => { AAP.state.legendSpins = 1; AAP.levelTest.rng = () => 0.5; }); await p7.click('#tabs [data-panel="shop"]'); await p7.waitForTimeout(300);

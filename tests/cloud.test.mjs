@@ -5,7 +5,7 @@ import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idl
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
-const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title']);
+const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title', 'set_region']);
 const users = new Map(); // token -> usuario
 const payRequests = [];
 const calls = [];
@@ -44,6 +44,8 @@ async function bridge(page) {
       }
       if (p === '/rest/v1/purchases') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(x)), '[]') from public.purchases x where stripe_session = ${lit((u.searchParams.get('stripe_session') || '').replace(/^eq\./, ''))}`, 'authenticated', me?.id)));
       if (p === '/rest/v1/profiles') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(p)), '[]') from public.profiles p`, 'authenticated', me?.id)));
+      if (p === '/rest/v1/region_ranking') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(l)), '[]') from public.region_ranking l`, 'anon')));
+      if (p === '/rest/v1/region_leaders') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(l) order by l.tomatoes_earned desc), '[]') from public.region_leaders l where region = ${lit((u.searchParams.get('region') || '').replace(/^eq\./, ''))}`, 'anon')));
       if (p === '/rest/v1/leaderboard') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(l)), '[]') from public.leaderboard l`, 'anon')));
       if (p.startsWith('/rest/v1/rpc/')) {
         const fn = p.split('/').pop(), args = Object.entries(body).map(([k, v]) => `${k} => ${lit(v)}`).join(', ');
@@ -137,8 +139,13 @@ psql(`update public.aap_config set value = 'false' where key = 'rewarded_ads'`);
 
 console.log('I. Título del perfil y regalo de bienvenida en el servidor');
 await page.click('#tabs [data-panel="profile"]'); await page.waitForTimeout(400);
-await page.fill('#title-input', 'Azote de Ferraz'); await page.click('#form-title button'); await page.waitForTimeout(600);
-check('el título se guarda en el servidor', db(email).title === 'Azote de Ferraz' && (await page.locator('#prof-title').textContent()) === 'Azote de Ferraz');
+await page.click('#region-grid button[data-region="valencia"]', { force: true }); await page.waitForTimeout(600);
+check('la comunidad se guarda en el servidor', db(email).region === 'valencia' && (await page.locator('#prof-title').textContent()) === 'Comunidad Valenciana');
+await page.click('#region-grid button[data-region="madrid"]', { force: true }); await page.waitForTimeout(600);
+check('la primera vez se puede corregir enseguida', db(email).region === 'madrid');
+await page.click('#region-grid button[data-region="galicia"]', { force: true }); await page.waitForTimeout(600);
+check('después, solo una vez por semana (avisa)', db(email).region === 'madrid' && /una vez por semana/.test(await page.locator('#toast').textContent()));
+check('una comunidad inventada: rechazada', await page.evaluate(() => import('./js/supabase.js').then(m => m.setRegion('narnia')).then(() => false, e => /no existe/.test(e.message))));
 await page.click('#panel-profile [data-close]');
 psql(`update public.profiles set welcome_offered_at = null, welcome_claimed = false where user_id = '${row.user_id}'`);
 await page.evaluate(async () => { AAP.state.welcomeClaimed = false; AAP.state.welcomeOfferedAt = null; AAP.giftTest.off = false; });
@@ -211,7 +218,7 @@ console.log('K. Niveles y ruleta en el servidor');
   const buy = await page.evaluate(() => AAP.backend.buySpin().then(r => ({ cost: r.cost, p: r.reward.pesetas, t: r.reward.tomatoes, w: r.wheel }), e => ({ err: e.message })));
   row = db(email); s = await S(page);
   const lvNow = +psql(`select public.fn_player_level(${row.tomatoes_thrown}, ${row.hits}, ${row.falls})`);
-  check('ruleta de la tienda en el servidor: cobra 40 + 3 por nivel y entrega el premio', buy.w === 'normal' && buy.cost === Math.min(120, 40 + 3 * lvNow) && row.pesetas_spent === before.pesetas_spent + buy.cost
+  check('ruleta de la tienda en el servidor: cobra 40 + 3 por nivel y entrega el premio', buy.w === 'normal' && buy.cost === 40 + 3 * lvNow && row.pesetas_spent === before.pesetas_spent + buy.cost
     && row.chest_pesetas === before.chest_pesetas + buy.p && row.chest_tomatoes === before.chest_tomatoes + buy.t && s.pesetas === row.pesetas, JSON.stringify(buy));
   check('sin tirada legendaria pagada, el servidor no deja girarla', await page.evaluate(() => AAP.backend.spinLegend().then(() => false, e => /No tienes tiradas legendarias/.test(e.message))));
   check('la tirada legendaria ya no se vende', (() => { try { psql(`select public.grant_pack('cs_test_ruleta', '${row.user_id}', 'ruleta', 99, 'eur')`, 'service_role'); return false; } catch (e) { return /Pack desconocido/.test(String(e.stderr)); } })());
@@ -233,6 +240,13 @@ console.log('K. Niveles y ruleta en el servidor');
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#rank-list');
 check('el ranking enseña el nivel de cada jugador', /Nv \d+ · /.test(rank), rank.replace(/\n/g, ' ').slice(0, 80));
+await page.click('#rank-tabs [data-rt="regions"]'); await page.waitForTimeout(700);
+const regs = await page.evaluate(() => [...document.querySelectorAll('#region-list > li')].map(li => li.dataset.region + ':' + li.querySelector('.sc').textContent + (li.classList.contains('me') ? ':me' : '')));
+check('ranking por comunidades: salen las 19, la tuya marcada y primero las que más tomates tienen', regs.length === 19 && regs[0].startsWith('madrid:') && regs[0].endsWith(':me'), regs.slice(0, 3).join(' '));
+await page.click('#region-list li[data-region="madrid"]'); await page.waitForTimeout(700);
+check('al tocar tu comunidad se ven sus mejores jugadores', (await page.locator('#rg-madrid li').first().textContent()).includes('Arlet'));
+await page.screenshot({ path: 'tests/out/12-ranking-comunidades.png' });
+await page.click('#rank-tabs [data-rt="players"]'); await page.waitForTimeout(500);
 check('ranking por tomates históricos con el jugador', rank.includes('Arlet') && rank.includes(String(db(email).tomatoes_earned.toLocaleString('es-ES'))), rank.replace(/\n/g, ' ').slice(0, 80));
 await page.screenshot({ path: 'tests/out/12-ranking.png' }); await page.click('#panel-rank .close');
 

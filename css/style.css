@@ -996,3 +996,39 @@ svg { display: block; }
 /* ruleta: textos con algo más de aire */
 .wheel .lbl { stroke-width: 5px; letter-spacing: .02em; }
 .wheel .amt { stroke-width: 6px; }
+
+/* ======================================================================== v36: comunidad autónoma y ranking por comunidades */
+.prof-region { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; max-width: 100%; margin: 2px 0; padding: 1px 9px 1px 3px; border-radius: 12px; border: 2px solid var(--ink);
+  background: linear-gradient(#2b44c8, #16237c); font: 800 13px/1.3 'Baloo 2'; color: #fff; text-align: left; box-shadow: inset 0 1px 0 #ffffff44; }
+.prof-region .av { width: 20px; height: 20px; border-width: 1.5px; }
+.prof-region span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-region.none { padding-left: 9px; background: linear-gradient(#ff9a1a, #c45a00); animation: badge 1.4s ease-in-out infinite; }
+.region-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.region-grid button { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 5px 8px 5px 5px; border-radius: 12px; border: 2.5px solid var(--ink);
+  background: linear-gradient(#2b44b8, #1a2c87); box-shadow: inset 0 2px 0 #ffffff33, 0 3px 0 #0008; text-align: left; }
+.region-grid button .av { width: 28px; height: 28px; border-width: 2px; }
+.region-grid button em { font: 800 12.5px/1.15 'Baloo 2'; font-style: normal; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.region-grid button.on { background: linear-gradient(#ffe766, #ffb21a 60%, #c47a00); box-shadow: 0 0 0 2px #fff, 0 0 14px #ffd23f, 0 3px 0 #0008; }
+.region-grid button.on em { color: #3a1d00; }
+.rank-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; border: 2.5px solid var(--ink); background: #0a1442; }
+.rank-tabs button { height: 38px; border-radius: 12px; font: 15px 'Titan One'; color: #9fb3ff; paint-order: stroke fill; -webkit-text-stroke: 3.5px var(--ink); }
+.rank-tabs button.on { color: #fff; background: linear-gradient(#ffe766, #ffb21a 60%, #c47a00); box-shadow: inset 0 2px 0 #fffb, 0 2px 0 #0008; }
+.rank-tabs button.on { color: #fff; }
+.rank.regions > li { flex-wrap: wrap; cursor: pointer; }
+.rank.regions > li .nm { display: flex; flex-direction: column; line-height: 1.15; }
+.rank.regions > li.zero { opacity: .62; }
+.rank.regions > li.me { box-shadow: 0 0 0 3px #ffd23f, 0 0 14px #ffb21a, 0 3px 0 #0008; }
+.rk-sub { display: block; font: 700 11.5px 'Baloo 2'; font-style: normal; color: #b9c6ff; }
+.rank.regions > li.me .rk-sub { color: #ffe766; }
+.rg-top { display: none; list-style: none; flex-basis: 100%; margin: 6px 0 2px; padding: 6px; border-radius: 12px; background: #0a1442; border: 2px solid var(--ink); }
+.rank.regions > li.open .rg-top { display: grid; gap: 4px; }
+.rg-top li { display: flex; align-items: center; gap: 7px; padding: 3px 6px; border-radius: 10px; font: 800 13px 'Baloo 2'; }
+.rg-top li.me { background: #ffd23f33; }
+.rg-top li::before { content: none; }
+.rg-top .pos { width: 20px; text-align: center; font: 13px 'Titan One'; color: #ffe766; }
+.rg-top .av { width: 24px; height: 24px; border-width: 2px; }
+.rg-top .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rg-top .sc { font: 13px 'Titan One'; color: #fff; }
+.rg-top .empty { justify-content: center; color: #b9c6ff; font-weight: 600; }
+.rg-top li { counter-increment: none; border: 0; background: none; box-shadow: none; }
+#panel-rank .sheet-body > *, #panel-profile .sheet-body > * { flex-shrink: 0; }

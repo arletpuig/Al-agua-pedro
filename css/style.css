@@ -1234,3 +1234,6 @@ svg { display: block; }
 .install-fab:active img { transform: translateY(3px); }
 #falcon-badge:not(.hidden) ~ .install-fab { top: calc(128px + var(--safe-top)); }
 @media (prefers-reduced-motion: reduce) { .install-fab, .install-fab .if-gift, .install-fab .if-glow { animation: none; } }
+
+/* v49: el juego ya es oscuro; sin esto, el «modo oscuro» de Samsung Internet y Chrome invierte los contornos de los textos */
+:root { color-scheme: only dark; }

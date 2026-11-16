@@ -630,6 +630,9 @@ console.log('32. App instalable (sin tiendas)');
   // service worker: tras abrir el juego una vez, vuelve a abrir aunque no haya conexión
   const c9 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p9 = await c9.newPage(); const e9 = watchErrors(p9); await mockTime(p9);
   await open(p9, undefined, { install: true });
+  const look = await p9.evaluate(async () => ({ scheme: document.querySelector('meta[name=color-scheme]')?.content, css: getComputedStyle(document.documentElement).colorScheme,
+    ico: (await fetch('./favicon.ico')).ok, og: (await fetch(document.querySelector('meta[property="og:image"]').content.replace('https://alaguapedro.es/', './'))).ok }));
+  check('el modo oscuro del navegador (Samsung, Chrome) no cambia los colores; favicon e imagen de compartir publicados', look.scheme === 'only dark' && /dark/.test(look.css) && look.ico && look.og, JSON.stringify(look));
   const sw = await p9.evaluate(() => navigator.serviceWorker.ready.then(r => r.active?.state || 'x'));
   await p9.reload(); await p9.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
   check('el juego registra su service worker', sw === 'activated' && await p9.evaluate(() => !!navigator.serviceWorker.controller), sw);

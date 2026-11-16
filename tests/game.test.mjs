@@ -427,24 +427,24 @@ console.log('28. iPhone: sin zoom ni movimientos al pulsar rápido');
 console.log('29. Niveles de jugador y ruleta');
 {
   const lv = await page.evaluate(async () => { const L = await import('./js/levels.js'); return { n: L.LEVEL_NAMES.length, first: L.LEVEL_NAMES[0], last: L.LEVEL_NAMES[49], l16: L.LEVEL_NAMES[15],
-    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round(12.6 * Math.pow(i, 2.4) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,300,800,1500,2400,3500,4800,6400,8300,10560',
-    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 299, 300, 799, 800, 2143129, 2143130, 1e9].map(L.levelOfXp), top: L.levelOfXp(610220) }; });
+    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round(16 * Math.pow(i, 2.4) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,450,1300,2450,3950,5850,8200,11050,14400,18250',
+    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 449, 450, 1299, 1300, 2726329, 2726330, 1e9].map(L.levelOfXp), top: L.levelOfXp(610220) }; });
   check('50 niveles: de Perroflauta a Caudillo Supremo', lv.n === 50 && lv.first === 'Perroflauta' && lv.last === 'Caudillo Supremo' && lv.l16 === 'Sanchista');
-  check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más (los primeros, algo más que antes)', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
-  check('límites de nivel exactos y tope en 50 (llegar al 50 cuesta unos 2,1 millones de XP)', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
-  check('el mejor jugador de ahora (610.000 XP) queda en el nivel 34 (antes, 44)', lv.top === 34, String(lv.top));
+  check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más (progresión pausada)', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
+  check('límites de nivel exactos y tope en 50 (llegar al 50 cuesta unos 2,7 millones de XP)', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
+  check('un jugador con 610.000 XP queda en el nivel 32 (antes, 34)', lv.top === 32, String(lv.top));
   check('la ruleta suma 100 (probabilidades en %)', lv.w === 100);
   const c7 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p7 = await c7.newPage(); const e7 = watchErrors(p7); await mockTime(p7);
   await open(p7, undefined, { levels: true });
-  await p7.evaluate(() => { AAP.giftTest.off = true; AAP.levelTest.fast = true; AAP.state.tutorialSeen = true; AAP.state.stats.chestTomatoes += 40; return import('./js/state.js').then(m => m.changed(false)); }); await noCombo(p7);
+  await p7.evaluate(() => { AAP.giftTest.off = true; AAP.levelTest.fast = true; AAP.state.tutorialSeen = true; AAP.state.stats.chestTomatoes += 60; return import('./js/state.js').then(m => m.changed(false)); }); await noCombo(p7);
   const chip0 = await p7.evaluate(() => [document.querySelector('#lvl-num').textContent, document.querySelector('#lvl-name').textContent, document.querySelector('#lvl-xp').textContent].join('|'));
-  check('jugador nuevo: barra de nivel 1 «Perroflauta» con 0/300 XP', chip0 === '1|Perroflauta|0 / 300 XP', chip0);
+  check('jugador nuevo: barra de nivel 1 «Perroflauta» con 0/450 XP', chip0 === '1|Perroflauta|0 / 450 XP', chip0);
   await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p7, 0, 8); await idle(p7);
   await p7.waitForSelector('.xp-float', { timeout: 3000 }).catch(() => {});
   const g1 = await p7.evaluate(() => [document.querySelector('.xp-float')?.textContent, document.querySelector('#lvl-xp').textContent, document.querySelector('#lvl-chip').classList.contains('gain')]);
-  check('al acertar: «+35 XP» sale volando y la barra sube (35/300)', g1[0] === '+35 XP' && g1[1] === '35 / 300 XP' && g1[2], JSON.stringify(g1));
+  check('al acertar: «+35 XP» sale volando y la barra sube (35/450)', g1[0] === '+35 XP' && g1[1] === '35 / 450 XP' && g1[2], JSON.stringify(g1));
   check('sin subir de nivel no hay ruleta', await p7.locator('#lvlup-overlay.open').count() === 0);
-  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(30); })); await stopAt(p7, 0, 8); await idle(p7);
+  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(45); })); await stopAt(p7, 0, 8); await idle(p7);
   await p7.waitForSelector('#lvlup-overlay.open', { timeout: 8000 }).catch(() => {});
   await p7.waitForFunction(() => document.querySelector('#lvlup-overlay').classList.contains('ready'), null, { timeout: 5000 }).catch(() => {});
   const up = await p7.evaluate(() => ({ num: document.querySelector('#lvlup-num').textContent, name: document.querySelector('#lvlup-name').textContent, banner: document.querySelector('#lvlup-banner').textContent, cnt: document.querySelector('#lvlup-cnt').textContent, conf: !!document.querySelector('#lvlup-overlay .fx-canvas') }));
@@ -500,7 +500,7 @@ console.log('29. Niveles de jugador y ruleta');
   // ruleta legendaria en el nivel 10, ruleta de la tienda con pesetas y tirada legendaria comprada
   const lg = await p7.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats;
     const legend10 = [1, 9, 10, 11, 20, 50].map(L.isLegendLevel).join(), ids = L.WHEELS.legend.segs.map(s => s.id).join();
-    st.tomatoesThrown = 800; st.hits = 700; st.falls = 0; AAP.state.wheelLevel = 9; (await import('./js/state.js')).changed(false);
+    st.tomatoesThrown = 1500; st.hits = 1000; st.falls = 0; AAP.state.wheelLevel = 9; (await import('./js/state.js')).changed(false);
     const a = await AAP.backend.spinWheel(() => 0.01);
     const p0 = AAP.state.pesetas, price = L.shopSpinPrice(L.levelOf(st)); const b = await AAP.backend.buySpin(() => 0.5); const paid = p0 - AAP.state.pesetas;
     const leg0 = AAP.backend.spinLegend(() => 0.1).then(() => 'dejó', e => e.message);
@@ -550,7 +550,7 @@ console.log('29. Niveles de jugador y ruleta');
   await p7.evaluate(() => { AAP.levelTest.rng = null; });
   // ruleta al final de la barra de nivel (la legendaria si el siguiente nivel es múltiplo de 10)
   const pzb = await p7.evaluate(async () => { const st = AAP.state.stats, m = await import('./js/levelup.js'), r = [];
-    for (const [t, h] of [[0, 0], [800, 300]]) { st.tomatoesThrown = t; st.hits = h; st.falls = 0; AAP.state.wheelLevel = 50; m.syncChip(); const L = (await import('./js/levels.js')).levelOf(st), e = document.querySelector('#lvl-prize');
+    for (const [t, h] of [[0, 0], [1500, 0]]) { st.tomatoesThrown = t; st.hits = h; st.falls = 0; AAP.state.wheelLevel = 50; m.syncChip(); const L = (await import('./js/levels.js')).levelOf(st), e = document.querySelector('#lvl-prize');
       r.push({ L, vis: e.offsetWidth > 0, href: e.querySelector('use').getAttribute('href'), leg: e.classList.contains('legend') }); }
     return r; });
   check('al final de la barra de nivel se ve la ruleta del premio (legendaria antes del nivel 10)', pzb[0].vis && pzb[0].href === '#ic-wheel' && pzb[1].L === 9 && pzb[1].href === '#ic-wheel-legend' && pzb[1].leg, JSON.stringify(pzb));

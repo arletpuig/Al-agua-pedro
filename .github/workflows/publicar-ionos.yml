@@ -81,7 +81,7 @@ jobs:
 
       - name: Comprobar la app instalable (manifiesto, service worker e iconos)
         run: |
-          for u in ads.txt robots.txt manifest.webmanifest sw.js favicon.ico assets/og.jpg assets/icons/icon-512.png assets/icons/apple-touch-icon.png; do
+          for u in ads.txt robots.txt manifest.webmanifest sw.js favicon.ico assets/og.jpg assets/icons/app-512.png assets/icons/app-256.png assets/icons/icon-512.png assets/icons/apple-touch-icon.png; do
             r=$(curl -sS -o /dev/null -w '%{http_code} %{content_type}' "https://alaguapedro.es/$u?c=$GITHUB_RUN_ID")
             echo "$u → $r"; case "$r" in 200*) ;; *) echo "::warning::$u no responde bien ($r)";; esac
           done

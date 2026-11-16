@@ -626,7 +626,7 @@ console.log('32. App instalable (sin tiendas)');
   const mf = await page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); const m = await (await fetch(l.href)).json();
     const ok = async u => (await fetch(u)).ok; return { name: m.name, display: m.display, start: m.start_url, icons: m.icons.map(i => i.sizes + ':' + i.purpose).join(), files: (await Promise.all(m.icons.map(i => ok(new URL(i.src, l.href))))).every(Boolean),
       apple: await ok(document.querySelector('link[rel=apple-touch-icon]').href), sw: await ok('./sw.js') }; });
-  check('la web se puede instalar: nombre, pantalla completa, iconos 192/512/maskable e icono de iPhone', mf.name === 'AL AGUA PEDRO' && mf.display === 'standalone' && mf.icons === '192x192:any,512x512:any,512x512:maskable' && mf.files && mf.apple && mf.sw, JSON.stringify(mf));
+  check('la web se puede instalar: nombre, pantalla completa, iconos 192/256/512/maskable e icono de iPhone', mf.name === 'AL AGUA PEDRO' && mf.display === 'standalone' && mf.icons === '192x192:any,256x256:any,512x512:any,512x512:maskable' && mf.files && mf.apple && mf.sw, JSON.stringify(mf));
   // service worker: tras abrir el juego una vez, vuelve a abrir aunque no haya conexión
   const c9 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p9 = await c9.newPage(); const e9 = watchErrors(p9); await mockTime(p9);
   await open(p9, undefined, { install: true });

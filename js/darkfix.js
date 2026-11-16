@@ -26,8 +26,36 @@ function collect(rules, out) {
 export function applyDarkFix() {
   if (!forcedDarkRisk()) return false;
   document.documentElement.classList.add('fd');
+  if (document.querySelector('#darkfix')) return true;
   const out = [];
   for (const sh of document.styleSheets) { try { collect(sh.cssRules, out); } catch (e) {} }
   const el = document.createElement('style'); el.id = 'darkfix'; el.textContent = out.join('\n'); document.head.appendChild(el);
   return true;
 }
+
+// Aviso: no se puede apagar desde la web, así que se explica cómo dejar el navegador en modo normal.
+// Como mucho una vez al día; «No volver a mostrar» lo quita para siempre. Si apaga el modo oscuro, el aviso se cierra solo.
+const TIP_KEY = 'alaguapedro.darkTip';
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const busy = () => !!document.querySelector('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour, #toast.on');
+let tipShown = false;
+function closeTip() { $('#dark-overlay')?.classList.remove('open'); }
+export async function maybeWarnDark() {
+  if (tipShown || !forcedDarkRisk() || !$('#dark-overlay')) return;
+  let last = ''; try { last = localStorage.getItem(TIP_KEY) || ''; } catch (e) {}
+  if (last === 'never' || Date.now() - (+last || 0) < 86400e3) return;
+  tipShown = true;
+  $('#dark-ok').addEventListener('click', closeTip);
+  $('#dark-never').addEventListener('click', () => { try { localStorage.setItem(TIP_KEY, 'never'); } catch (e) {} closeTip(); });
+  let ok = 0; while (ok < 3) { await sleep(400); ok = busy() ? 0 : ok + 1; }
+  if (!forcedDarkRisk()) return;
+  try { localStorage.setItem(TIP_KEY, String(Date.now())); } catch (e) {}
+  $('#dark-overlay').classList.add('open');
+}
+// si cambia el modo del navegador mientras juega: se ajustan los contornos y el aviso
+try {
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (/SamsungBrowser/i.test(navigator.userAgent)) { if (forcedDarkRisk()) applyDarkFix(); else { document.documentElement.classList.remove('fd'); closeTip(); } }
+  });
+} catch (e) {}

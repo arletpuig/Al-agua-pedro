@@ -1239,3 +1239,9 @@ svg { display: block; }
 :root { color-scheme: dark; }
 /* Samsung Internet solo respeta el tema de la web si encuentra esta consulta: el juego es igual en claro y en oscuro */
 @media (prefers-color-scheme: dark) { :root { color-scheme: dark; } html, body { background-color: #02040f; } }
+
+/* v51: aviso para quitar el modo oscuro de Samsung Internet */
+.dark-ov { z-index: 46; }
+.dark-ico { display: flex; align-items: center; gap: 10px; font-size: 54px; line-height: 1; filter: drop-shadow(0 4px 0 #0008); animation: medalfloat 2.2s ease-in-out infinite; }
+.dark-ico b { font-size: 30px; color: #ffe766; }
+.dark-ov .install-sub b { color: #ffe766; }

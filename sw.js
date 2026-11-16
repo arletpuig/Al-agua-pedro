@@ -2,7 +2,7 @@
 // - Código y páginas: primero la red (siempre la última versión publicada); sin conexión, lo último guardado.
 // - Imágenes y fuentes: lo guardado al momento y se actualiza por detrás.
 // - Supabase, Google, anuncios, pagos y la música: no pasan por aquí (van directos).
-const CACHE = 'aap-v4';
+const CACHE = 'aap-v5';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil((async () => {
   for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k);

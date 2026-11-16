@@ -640,6 +640,28 @@ console.log('32. App instalable (sin tiendas)');
     check('Samsung Internet en modo oscuro: los contornos de las letras pasan a sombras que el navegador no aclara', fd.on && fd.rules > 50 && fd.w === '0px' && fd.sh, JSON.stringify(fd));
     await pf.close();
   }
+  {
+    // Samsung Internet con modo oscuro: aviso con los pasos para dejar el navegador en modo normal
+    const SAMSUNG = 'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Mobile Safari/537.36';
+    const cs = await browser.newContext({ ...devices['Galaxy S9+'], userAgent: SAMSUNG, colorScheme: 'dark' }); const ps = await cs.newPage(); const es = watchErrors(ps); await mockTime(ps);
+    await open(ps);
+    await ps.waitForSelector('#dark-overlay.open', { timeout: 15000 }).catch(() => {});
+    const tip = await ps.evaluate(() => ({ open: document.querySelector('#dark-overlay').classList.contains('open'), fd: document.documentElement.classList.contains('fd'), txt: document.querySelector('#dark-overlay').textContent }));
+    check('Samsung Internet en modo oscuro: aviso para apagar el modo oscuro del navegador', tip.open && tip.fd && /Modo oscuro/.test(tip.txt) && /Labs/.test(tip.txt), JSON.stringify({ open: tip.open, fd: tip.fd }));
+    await ps.screenshot({ path: 'tests/out/33-aviso-modo-oscuro.png' });
+    await ps.click('#dark-never'); await ps.waitForTimeout(200);
+    await ps.reload(); await ps.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await ps.waitForTimeout(2500);
+    check('«No volver a mostrar»: no vuelve a salir', await ps.locator('#dark-overlay.open').count() === 0);
+    await ps.emulateMedia({ colorScheme: 'light' }); await ps.waitForTimeout(200);
+    check('al apagar el modo oscuro, el juego vuelve a sus contornos normales', await ps.evaluate(() => !document.documentElement.classList.contains('fd')));
+    check('aviso de modo oscuro: sin errores en consola', es.length === 0, es.join(' | '));
+    await cs.close();
+    // en otros navegadores, o en modo claro, nada
+    const cl = await browser.newContext({ ...devices['Galaxy S9+'], userAgent: SAMSUNG, colorScheme: 'light' }); const pl = await cl.newPage(); await mockTime(pl);
+    await open(pl); await pl.waitForTimeout(2500);
+    check('Samsung Internet en modo claro: sin aviso', await pl.evaluate(() => !document.querySelector('#dark-overlay').classList.contains('open') && !document.documentElement.classList.contains('fd')));
+    await cl.close();
+  }
   const sw = await p9.evaluate(() => navigator.serviceWorker.ready.then(r => r.active?.state || 'x'));
   await p9.reload(); await p9.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
   check('el juego registra su service worker', sw === 'activated' && await p9.evaluate(() => !!navigator.serviceWorker.controller), sw);

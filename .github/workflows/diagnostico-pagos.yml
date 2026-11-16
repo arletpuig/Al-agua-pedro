@@ -1,4 +1,4 @@
-# Diagnóstico (solo lectura): no cambia nada. (9.ª comprobación: cuánto han jugado los mejores, para calibrar los niveles)
+# Diagnóstico (solo lectura): no cambia nada. (10.ª comprobación: niveles de los mejores, para calibrar la curva)
 name: Diagnóstico de pagos
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
         run: |
           K=$(grep -o "SUPABASE_KEY: '[^']*'" js/config.js | cut -d"'" -f2)
           U=$(grep -o "SUPABASE_URL: '[^']*'" js/config.js | cut -d"'" -f2)
-          curl -sS "$U/rest/v1/leaderboard?select=tomatoes_earned,falls,perfects,hits&order=tomatoes_earned.desc&limit=50" -H "apikey: $K" | python3 -c "
+          curl -sS "$U/rest/v1/leaderboard?select=tomatoes_earned,falls,perfects,hits,level&order=tomatoes_earned.desc&limit=50" -H "apikey: $K" | python3 -c "
           import json,sys
           d=json.load(sys.stdin); print('jugadores en ranking:', len(d))
           for i,r in enumerate(d): print(i+1, r)"

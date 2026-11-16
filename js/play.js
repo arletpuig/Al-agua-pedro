@@ -87,7 +87,7 @@ function speedMult() {
 }
 // ---------- lanzamiento: un tiro que vale por n tomates ----------
 export async function throwTomatoes(n) {
-  if (busy || !scene.ready || n < 1 || state.tomatoes < n) return false;
+  if (busy || !scene.ready || scene.busy || n < 1 || state.tomatoes < n) return false;   // (scene.busy: un objeto de La Armería en marcha)
   if (!state.tutorialSeen) { ui.showTutorial(() => throwTomatoes(n)); return false; }
   unlock();
   if (!useTomatoes(n)) return false;                 // descuenta exactamente n

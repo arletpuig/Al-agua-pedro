@@ -13,17 +13,17 @@
 <meta property="og:url" content="https://alaguapedro.es/">
 <meta property="og:title" content="¡Al Agua Pedro! · Tira a Pedro a la pecera">
 <meta property="og:description" content="Lanza tomates a la diana y tira a Pedro al agua. Juego satírico gratis: pesetas, cartas y ranking. ¿Te atreves?">
-<meta property="og:image" content="https://alaguapedro.es/assets/og.jpg?v=56">
+<meta property="og:image" content="https://alaguapedro.es/assets/og.jpg?v=57">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Caricatura de Pedro guiñando un ojo y haciendo la peineta, con un tomatazo en la cara">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="¡Al Agua Pedro! · Tira a Pedro a la pecera">
 <meta name="twitter:description" content="Lanza tomates a la diana y tira a Pedro al agua. Juego satírico gratis.">
-<meta name="twitter:image" content="https://alaguapedro.es/assets/og.jpg?v=56">
+<meta name="twitter:image" content="https://alaguapedro.es/assets/og.jpg?v=57">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Al Agua Pedro","alternateName":"¡Al agua, Pedro!","url":"https://alaguapedro.es/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Al Agua Pedro","url":"https://alaguapedro.es/","logo":"https://alaguapedro.es/assets/icons/app-512.png"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Al Agua Pedro","alternateName":"¡Al agua, Pedro!","url":"https://alaguapedro.es/","image":"https://alaguapedro.es/assets/og.jpg?v=56","description":"Juego satírico gratis para navegador: lanza tomates a la diana y tira a Pedro a la pecera de las pirañas. Pesetas, cartas mejorables y ranking.","genre":["Arcade","Humor","Sátira"],"gamePlatform":["Navegador web","Móvil","Ordenador"],"applicationCategory":"Game","operatingSystem":"Cualquiera","inLanguage":"es","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Al Agua Pedro","alternateName":"¡Al agua, Pedro!","url":"https://alaguapedro.es/","image":"https://alaguapedro.es/assets/og.jpg?v=57","description":"Juego satírico gratis para navegador: lanza tomates a la diana y tira a Pedro a la pecera de las pirañas. Pesetas, cartas mejorables y ranking.","genre":["Arcade","Humor","Sátira"],"gamePlatform":["Navegador web","Móvil","Ordenador"],"applicationCategory":"Game","operatingSystem":"Cualquiera","inLanguage":"es","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}</script>
 <script>
 // Versión de pruebas (GitHub, o ?prueba en local): siempre empieza desde cero, sin cuenta, para poder probarlo todo como un jugador nuevo.
 window.__AAP_TEST = /github\.io$/.test(location.hostname) || /[?&]prueba\b/.test(location.search);
@@ -38,10 +38,10 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <link rel="icon" href="https://alaguapedro.es/favicon.ico" sizes="any">
 <link rel="shortcut icon" href="https://alaguapedro.es/favicon.ico">
 <link rel="icon" href="assets/icons/app-192.png" type="image/png" sizes="192x192">
-<link rel="icon" href="assets/icons/favicon-96.png?v=56" type="image/png" sizes="96x96">
-<link rel="icon" href="assets/icons/favicon-48.png?v=56" type="image/png" sizes="48x48">
+<link rel="icon" href="assets/icons/favicon-96.png?v=57" type="image/png" sizes="96x96">
+<link rel="icon" href="assets/icons/favicon-48.png?v=57" type="image/png" sizes="48x48">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png?v=56">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png?v=57">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Al agua Pedro">
@@ -50,7 +50,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7829705078320776" crossorigin="anonymous"></script>
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=56">
+<link rel="stylesheet" href="css/style.css?v=57">
 </head>
 <body>
 <div id="app">
@@ -72,8 +72,14 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     <button class="sq" id="btn-settings" aria-label="Ajustes"><svg><use href="#ic-gear"/></svg></button>
   </header>
   <div id="falcon-badge" class="boost hidden"><svg><use href="#ic-plane"/></svg>FALCÓN ×5 <span class="tm" id="falcon-time">10:00</span></div>
+  <!-- La Armería (desde el nivel 10) y la mochila con los objetos comprados -->
+  <button id="armory-btn" class="armory-btn locked" aria-label="La Armería"><img src="assets/armeria/icono.png" alt="" width="64" height="64"><i class="arm-lock">🔒</i><span class="arm-tag" id="armory-tag">NV 10</span></button>
+  <button id="bag-btn" class="bag-btn hidden" aria-label="Tus objetos"><svg viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="4" stroke-linejoin="round"><path d="M22 18 C22 8 42 8 42 18" fill="none"/><path d="M12 24 C12 18 16 16 22 16 H42 C48 16 52 18 52 24 V52 C52 56 48 58 44 58 H20 C16 58 12 56 12 52 Z" fill="#b8742e"/><path d="M12 30 H52 V38 H12 Z" fill="#8a5326"/><rect x="26" y="34" width="12" height="10" rx="3" fill="#ffd23f"/></g></svg><i class="bag-count hidden" id="bag-count">0</i></button>
+  <div id="bag-menu" class="bag-menu hidden"></div>
+  <div id="armory-tease" class="armory-tease hidden"><b>🔒 LA ARMERÍA</b><span>Se desbloquea en el <b>nivel 10</b>. Abascal te espera con su arsenal…</span><div class="tease-bar"><i id="tease-fill"></i></div><small id="tease-lvl">Nivel 1 de 10</small></div>
+
   <!-- instalar la app, a la vista: icono del juego con su regalo -->
-  <button id="install-fab" class="install-fab hidden" aria-label="Instala la app y llévate un regalo"><i class="if-glow"></i><img src="assets/icons/icon-192.png?v=56" alt="" width="48" height="48"><svg class="if-gift"><use href="#ic-chest-dia"/></svg><span>¡APP!</span></button>
+  <button id="install-fab" class="install-fab hidden" aria-label="Instala la app y llévate un regalo"><i class="if-glow"></i><img src="assets/icons/icon-192.png?v=57" alt="" width="48" height="48"><svg class="if-gift"><use href="#ic-chest-dia"/></svg><span>¡APP!</span></button>
   
   <div id="save-status" class="save-status"></div>
 
@@ -109,6 +115,15 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="panel-shop" class="panel"><div class="sheet">
     <div class="title">TIENDA</div><button class="close" data-close aria-label="Cerrar">✕</button>
     <div class="sheet-body"><div id="shop-body" class="shop-body"></div><div class="ad-banner hidden" id="ad-shop"></div></div>
+  </div></div>
+
+  <div id="panel-armory" class="panel"><div class="sheet armory-sheet">
+    <div class="title">LA ARMERÍA</div><button class="close" data-close aria-label="Cerrar">✕</button>
+    <div class="sheet-body">
+      <div class="arm-booth"><i class="arm-awning"></i><div class="arm-bubble" id="arm-bubble">¡Pasen y vean!</div><img class="arm-seller" src="assets/armeria/abascal.png" alt="Abascal, el vendedor" width="600" height="566"><div class="arm-counter"><span>★ OBJETOS CONTRA PEDRO ★</span></div></div>
+      <p class="arm-wallet">Tienes <svg class="ri"><use href="#ic-coin"/></svg><b id="arm-pes">0</b> pesetas · los objetos no se gastan</p>
+      <div class="arm-grid" id="arm-grid"></div>
+    </div>
   </div></div>
 
   <div id="panel-cards" class="panel"><div class="sheet">
@@ -290,7 +305,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="install-overlay" class="overlay install-ov">
     <i class="rays"></i>
     <div class="install-box" role="dialog" aria-labelledby="install-title">
-      <img class="install-icon" src="assets/icons/icon-192.png?v=56" alt="" width="96" height="96">
+      <img class="install-icon" src="assets/icons/icon-192.png?v=57" alt="" width="96" height="96">
       <h2 class="t-big" id="install-title">¡Llévate el juego!</h2>
       <p class="install-sub">Instala AL AGUA PEDRO en tu móvil: a pantalla completa, más rápido y a un toque desde tu pantalla de inicio.</p>
       <div class="install-gift"><svg><use href="#ic-chest-dia"/></svg><span><b>REGALO</b>Cofre de diamante + 150 pesetas<small>al abrir el juego desde la app</small></span></div>
@@ -383,7 +398,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
   <div id="test-badge" class="test-badge hidden">PRUEBAS · DESDE CERO</div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 56</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 57</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -448,7 +463,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 56</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 57</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -464,8 +479,8 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 })();
 </script>
 <!-- cada módulo con su ?v= (lo genera tools/version.py): nadie se queda con código viejo guardado -->
-<script type="importmap">{"imports":{"./js/ads.js":"./js/ads.js?v=56","./js/audio.js":"./js/audio.js?v=56","./js/avatars.js":"./js/avatars.js?v=56","./js/backend.js":"./js/backend.js?v=56","./js/cards-art.js":"./js/cards-art.js?v=56","./js/config.js":"./js/config.js?v=56","./js/darkfix.js":"./js/darkfix.js?v=56","./js/economy.js":"./js/economy.js?v=56","./js/fx.js":"./js/fx.js?v=56","./js/game/arena.js":"./js/game/arena.js?v=56","./js/game/pedro-anims.js":"./js/game/pedro-anims.js?v=56","./js/game/pedro-rig.js":"./js/game/pedro-rig.js?v=56","./js/game/stage-art.js":"./js/game/stage-art.js?v=56","./js/gift.js":"./js/gift.js?v=56","./js/guard.js":"./js/guard.js?v=56","./js/install.js":"./js/install.js?v=56","./js/levels.js":"./js/levels.js?v=56","./js/levelup.js":"./js/levelup.js?v=56","./js/main.js":"./js/main.js?v=56","./js/nozoom.js":"./js/nozoom.js?v=56","./js/payments.js":"./js/payments.js?v=56","./js/play.js":"./js/play.js?v=56","./js/share.js":"./js/share.js?v=56","./js/state.js":"./js/state.js?v=56","./js/streak.js":"./js/streak.js?v=56","./js/supabase.js":"./js/supabase.js?v=56","./js/tour.js":"./js/tour.js?v=56","./js/ui.js":"./js/ui.js?v=56","./js/update.js":"./js/update.js?v=56"}}</script>
-<script type="module" src="js/main.js?v=56"></script>
+<script type="importmap">{"imports":{"./js/ads.js":"./js/ads.js?v=57","./js/armory.js":"./js/armory.js?v=57","./js/audio.js":"./js/audio.js?v=57","./js/avatars.js":"./js/avatars.js?v=57","./js/backend.js":"./js/backend.js?v=57","./js/cards-art.js":"./js/cards-art.js?v=57","./js/config.js":"./js/config.js?v=57","./js/darkfix.js":"./js/darkfix.js?v=57","./js/economy.js":"./js/economy.js?v=57","./js/fx.js":"./js/fx.js?v=57","./js/game/arena.js":"./js/game/arena.js?v=57","./js/game/pedro-anims.js":"./js/game/pedro-anims.js?v=57","./js/game/pedro-rig.js":"./js/game/pedro-rig.js?v=57","./js/game/stage-art.js":"./js/game/stage-art.js?v=57","./js/game/weapons.js":"./js/game/weapons.js?v=57","./js/gift.js":"./js/gift.js?v=57","./js/guard.js":"./js/guard.js?v=57","./js/install.js":"./js/install.js?v=57","./js/levels.js":"./js/levels.js?v=57","./js/levelup.js":"./js/levelup.js?v=57","./js/main.js":"./js/main.js?v=57","./js/nozoom.js":"./js/nozoom.js?v=57","./js/payments.js":"./js/payments.js?v=57","./js/play.js":"./js/play.js?v=57","./js/share.js":"./js/share.js?v=57","./js/state.js":"./js/state.js?v=57","./js/streak.js":"./js/streak.js?v=57","./js/supabase.js":"./js/supabase.js?v=57","./js/tour.js":"./js/tour.js?v=57","./js/ui.js":"./js/ui.js?v=57","./js/update.js":"./js/update.js?v=57"}}</script>
+<script type="module" src="js/main.js?v=57"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>
 </html>

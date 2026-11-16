@@ -5,7 +5,7 @@ import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idl
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
-const COMPOSITE = new Set(['save_progress', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title', 'set_region']);
+const COMPOSITE = new Set(['save_progress', 'buy_armory_item', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title', 'set_region']);
 const users = new Map(); // token -> usuario
 const payRequests = [];
 const calls = [];
@@ -313,6 +313,34 @@ console.log('N. Regalo por instalar la app, en el servidor');
   row = db(email);
   check('regalo de la app: cofre de diamante + 150 pesetas, guardado en el servidor', row.install_claimed === true && r1.n >= 0 && r1.p >= 150 && row.chest_pesetas === before.chest_pesetas + r1.p && row.chests_opened === before.chests_opened + 1, JSON.stringify(r1));
   check('y solo una vez por cuenta', await page.evaluate(() => AAP.backend.claimInstall().then(() => false, e => /Ya has recogido/.test(e.message))));
+}
+
+console.log('O. La Armería en el servidor');
+{
+  row = db(email);
+  check('el regalo de la app también dio el martillo de goma (en el servidor)', JSON.stringify(row.armory).includes('hammer'), JSON.stringify(row.armory));
+  // por debajo del nivel 10, el servidor no vende
+  psql(`update public.profiles set tomatoes_thrown = 10, hits = 0, falls = 0 where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  check('por debajo del nivel 10 el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /nivel 10/.test(e.message))));
+  psql(`update public.profiles set tomatoes_thrown = 3000, hits = 0, falls = 0, wheel_level = greatest(wheel_level, public.fn_player_level(3000, 0, 0)), chest_pesetas = chest_pesetas + 100000 where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  before = db(email);
+  const r1 = await page.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => 'ok', e => e.message));
+  row = db(email); s = await S(page);
+  check('comprar en el servidor: cobra 60.000 y guarda el objeto', r1 === 'ok' && row.pesetas_spent === before.pesetas_spent + 60000 && row.armory.includes('slipper') && s.pesetas === row.pesetas
+    && await page.evaluate(() => AAP.state.armory.includes('slipper')), JSON.stringify({ r1, a: row.armory }));
+  check('no se puede comprar dos veces (ni cobrar dos veces)', await page.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /Ya tienes/.test(e.message))) && db(email).pesetas_spent === row.pesetas_spent);
+  check('sin pesetas suficientes, el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('stamp', 1000000).then(() => false, e => /pesetas suficientes/.test(e.message))) && !db(email).armory.includes('stamp'));
+  check('el martillo no se vende (es regalo) y un objeto inventado tampoco', await page.evaluate(() => Promise.all(['hammer', 'misil'].map(id => AAP.backend.buyArmory(id, 1).then(() => false, e => /no se vende/.test(e.message))))).then(r => r.every(Boolean)));
+  check('un jugador no puede darse objetos a sí mismo', (() => { try { psql(`update public.profiles set armory = '["stamp"]'`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
+  // dos compras a la vez: solo se cobra una
+  psql(`update public.profiles set chest_pesetas = chest_pesetas + 125000 where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  before = db(email);
+  const twice = await page.evaluate(() => Promise.allSettled([AAP.backend.buyArmory('goose', 125000), AAP.backend.buyArmory('goose', 125000)]).then(r => r.map(x => x.status).join()));
+  row = db(email);
+  check('dos compras seguidas del mismo objeto: se cobra una sola vez', row.pesetas_spent === before.pesetas_spent + 125000 && row.armory.filter(x => x === 'goose').length === 1, twice);
 }
 
 console.log('F. Ranking');

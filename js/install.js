@@ -62,6 +62,7 @@ export async function checkReward() {
     ui.showToast('📲 ¡Gracias por instalar la app! Aquí tienes tu regalo', 3200); SFX.levelUp?.();
     await ui.chestOpening('diamond', reward); ui.hud();
     if (reward.extra) ui.pesetaGain(reward.extra);
+    if (reward.item === 'hammer') ui.showToast('🔨 ¡Martillo de goma en tu mochila! Úsalo contra Pedro', 3600);
   } catch (e) { if (!/Ya has recogido/.test(e.message)) fail?.(e); }
   claiming = false; refresh();
 }

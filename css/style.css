@@ -1256,3 +1256,68 @@ svg { display: block; }
 .guard-target.pop { animation: guardpop .25s ease-out; }
 @keyframes guardpop { from { transform: scale(.3); } 70% { transform: scale(1.15); } }
 .guard-count { margin: 0; font: 22px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 5px var(--ink); }
+
+/* v57: La Armería */
+.armory-btn { position: absolute; left: 6px; top: calc(220px + var(--safe-top)); z-index: 5; width: 66px; padding: 0; border: 0; background: none; display: flex; flex-direction: column; align-items: center; }
+.armory-btn img { width: 60px; height: 60px; border-radius: 50%; filter: drop-shadow(0 4px 0 #000a); transition: filter .3s; }
+.armory-btn.locked img { filter: grayscale(.85) brightness(.75) drop-shadow(0 4px 0 #000a); }
+.armory-btn .arm-lock { position: absolute; right: 0; top: -2px; font-size: 20px; font-style: normal; display: none; filter: drop-shadow(0 2px 0 #000a); }
+.armory-btn.locked .arm-lock { display: block; }
+.armory-btn .arm-tag { position: relative; margin-top: -8px; padding: 0 6px; border-radius: 8px; border: 2px solid var(--ink); background: linear-gradient(#ff5a48, #c4161c); font: 10px/15px 'Titan One'; color: #fff; white-space: nowrap; paint-order: stroke fill; -webkit-text-stroke: 2.5px var(--ink); }
+.armory-btn.locked .arm-tag { background: linear-gradient(#5b6a95, #2c3760); }
+.armory-btn.fresh img { animation: armpulse 1s ease-in-out infinite; }
+@keyframes armpulse { 50% { transform: scale(1.12); filter: drop-shadow(0 0 14px #ffd23f) drop-shadow(0 4px 0 #000a); } }
+.bag-btn { position: absolute; left: 10px; top: calc(300px + var(--safe-top)); z-index: 5; width: 54px; height: 54px; padding: 6px; border-radius: 16px; border: 3px solid var(--ink); background: linear-gradient(#ffcf5a, #e08a12); box-shadow: inset 0 3px 0 #fff8, 0 4px 0 #000a; }
+.bag-btn svg { width: 100%; height: 100%; }
+.bag-btn.hidden, .bag-menu.hidden, .armory-tease.hidden, .bag-count.hidden { display: none; }
+.bag-btn:disabled { filter: grayscale(.7) brightness(.8); }
+.bag-count { position: absolute; right: -8px; top: -8px; min-width: 22px; height: 22px; border-radius: 11px; border: 2px solid var(--ink); background: #e3262c; font: 12px/18px 'Titan One'; font-style: normal; color: #fff; }
+.bag-menu { position: absolute; left: 72px; top: calc(270px + var(--safe-top)); z-index: 25; width: 200px; max-height: 52vh; overflow-y: auto; padding: 8px; border-radius: 16px; border: 3px solid var(--ink);
+  background: linear-gradient(#24357f, #111a4c); box-shadow: 0 8px 0 #0008, 0 0 30px #0009; display: flex; flex-direction: column; gap: 6px; animation: fade .15s ease-out; }
+.bag-title { margin: 2px 4px 2px; font: 13px 'Titan One'; color: #ffe766; }
+.bag-empty { margin: 4px; font: 700 13px/1.35 'Baloo 2'; color: #dfe6ff; }
+.bag-empty b { color: #ffe766; }
+.bag-item { display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 12px; border: 2px solid var(--ink); background: #0a1442; text-align: left; font: 800 14px/1.1 'Baloo 2'; color: #fff; }
+.bag-item canvas { width: 46px; height: 46px; flex: none; }
+.bag-item:active { transform: translateY(2px); background: #1a2a6a; }
+.armory-tease { position: absolute; left: 76px; top: calc(222px + var(--safe-top)); z-index: 6; width: 230px; padding: 10px 12px; border-radius: 16px; border: 3px solid var(--ink); background: linear-gradient(#3a1018, #170408);
+  box-shadow: 0 8px 0 #0008; display: flex; flex-direction: column; gap: 6px; font: 700 13px/1.3 'Baloo 2'; color: #fff; animation: fade .15s ease-out; }
+.armory-tease > b { font: 16px 'Titan One'; color: #ffd23f; }
+.armory-tease span b { color: #ffd23f; }
+.tease-bar { height: 12px; border-radius: 8px; border: 2px solid var(--ink); background: #0008; overflow: hidden; }
+.tease-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd23f, #ff8a1a); }
+.armory-tease small { font-size: 12px; color: #ffc9c9; }
+/* la tienda: puesto de feria */
+.armory-sheet { background: linear-gradient(#5a1a12, #2a0c0a); }
+.arm-booth { position: relative; flex: none; height: 300px; margin: -6px -2px 0; border-radius: 16px; overflow: hidden; border: 3px solid var(--ink); background: radial-gradient(circle at 50% 70%, #ffcf7a, #b85a1e 70%, #6a2a0e); }
+.arm-awning { position: absolute; left: 0; right: 0; top: 0; height: 44px; z-index: 3; background: repeating-linear-gradient(90deg, #e3262c 0 34px, #fff4d6 34px 68px); border-bottom: 3px solid var(--ink);
+  -webkit-mask: radial-gradient(18px at 17px 44px, #0000 97%, #000) 0 0 / 34px 100%; mask: radial-gradient(18px at 17px 44px, #0000 97%, #000) 0 0 / 34px 100%; filter: drop-shadow(0 4px 0 #0006); }
+.arm-seller { position: absolute; left: 50%; bottom: 50px; z-index: 1; width: 222px; height: auto; transform: translateX(-56%); }
+.arm-counter { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 2; border-top: 4px solid var(--ink); background: repeating-linear-gradient(90deg, #a8652c 0 46px, #8a4f1e 46px 50px); box-shadow: inset 0 6px 0 #d18a46; display: grid; place-items: center; }
+.arm-counter span { padding: 2px 12px; border-radius: 8px; border: 2px solid var(--ink); background: #ffd23f; font: 13px 'Titan One'; color: #6a2a0e; }
+.arm-bubble { position: absolute; right: 8px; top: 54px; z-index: 3; max-width: 44%; padding: 7px 10px; border-radius: 14px; border: 3px solid var(--ink); background: #fff; font: 800 13px/1.2 'Baloo 2'; color: #1a1a2a; box-shadow: 0 4px 0 #0007; }
+.arm-bubble::after { content: ''; position: absolute; left: -12px; top: 18px; border: 8px solid transparent; border-right-color: var(--ink); }
+.arm-wallet { margin: 0; text-align: center; font: 800 14px 'Baloo 2'; color: #ffe2c9; }
+.arm-wallet b { color: #ffd23f; font-family: 'Titan One'; }
+.arm-wallet .ri { display: inline-block; width: 18px; height: 18px; vertical-align: -4px; }
+.arm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.arm-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 5px 8px; border-radius: 14px; border: 3px solid var(--ink); background: linear-gradient(#fff4d6, #f0d29a); box-shadow: 0 4px 0 #0008; text-align: center; }
+.arm-card.wide { grid-column: 1 / -1; flex-direction: row; text-align: left; gap: 10px; padding: 8px 12px; background: linear-gradient(#ffe1e1, #f3a7a7); }
+.arm-card.have { background: linear-gradient(#e2ffd9, #a9e39a); }
+.arm-card canvas { width: 76px; height: 76px; flex: none; }
+.arm-card.wide canvas { width: 92px; height: 92px; }
+.arm-info { display: flex; flex-direction: column; align-items: inherit; gap: 2px; min-width: 0; width: 100%; }
+.arm-card.wide .arm-info { align-items: flex-start; }
+.arm-card h4 { margin: 0; font: 13px/1.05 'Titan One'; color: #3a1a0a; }
+.arm-card p { margin: 0; font: 700 11px/1.15 'Baloo 2'; color: #6a3a1a; }
+.arm-price { display: flex; flex-direction: column; align-items: inherit; }
+.arm-price b { display: flex; align-items: center; gap: 3px; font: 14px 'Titan One'; color: #3a1a0a; }
+.arm-price .ri { width: 16px; height: 16px; }
+.arm-price .arm-free { color: #1f8a2e; }
+.arm-price small { font: 700 10px/1.1 'Baloo 2'; color: #6a3a1a; }
+.arm-buy { width: 100%; margin-top: 3px; padding: 5px 4px; border-radius: 10px; border: 2px solid var(--ink); background: linear-gradient(#7af585, #1fa83a); font: 12px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); box-shadow: 0 3px 0 #0008; }
+.arm-card.wide .arm-buy { width: auto; padding: 6px 16px; }
+.arm-buy.sure { background: linear-gradient(#ffd23f, #ff8a1a); animation: badge .6s ease-in-out infinite; }
+.arm-buy.gift { background: linear-gradient(#b163ff, #6a2ad0); }
+.arm-buy:disabled { background: #8a7a6a; -webkit-text-stroke: 0; color: #f3e6d6; font: 800 11px 'Baloo 2'; }
+.arm-own { margin-top: 3px; font: 11px 'Titan One'; color: #1f7a2a; }

@@ -25,7 +25,7 @@ jobs:
         run: |
           mkdir -p dist/assets
           cp -r index.html .htaccess robots.txt sitemap.xml ads.txt manifest.webmanifest sw.js favicon.ico css js legal dist/
-          cp -r assets/pedro assets/musica assets/icons assets/fonts assets/favicon.svg assets/og.jpg dist/assets/
+          cp -r assets/pedro assets/musica assets/icons assets/armeria assets/fonts assets/favicon.svg assets/og.jpg dist/assets/
           echo "Archivos a publicar:"; find dist -type f | sort
           grep -o 'versión [0-9][0-9]*' dist/index.html | head -1
 

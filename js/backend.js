@@ -104,12 +104,21 @@ export const backend = {
     if (state.legendSpins < 1) throw new Error('No tienes tiradas legendarias');
     return localSpin('legend', LV.levelOf(state.stats), 0, rng, () => { state.legendSpins--; });
   },
+  // La Armería: comprar un objeto (desde el nivel 10, con pesetas; se queda para siempre). Con cuenta lo valida el servidor.
+  async buyArmory(id, price) {
+    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.buyArmory(id)); applyServer(r, sent); return; }
+    if (!price) throw new Error('Ese objeto no se vende');
+    if (LV.levelOf(state.stats) < 10) throw new Error('La Armería se desbloquea en el nivel 10');
+    if (state.armory.includes(id)) throw new Error('Ya tienes ese objeto');
+    if (state.pesetas < price) throw new Error('No tienes pesetas suficientes');
+    state.stats.pesetasSpent += price; state.armory.push(id); changed(false);
+  },
   // Regalo por instalar la app: cofre de diamante + 150 pesetas, una sola vez (con cuenta lo da el servidor)
   async claimInstall() {
     if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimInstall()); applyServer(r.profile, sent); return r.reward; }
     if (state.installClaimed) throw new Error('Ya has recogido el regalo de la app');
     const reward = E.rollChest('diamond', state.cards); E.applyChestCards(state.cards, reward.cards); reward.pesetas += INSTALL_PESETAS;
-    state.installClaimed = true; applyChestLocal(reward, 0); return reward;
+    state.installClaimed = true; if (!state.armory.includes('hammer')) state.armory.push('hammer'); reward.item = 'hammer'; applyChestLocal(reward, 0); return reward;
   },
   // Vídeo recompensado de la tienda (El Falcón o Sobre de la Moncloa). Con cuenta lo concede el servidor, con límite diario.
   async watchAd(placement) {

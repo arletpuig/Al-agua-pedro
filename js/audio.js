@@ -42,7 +42,46 @@ function noise({ t = 0.2, vol = 0.4, filter = 1200, q = 1, delay = 0, type = 'lo
   s.connect(f); f.connect(g); g.connect(master); s.start(t0);
 }
 
+// coro de plaza de toros: varias voces cantando «¡o-LÉÉÉÉ!» (síntesis de formantes: vocal o → l → e)
+function ole() {
+  const c = ac(), t0 = c.currentTime + 0.01, out = c.createGain(); out.gain.value = 0.9; out.connect(master);
+  for (let v = 0; v < 10; v++) {
+    const d = t0 + Math.random() * 0.07, f0 = 140 + Math.random() * 170, o = c.createOscillator(), vib = c.createOscillator(), vg = c.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f0, d); o.frequency.linearRampToValueAtTime(f0 * 1.26, d + 0.3); o.frequency.setValueAtTime(f0 * 1.26, d + 1.3); o.frequency.linearRampToValueAtTime(f0 * 1.12, d + 1.8);
+    vib.frequency.value = 5 + Math.random() * 1.5; vg.gain.value = f0 * 0.025; vib.connect(vg); vg.connect(o.frequency);
+    const g = c.createGain(); g.gain.setValueAtTime(0, d); g.gain.linearRampToValueAtTime(0.07, d + 0.04); g.gain.setValueAtTime(0.07, d + 0.2); g.gain.linearRampToValueAtTime(0.015, d + 0.27);
+    g.gain.linearRampToValueAtTime(0.09, d + 0.42); g.gain.setValueAtTime(0.09, d + 1.35); g.gain.linearRampToValueAtTime(0, d + 1.85);
+    for (const [a, b, q] of [[520, 380, 7], [880, 2050, 9], [2500, 2700, 6]]) {
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = q; f.frequency.setValueAtTime(a, d); f.frequency.setValueAtTime(a, d + 0.22); f.frequency.linearRampToValueAtTime(b, d + 0.36);
+      o.connect(f); f.connect(g);
+    }
+    g.connect(out); o.start(d); vib.start(d); o.stop(d + 1.9); vib.stop(d + 1.9);
+  }
+  noise({ t: 1.8, vol: 0.12, filter: 1200, q: 0.6, type: 'bandpass' });   // el público de fondo
+  tone({ f: 523, type: 'square', t: 0.3, vol: 0.06, delay: 0.35 }); tone({ f: 659, type: 'square', t: 0.3, vol: 0.06, delay: 0.35 });
+}
+
 export const SFX = {
+  // ---------- La Armería ----------
+  ole() { if (!enabled) return; ole(); },
+  bonk() { if (!enabled) return; noise({ t: 0.18, vol: 0.6, filter: 700 }); tone({ f: 260, f2: 70, type: 'sine', t: 0.3, vol: 0.55 }); },
+  squeak() { if (!enabled) return; tone({ f: 1100, f2: 1900, type: 'sine', t: 0.1, vol: 0.3 }); tone({ f: 1900, f2: 900, type: 'sine', t: 0.16, vol: 0.3, delay: 0.1 }); tone({ f: 1300, f2: 1700, type: 'triangle', t: 0.08, vol: 0.2, delay: 0.27 }); },
+  boing() { if (!enabled) return; tone({ f: 140, f2: 520, type: 'triangle', t: 0.45, vol: 0.35 }); },
+  slap() { if (!enabled) return; noise({ t: 0.13, vol: 0.9, filter: 2600, q: 0.8, type: 'bandpass' }); tone({ f: 420, f2: 160, type: 'square', t: 0.08, vol: 0.2 }); },
+  honk() { if (!enabled) return; tone({ f: 430, f2: 360, type: 'sawtooth', t: 0.17, vol: 0.22 }); tone({ f: 860, f2: 720, type: 'square', t: 0.17, vol: 0.08 }); },
+  peck() { if (!enabled) return; tone({ f: 1500, f2: 700, type: 'square', t: 0.04, vol: 0.2 }); noise({ t: 0.05, vol: 0.3, filter: 3000, type: 'highpass' }); },
+  moo() { if (!enabled) return; tone({ f: 120, f2: 95, type: 'sawtooth', t: 0.9, vol: 0.25, attack: 0.08 }); noise({ t: 0.5, vol: 0.25, filter: 400, q: 2, type: 'bandpass', delay: 0.4 }); },
+  hoof() { if (!enabled) return; tone({ f: 90, f2: 50, type: 'sine', t: 0.12, vol: 0.5 }); noise({ t: 0.08, vol: 0.3, filter: 500 }); },
+  charge() { if (!enabled) return; for (let i = 0; i < 6; i++) { tone({ f: 80, f2: 50, type: 'sine', t: 0.08, vol: 0.4, delay: i * 0.07 }); } noise({ t: 0.5, vol: 0.3, filter: 300, sweep: 1500, type: 'bandpass', q: 1.5 }); },
+  vacuumOn() { if (!enabled) return; noise({ t: 2.6, vol: 0.18, filter: 400, sweep: 1400, type: 'bandpass', q: 2 }); tone({ f: 70, f2: 140, type: 'sawtooth', t: 2.4, vol: 0.08, attack: 0.3 }); },
+  suck() { if (!enabled) return; noise({ t: 1.0, vol: 0.35, filter: 600, sweep: 4000, type: 'bandpass', q: 3 }); tone({ f: 200, f2: 900, type: 'sawtooth', t: 1.0, vol: 0.08 }); },
+  gulp() { if (!enabled) return; tone({ f: 420, f2: 90, type: 'sine', t: 0.25, vol: 0.5 }); tone({ f: 300, f2: 70, type: 'sine', t: 0.25, vol: 0.4, delay: 0.28 }); },
+  spit() { if (!enabled) return; noise({ t: 0.25, vol: 0.6, filter: 1500, sweep: 400 }); tone({ f: 180, f2: 800, type: 'square', t: 0.15, vol: 0.18 }); },
+  hiss() { if (!enabled) return; noise({ t: 0.8, vol: 0.3, filter: 5000, type: 'highpass' }); },
+  clunk() { if (!enabled) return; tone({ f: 110, f2: 40, type: 'square', t: 0.3, vol: 0.35 }); noise({ t: 0.2, vol: 0.5, filter: 800 }); },
+  accordion() { if (!enabled) return; [[262, 330, 392], [247, 311, 370], [262, 330, 392], [196, 247, 294]].forEach((ch, i) => ch.forEach(f => { tone({ f, type: 'sawtooth', t: 0.26, vol: 0.06, delay: i * 0.27, attack: 0.05 }); tone({ f: f * 1.006, type: 'square', t: 0.26, vol: 0.03, delay: i * 0.27, attack: 0.05 }); })); },
+  stampBig() { if (!enabled) return; tone({ f: 120, f2: 35, type: 'sine', t: 0.5, vol: 0.7 }); noise({ t: 0.3, vol: 0.6, filter: 700 }); tone({ f: 1568, type: 'triangle', t: 0.8, vol: 0.15, delay: 0.15 }); tone({ f: 2093, type: 'triangle', t: 0.8, vol: 0.1, delay: 0.15 }); },
+
   click() { if (!enabled) return; tone({ f: 900, f2: 600, type: 'square', t: 0.05, vol: 0.12 }); },
   tomato() { if (!enabled) return; [523, 659, 784, 1047].forEach((f, i) => tone({ f, type: 'triangle', t: 0.18, vol: 0.3, delay: i * 0.07 })); },
   throwStart() { if (!enabled) return; noise({ t: 0.35, vol: 0.25, filter: 400, sweep: 3000, type: 'bandpass', q: 2 }); },

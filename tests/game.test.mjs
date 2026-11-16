@@ -765,5 +765,68 @@ console.log('34. Anti-autoclicker');
   await cg.close();
 }
 
+console.log('35. La Armería');
+{
+  const ca = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const pa = await ca.newPage(); const ea = watchErrors(pa); await mockTime(pa);
+  await open(pa);
+  await pa.evaluate(() => { AAP.giftTest.off = true; AAP.armoryTest.off = true; });
+  const vis = sel => pa.evaluate(s => { const e = document.querySelector(s); return !!e && !e.classList.contains('hidden') && e.offsetWidth > 0; }, sel);
+  const lock0 = await pa.evaluate(() => ({ locked: document.querySelector('#armory-btn').classList.contains('locked'), tag: document.querySelector('#armory-tag').textContent }));
+  await pa.click('#armory-btn'); await pa.waitForTimeout(200);
+  check('jugador nuevo: La Armería cerrada (candado, «NV 10») y aviso de cuándo se abre', lock0.locked && lock0.tag === 'NV 10' && await vis('#armory-tease') && /nivel 10/.test(await pa.textContent('#armory-tease'))
+    && !(await pa.evaluate(() => document.querySelector('#panel-armory').classList.contains('open'))), JSON.stringify(lock0));
+  check('sin nivel 10 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /nivel 10/.test(e.message))));
+  const btn = await pa.evaluate(() => { const r = document.querySelector('#armory-btn').getBoundingClientRect(); return { x: r.x, w: r.width, top: r.top }; });
+  check('el botón está a un lado (fuera del menú de abajo) y no tapa el juego', btn.x < 20 && btn.w < 80 && btn.top > 150, JSON.stringify(btn));
+  // nivel 10 con el sistema de niveles de verdad: se abre sola
+  await pa.evaluate(async () => { const st = AAP.state.stats; st.tomatoesThrown = 2200; st.hits = 1200; (await import('./js/state.js')).changed(false); });
+  await pa.waitForTimeout(300);
+  check('al llegar al nivel 10 se desbloquea sola', await pa.evaluate(() => !document.querySelector('#armory-btn').classList.contains('locked') && (AAP.state.stats.tomatoesThrown * 10 + AAP.state.stats.hits * 5) >= 27200));
+  await pa.click('#armory-btn'); await pa.waitForTimeout(400);
+  const shop = await pa.evaluate(() => ({ open: document.querySelector('#panel-armory').classList.contains('open'), seller: document.querySelector('.arm-seller').naturalWidth, cards: [...document.querySelectorAll('.arm-card')].map(c => c.dataset.id),
+    wide: document.querySelector('.arm-card.wide')?.dataset.id, cols: getComputedStyle(document.querySelector('#arm-grid')).gridTemplateColumns.split(' ').length, prices: [...document.querySelectorAll('.arm-price b')].map(b => b.textContent.trim()),
+    poor: document.querySelector('[data-id="slipper"] button').disabled }));
+  check('la tienda: Abascal tras el mostrador y 7 objetos (3 + 3 + el sello a lo ancho)', shop.open && shop.seller > 0 && shop.cards.join() === 'hammer,slipper,goose,bull,vacuum,press,stamp' && shop.wide === 'stamp' && shop.cols === 3, JSON.stringify(shop));
+  check('precios: gratis, 60.000, 125.000, 250.000, 400.000, 650.000 y 1.000.000', shop.prices.join('|') === 'GRATIS|60.000|125.000|250.000|400.000|650.000|1.000.000', shop.prices.join('|'));
+  check('sin pesetas suficientes no se puede comprar', shop.poor);
+  await pa.screenshot({ path: 'tests/out/35-armeria.png' });
+  await pa.evaluate(async () => { AAP.state.stats.chestPesetas += 200000; (await import('./js/state.js')).changed(false); }); await pa.waitForTimeout(200);
+  const p0 = (await S(pa)).pesetas;
+  await pa.click('[data-buy="slipper"]', { force: true }); await pa.waitForTimeout(200);
+  const one = await pa.evaluate(() => ({ owned: AAP.state.armory.includes('slipper'), label: document.querySelector('[data-id="slipper"] button')?.textContent }));
+  check('un toque no compra: pide confirmación', !one.owned && /SEGURO/.test(one.label), JSON.stringify(one));
+  await pa.click('[data-buy="slipper"]', { force: true }); await pa.waitForTimeout(400);
+  const after = await pa.evaluate(() => ({ owned: AAP.state.armory.filter(x => x === 'slipper').length, own: document.querySelector('[data-id="slipper"] .arm-own')?.textContent, btn: !!document.querySelector('[data-buy="slipper"]') }));
+  const p1 = (await S(pa)).pesetas;
+  check('comprar: descuenta 60.000 pesetas y va a la mochila (una vez)', after.owned === 1 && p0 - p1 === 60000 && /MOCHILA/.test(after.own) && !after.btn, JSON.stringify({ after, p0, p1 }));
+  check('no se puede comprar dos veces', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /Ya tienes/.test(e.message))) && (await S(pa)).pesetas === p1);
+  await pa.click('#panel-armory [data-close]'); await pa.waitForTimeout(200);
+  // mochila: solo lo comprado; se usa contra Pedro y no se gasta
+  await pa.click('#bag-btn'); await pa.waitForTimeout(200);
+  const bag = await pa.evaluate(() => [...document.querySelectorAll('#bag-menu [data-use]')].map(b => b.dataset.use).join());
+  check('la mochila enseña solo lo comprado', bag === 'slipper', bag);
+  await pa.click('#bag-menu [data-use="slipper"]'); await pa.waitForTimeout(250);
+  const during = await pa.evaluate(async () => ({ busy: AAP.scene.busy, prop: !!AAP.scene.prop, thr: await (await import('./js/play.js')).throwTomatoes(1) }));
+  await pa.waitForFunction(() => !AAP.scene.busy, null, { timeout: 8000 });
+  check('al usarla: animación contra Pedro y mientras tanto no se lanza', during.busy && during.prop && during.thr === false, JSON.stringify(during));
+  check('y no se gasta', await pa.evaluate(() => AAP.state.armory.includes('slipper') && !AAP.scene.wpn && !AAP.scene.prop));
+  check('lo que no tienes no se puede usar', await pa.evaluate(() => import('./js/armory.js').then(m => m.use('bull'))) === false);
+  // martillo de goma: el regalo de la app, una sola vez
+  const ham = await pa.evaluate(() => AAP.backend.claimInstall().then(r => r.item, e => 'err ' + e.message));
+  check('martillo de goma: regalo al instalar la app', ham === 'hammer' && await pa.evaluate(() => AAP.state.armory.includes('hammer')));
+  check('y solo una vez', await pa.evaluate(() => AAP.backend.claimInstall().then(() => false, e => /Ya has recogido/.test(e.message)) && AAP.state.armory.filter(x => x === 'hammer').length === 1));
+  // se guarda al cerrar y volver a abrir
+  await pa.reload(); await pa.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
+  check('el inventario se conserva al volver a abrir', await pa.evaluate(() => AAP.state.armory.slice().sort().join()) === 'hammer,slipper');
+  // las siete animaciones, sin errores
+  await pa.evaluate(() => { AAP.giftTest.off = true; AAP.state.armory = ['hammer', 'slipper', 'goose', 'bull', 'vacuum', 'press', 'stamp']; });
+  const ok = []; for (const id of ['hammer', 'slipper', 'goose', 'bull', 'vacuum', 'press', 'stamp']) {
+    const r = await pa.evaluate(id => import('./js/armory.js').then(m => m.use(id)), id); if (id === 'bull') await pa.screenshot({ path: 'tests/out/35-toro.png' }).catch(() => {});
+    ok.push(r === true && await pa.evaluate(() => !AAP.scene.busy && !AAP.scene.wpn && !AAP.scene.tint)); }
+  check('las 7 animaciones (martillo, chancla, oca, toro, aspiradora, prensa y sello) terminan bien', ok.every(Boolean), ok.join());
+  check('La Armería: sin errores en consola', ea.length === 0, ea.join(' | '));
+  await ca.close();
+}
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

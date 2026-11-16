@@ -7,6 +7,7 @@ import { CLIPS, sample } from './pedro-anims.js';
 import { drawStageBack, drawStageFront, drawStatic, pedroShadow, softBlob, PLANK, TANK, TARGET, W } from './stage-art.js';
 import { CONFIG } from '../config.js';
 import { SFX } from '../audio.js';
+import { runWeapon } from './weapons.js';
 
 // Al fallar dice siempre lo mismo; en el resto de momentos, una de sus frases típicas al azar.
 const CENTRO = ['¡Le tienes que dar al centro, eh! ¡Jajajaja!'];
@@ -237,6 +238,16 @@ export class Arena {
     if (last) this.say(pick(LINES.wetChair), 2.4);
   }
 
+  // ------------------------------------------------ La Armería: un objeto contra Pedro (no se puede mientras lanza o cae)
+  pedX() { return PED.x + (this.P?.px || 0) * PED.s; }
+  canUseWeapon() { return this.ready && !this.busy && !this.aim && !this.pose && !this.flying; }
+  async useWeapon(id) {
+    if (!this.canUseWeapon()) return false;
+    this.busy = true; this.hush(); this.lookOverride = null;
+    try { await runWeapon(this, id); } finally { this.busy = false; }
+    return true;
+  }
+
   // ------------------------------------------------ el Falcón cruza el cielo
   falconFly() { this.plane = { t0: this.now }; SFX.falcon(); }
 
@@ -292,6 +303,7 @@ export class Arena {
     this.drawWall(c);
     if (!this.pose) pedroShadow(c, pedX, 1 - P.walkAmt * 0.15);
     if (!this.pose?.inside) this.drawPedro(c, P, now);
+    if (this.prop) { this.prop.step?.(); this.prop.draw?.(c); this.prop.over?.(c); }   // objetos de La Armería
     this.drawRipples(c);
     this.drawAim(c);
     this.drawParts(c, dt);
@@ -304,7 +316,18 @@ export class Arena {
     if (now < this.wetUntil && !this.pose && Math.random() < dt * 14) this.burst(pedX + rand(-60, 60), PLANK.y - 560 + rand(0, 200), 1, 'drop', { angle: Math.PI / 2, spread: 0.2, min: 50, max: 150, g: 1800, r: [4, 7], life: [0.5, 0.8] });
   }
   drawPedro(c, P, t) {
+    const w = this.wpn;
+    if (w?.hide) return;
+    // sello «CORRUPTO»: Pedro se tiñe de rojo (se dibuja aparte y se colorea solo él)
+    if (this.tint?.a > 0.01) {
+      const oc = this.tintCv ||= document.createElement('canvas'); if (oc.width !== c.canvas.width || oc.height !== c.canvas.height) { oc.width = c.canvas.width; oc.height = c.canvas.height; }
+      const ox = oc.getContext('2d'); ox.setTransform(1, 0, 0, 1, 0, 0); ox.clearRect(0, 0, oc.width, oc.height); ox.setTransform(c.getTransform());
+      const tint = this.tint; this.tint = null; this.drawPedro(ox, P, t); this.tint = tint;
+      ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-atop'; ox.fillStyle = `rgba(225,20,31,${tint.a})`; ox.fillRect(0, 0, oc.width, oc.height); ox.globalCompositeOperation = 'source-over';
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(oc, 0, 0); c.restore(); return;
+    }
     c.save();
+    if (w) { const fx = this.pose ? 0 : PED.x + (P.px || 0) * PED.s; c.translate(fx + w.dx, PLANK.y + 4 + w.dy); c.rotate(w.rot); c.scale(w.sx, w.sy); c.translate(-fx, -(PLANK.y + 4)); c.globalAlpha *= w.alpha; }
     if (this.pose) { c.translate(this.pose.x, this.pose.y); c.rotate(this.pose.rot); c.scale(this.pose.s, this.pose.s); c.translate(-ROOT[0], -ROOT[1]); P = { ...P, px: 0 }; }
     else {
       c.translate(PED.x, PLANK.y + 4);
@@ -383,6 +406,8 @@ export class Arena {
       const a = Math.min(1, (p.life - p.t) / 0.25);
       c.save(); c.globalAlpha = a; c.translate(p.x, p.y);
       if (p.kind === 'drop') { c.rotate(Math.atan2(p.vy, p.vx) - Math.PI / 2); c.fillStyle = '#bff0ff'; c.strokeStyle = '#2a8fc4'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, -p.r * 1.6); c.quadraticCurveTo(p.r, 0, 0, p.r); c.quadraticCurveTo(-p.r, 0, 0, -p.r * 1.6); c.fill(); c.stroke(); c.fillStyle = '#fff'; ell(c, -p.r * 0.3, -p.r * 0.2, p.r * 0.25, p.r * 0.35); c.fill(); }
+      else if (p.kind === 'feather') { c.rotate(p.rot); c.fillStyle = '#ffffff'; c.strokeStyle = '#9aa6b8'; c.lineWidth = 2; ell(c, 0, 0, p.r, p.r * 0.38); c.fill(); c.stroke(); c.beginPath(); c.moveTo(-p.r, 0); c.lineTo(p.r, 0); c.stroke(); }
+      else if (p.kind === 'dust') { const k = p.t / p.life; c.globalAlpha = Math.max(0, 0.7 * (1 - k)); c.fillStyle = '#d9cbb3'; ell(c, 0, 0, p.r * (1 + k * 1.5), p.r * (1 + k * 1.5)); c.fill(); }
       else if (p.kind === 'juice') { c.fillStyle = p.r > 8 ? '#e3312a' : '#ff6b55'; ell(c, 0, 0, p.r, p.r * 0.8, p.rot); c.fill(); }
       else if (p.kind === 'coin') {
         // halo dorado

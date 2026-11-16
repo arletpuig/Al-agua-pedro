@@ -92,6 +92,7 @@ export const claimWelcome = () => rpc('claim_welcome', {});                     
 export const spinWheel = () => rpc('spin_level_wheel', {});                               // -> { seg, wheel, level, pending, reward, profile }
 export const buySpin = () => rpc('buy_wheel_spin', {});                                   // ruleta de la tienda (pesetas)
 export const spinLegend = () => rpc('spin_legend_wheel', {});
+export const buyArmory = item => rpc('buy_armory_item', { p_item: item });              // La Armería: comprar un objeto -> profile
 export const claimInstall = () => rpc('claim_install_reward', {});                       // regalo por instalar la app -> { reward, profile }                             // tirada legendaria comprada
 // Pagos (Stripe): crea la página de pago en la función «crear-pago» y consulta si una compra ya se ha entregado
 export async function createCheckout(pack, returnUrl) { const d = await req(`/functions/v1/${CONFIG.PAY_FUNCTION || 'crear-pago'}`, { method: 'POST', body: { pack, returnUrl } }); if (!d?.url) throw new Error('No se ha podido iniciar el pago'); return d.url; }

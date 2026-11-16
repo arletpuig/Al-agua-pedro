@@ -632,7 +632,14 @@ console.log('32. App instalable (sin tiendas)');
   await open(p9, undefined, { install: true });
   const look = await p9.evaluate(async () => ({ scheme: document.querySelector('meta[name=color-scheme]')?.content, css: getComputedStyle(document.documentElement).colorScheme,
     ico: (await fetch('./favicon.ico')).ok, og: (await fetch(document.querySelector('meta[property="og:image"]').content.replace('https://alaguapedro.es/', './'))).ok }));
-  check('el modo oscuro del navegador (Samsung, Chrome) no cambia los colores; favicon e imagen de compartir publicados', look.scheme === 'only dark' && /dark/.test(look.css) && look.ico && look.og, JSON.stringify(look));
+  check('el modo oscuro del navegador (Samsung, Chrome) no cambia los colores; favicon e imagen de compartir publicados', look.scheme === 'dark' && /dark/.test(look.css) && look.ico && look.og, JSON.stringify(look));
+  {
+    const pf = await c9.newPage(); await pf.addInitScript(() => { window.__AAP_NOTOUR = 1; window.__AAP_NOSW = 1; });
+    await pf.goto('http://localhost:8080/?debug&prueba&fd'); await pf.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
+    const fd = await pf.evaluate(() => { const st = getComputedStyle(document.querySelector('#lvl-name')); return { on: document.documentElement.classList.contains('fd'), rules: document.querySelector('#darkfix')?.sheet.cssRules.length, w: st.webkitTextStrokeWidth, sh: st.textShadow.split('px').length > 8 }; });
+    check('Samsung Internet en modo oscuro: los contornos de las letras pasan a sombras que el navegador no aclara', fd.on && fd.rules > 50 && fd.w === '0px' && fd.sh, JSON.stringify(fd));
+    await pf.close();
+  }
   const sw = await p9.evaluate(() => navigator.serviceWorker.ready.then(r => r.active?.state || 'x'));
   await p9.reload(); await p9.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
   check('el juego registra su service worker', sw === 'activated' && await p9.evaluate(() => !!navigator.serviceWorker.controller), sw);

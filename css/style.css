@@ -1236,4 +1236,6 @@ svg { display: block; }
 @media (prefers-reduced-motion: reduce) { .install-fab, .install-fab .if-gift, .install-fab .if-glow { animation: none; } }
 
 /* v49: el juego ya es oscuro; sin esto, el «modo oscuro» de Samsung Internet y Chrome invierte los contornos de los textos */
-:root { color-scheme: only dark; }
+:root { color-scheme: dark; }
+/* Samsung Internet solo respeta el tema de la web si encuentra esta consulta: el juego es igual en claro y en oscuro */
+@media (prefers-color-scheme: dark) { :root { color-scheme: dark; } html, body { background-color: #02040f; } }

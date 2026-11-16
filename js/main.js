@@ -1,5 +1,7 @@
 // Punto de entrada: une estado, escena (canvas), interfaz, economía y cuenta.
-import './nozoom.js';   // iPhone: sin zoom ni movimientos al pulsar rápido
+import './nozoom.js';
+import { applyDarkFix } from './darkfix.js';
+applyDarkFix();   // Samsung Internet en modo oscuro: contornos de las letras que el navegador no puede aclarar   // iPhone: sin zoom ni movimientos al pulsar rápido
 import { CONFIG } from './config.js';
 import { state, load, onChange, applyServer, snapshot, hasProgress, resetProgress, falconActive } from './state.js';
 import * as ui from './ui.js';

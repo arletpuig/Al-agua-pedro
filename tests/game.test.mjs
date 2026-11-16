@@ -723,5 +723,47 @@ console.log('32. App instalable (sin tiendas)');
   await c10.close();
 }
 
+console.log('34. Anti-autoclicker');
+{
+  const cg = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const pg = await cg.newPage(); const eg = watchErrors(pg); await mockTime(pg);
+  await open(pg);
+  await pg.evaluate(() => { AAP.giftTest.off = true; AAP.guardTest.on = true; AAP.guardTest.synthetic = true; });
+  // toques con un ritmo y una posición dados: [intervalo en ms, dispersión en píxeles]
+  const burst = (n, gap, jitter, spread) => pg.evaluate(([n, gap, jitter, spread]) => new Promise(res => {
+    const b = document.querySelector('#btn-click'), r = b.getBoundingClientRect(); let i = 0;
+    const one = () => { if (i++ >= n) return res(); b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.x + r.width / 2 + (Math.random() - .5) * spread, clientY: r.y + r.height / 2 + (Math.random() - .5) * spread }));
+      setTimeout(one, gap + (Math.random() - .5) * jitter); };
+    one(); }), [n, gap, jitter, spread]);
+  const isOpen = () => pg.evaluate(() => document.querySelector('#guard-overlay').classList.contains('open'));
+  await burst(120, 110, 90, 24);
+  check('persona pulsando deprisa (ritmo y dedo variables): nada', !(await isOpen()));
+  await burst(120, 130, 110, 0);
+  check('con ratón (siempre el mismo punto) pero ritmo humano: nada', !(await isOpen()));
+  const c0 = (await S(pg)).totalClicks;
+  await burst(60, 60, 2, 0);
+  const why = await pg.evaluate(() => document.querySelector('#guard-overlay').dataset.why);
+  check('autoclicker (ritmo de máquina en el mismo punto): «¿Sigues ahí?»', await isOpen() && ['rhythm', 'spot'].includes(why), why);
+  await pg.screenshot({ path: 'tests/out/34-autoclicker.png' });
+  const c1 = (await S(pg)).totalClicks; await burst(30, 60, 2, 0); const c2 = (await S(pg)).totalClicks;
+  check('mientras no la pasa, los toques no cuentan (lo detecta en unos 40 toques)', c1 - c0 <= 60 * 3 && c2 === c1, `${c0} → ${c1} → ${c2}`);
+  // un autoclicker pulsando siempre en el mismo sitio de la ventana no la pasa (los tomates cambian de sitio)
+  const spot = await pg.evaluate(() => { const a = document.querySelector('#guard-area').getBoundingClientRect(), t = document.querySelector('#guard-target').getBoundingClientRect();
+    const x = t.left > a.left + a.width / 2 ? a.left + 20 : a.right - 20, y = t.top > a.top + a.height / 2 ? a.top + 20 : a.bottom - 20; return { x, y }; });
+  for (let i = 0; i < 8; i++) await pg.mouse.click(spot.x, spot.y);
+  check('tocando siempre el mismo sitio no se pasa', await isOpen() && (await pg.textContent('#guard-count')) === '0 / 3');
+  for (let i = 0; i < 3; i++) { await pg.locator('#guard-target').click({ force: true }); await pg.waitForTimeout(150); }
+  const c3 = (await S(pg)).totalClicks; await burst(10, 150, 120, 20); const c4 = (await S(pg)).totalClicks;
+  check('tocando los 3 tomates: se cierra y los toques vuelven a contar', !(await isOpen()) && c4 > c3, `${c3} → ${c4}`);
+  // toques lanzados por un programa desde la página (no son de un dedo): no cuentan
+  await pg.evaluate(() => { AAP.guardTest.synthetic = false; }); await burst(10, 150, 120, 20);
+  check('toques falsos (lanzados desde código): no cuentan', (await S(pg)).totalClicks === c4);
+  // horas pulsando sin parar ni un momento: también pregunta
+  await pg.evaluate(async () => { const m = await import('./js/guard.js'); m.GUARD.nonstopMs = 1500; AAP.guardTest.synthetic = true; });
+  await burst(20, 120, 100, 20);
+  check('pulsando sin ninguna pausa durante mucho rato: «¿Sigues ahí?»', await isOpen() && await pg.evaluate(() => document.querySelector('#guard-overlay').dataset.why) === 'nonstop');
+  check('anti-autoclicker: sin errores en consola', eg.length === 0, eg.join(' | '));
+  await cg.close();
+}
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

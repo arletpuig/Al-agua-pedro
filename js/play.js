@@ -2,6 +2,7 @@
 // El botón grande sirve para las dos cosas: pulsar para conseguir tomates y, mientras apuntas, lanzar.
 // Lanzar ×N es UN solo tiro que vale por N tomates: si cae Pedro cuenta N caídas y N pagas de pesetas.
 import { CONFIG } from './config.js';
+import { allowTap } from './guard.js';
 import { state, addClicks, useTomatoes, registerThrow, falconActive, recoverTomatoes, addPaguita, addStreakPesetas, save } from './state.js';
 import * as STREAK from './streak.js';
 import { backend } from './backend.js';
@@ -50,6 +51,7 @@ function onPress(e) {
   onTap(e);
 }
 function onTap(e) {
+  if (!allowTap(e)) return;   // anti-autoclicker: con la prueba «¿Sigues ahí?» pendiente, los toques no cuentan
   SFX.click(); taps++;
   const C = CONFIG.COMBO;
   combo.heat = Math.min(C.max, combo.heat + C.perTap); combo.last = performance.now() / 1000;

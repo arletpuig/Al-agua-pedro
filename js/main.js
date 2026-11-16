@@ -2,6 +2,7 @@
 import './nozoom.js';
 import { applyDarkFix, maybeWarnDark } from './darkfix.js';
 import { checkVersion } from './update.js';
+import { initGuard, guardTest } from './guard.js';
 applyDarkFix();   // Samsung Internet en modo oscuro: contornos de las letras que el navegador no puede aclarar   // iPhone: sin zoom ni movimientos al pulsar rápido
 import { CONFIG } from './config.js';
 import { state, load, onChange, applyServer, snapshot, hasProgress, resetProgress, falconActive } from './state.js';
@@ -53,6 +54,7 @@ const start = () => {
   try { gatePedro(); } catch (e) {}
   window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { afterThrow(); pushNow(); if (r?.[0]?.fall) maybeOffer(); offerInstall(levelOf(state.stats)); } });
   initInstall(ui, isBusy, e => fail(e)); if (!ui.gated()) installReward();
+  initGuard(ui);     // anti-autoclicker
   maybeWarnDark();   // Samsung Internet en modo oscuro: cómo verlo con sus colores
   // ¿hay una versión nueva publicada? (también al volver a la app tras un rato): se actualiza sola
   checkVersion(); let lastCheck = Date.now();
@@ -70,7 +72,7 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest, CHAT, streakTest, installTest };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest, CHAT, streakTest, installTest, guardTest };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };

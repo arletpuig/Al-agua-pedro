@@ -1257,7 +1257,7 @@ svg { display: block; }
 @keyframes guardpop { from { transform: scale(.3); } 70% { transform: scale(1.15); } }
 .guard-count { margin: 0; font: 22px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 5px var(--ink); }
 
-/* v57: La Armería */
+/* v58: La Armería (puesto de feria, tarjetas exclusivas) */
 .armory-btn { position: absolute; left: 6px; top: calc(220px + var(--safe-top)); z-index: 5; width: 66px; padding: 0; border: 0; background: none; display: flex; flex-direction: column; align-items: center; }
 .armory-btn img { width: 60px; height: 60px; border-radius: 50%; filter: drop-shadow(0 4px 0 #000a); transition: filter .3s; }
 .armory-btn.locked img { filter: grayscale(.85) brightness(.75) drop-shadow(0 4px 0 #000a); }
@@ -1265,21 +1265,10 @@ svg { display: block; }
 .armory-btn.locked .arm-lock { display: block; }
 .armory-btn .arm-tag { position: relative; margin-top: -8px; padding: 0 6px; border-radius: 8px; border: 2px solid var(--ink); background: linear-gradient(#ff5a48, #c4161c); font: 10px/15px 'Titan One'; color: #fff; white-space: nowrap; paint-order: stroke fill; -webkit-text-stroke: 2.5px var(--ink); }
 .armory-btn.locked .arm-tag { background: linear-gradient(#5b6a95, #2c3760); }
-.armory-btn.fresh img { animation: armpulse 1s ease-in-out infinite; }
-@keyframes armpulse { 50% { transform: scale(1.12); filter: drop-shadow(0 0 14px #ffd23f) drop-shadow(0 4px 0 #000a); } }
-.bag-btn { position: absolute; left: 10px; top: calc(300px + var(--safe-top)); z-index: 5; width: 54px; height: 54px; padding: 6px; border-radius: 16px; border: 3px solid var(--ink); background: linear-gradient(#ffcf5a, #e08a12); box-shadow: inset 0 3px 0 #fff8, 0 4px 0 #000a; }
-.bag-btn svg { width: 100%; height: 100%; }
-.bag-btn.hidden, .bag-menu.hidden, .armory-tease.hidden, .bag-count.hidden { display: none; }
-.bag-btn:disabled { filter: grayscale(.7) brightness(.8); }
-.bag-count { position: absolute; right: -8px; top: -8px; min-width: 22px; height: 22px; border-radius: 11px; border: 2px solid var(--ink); background: #e3262c; font: 12px/18px 'Titan One'; font-style: normal; color: #fff; }
-.bag-menu { position: absolute; left: 72px; top: calc(270px + var(--safe-top)); z-index: 25; width: 200px; max-height: 52vh; overflow-y: auto; padding: 8px; border-radius: 16px; border: 3px solid var(--ink);
-  background: linear-gradient(#24357f, #111a4c); box-shadow: 0 8px 0 #0008, 0 0 30px #0009; display: flex; flex-direction: column; gap: 6px; animation: fade .15s ease-out; }
-.bag-title { margin: 2px 4px 2px; font: 13px 'Titan One'; color: #ffe766; }
-.bag-empty { margin: 4px; font: 700 13px/1.35 'Baloo 2'; color: #dfe6ff; }
-.bag-empty b { color: #ffe766; }
-.bag-item { display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 12px; border: 2px solid var(--ink); background: #0a1442; text-align: left; font: 800 14px/1.1 'Baloo 2'; color: #fff; }
-.bag-item canvas { width: 46px; height: 46px; flex: none; }
-.bag-item:active { transform: translateY(2px); background: #1a2a6a; }
+/* recién abierta: un brillo suave y la etiqueta «NUEVO» (sin parpadeos) */
+.armory-btn.fresh img { filter: drop-shadow(0 0 8px #ffd23fcc) drop-shadow(0 4px 0 #000a); }
+.armory-btn.fresh::after { content: 'NUEVO'; position: absolute; right: -6px; top: -6px; padding: 0 4px; border-radius: 6px; border: 2px solid var(--ink); background: #ffd23f; font: 9px/13px 'Titan One'; color: #6a2a0e; }
+.armory-tease.hidden { display: none; }
 .armory-tease { position: absolute; left: 76px; top: calc(222px + var(--safe-top)); z-index: 6; width: 230px; padding: 10px 12px; border-radius: 16px; border: 3px solid var(--ink); background: linear-gradient(#3a1018, #170408);
   box-shadow: 0 8px 0 #0008; display: flex; flex-direction: column; gap: 6px; font: 700 13px/1.3 'Baloo 2'; color: #fff; animation: fade .15s ease-out; }
 .armory-tease > b { font: 16px 'Titan One'; color: #ffd23f; }
@@ -1287,37 +1276,76 @@ svg { display: block; }
 .tease-bar { height: 12px; border-radius: 8px; border: 2px solid var(--ink); background: #0008; overflow: hidden; }
 .tease-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd23f, #ff8a1a); }
 .armory-tease small { font-size: 12px; color: #ffc9c9; }
-/* la tienda: puesto de feria */
-.armory-sheet { background: linear-gradient(#5a1a12, #2a0c0a); }
-.arm-booth { position: relative; flex: none; height: 300px; margin: -6px -2px 0; border-radius: 16px; overflow: hidden; border: 3px solid var(--ink); background: radial-gradient(circle at 50% 70%, #ffcf7a, #b85a1e 70%, #6a2a0e); }
-.arm-awning { position: absolute; left: 0; right: 0; top: 0; height: 44px; z-index: 3; background: repeating-linear-gradient(90deg, #e3262c 0 34px, #fff4d6 34px 68px); border-bottom: 3px solid var(--ink);
-  -webkit-mask: radial-gradient(18px at 17px 44px, #0000 97%, #000) 0 0 / 34px 100%; mask: radial-gradient(18px at 17px 44px, #0000 97%, #000) 0 0 / 34px 100%; filter: drop-shadow(0 4px 0 #0006); }
-.arm-seller { position: absolute; left: 50%; bottom: 50px; z-index: 1; width: 222px; height: auto; transform: translateX(-56%); }
-.arm-counter { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; z-index: 2; border-top: 4px solid var(--ink); background: repeating-linear-gradient(90deg, #a8652c 0 46px, #8a4f1e 46px 50px); box-shadow: inset 0 6px 0 #d18a46; display: grid; place-items: center; }
-.arm-counter span { padding: 2px 12px; border-radius: 8px; border: 2px solid var(--ink); background: #ffd23f; font: 13px 'Titan One'; color: #6a2a0e; }
-.arm-bubble { position: absolute; right: 8px; top: 54px; z-index: 3; max-width: 44%; padding: 7px 10px; border-radius: 14px; border: 3px solid var(--ink); background: #fff; font: 800 13px/1.2 'Baloo 2'; color: #1a1a2a; box-shadow: 0 4px 0 #0007; }
+/* el puesto de feria */
+.armory-sheet { background: radial-gradient(circle at 50% 0, #4a1238, #170a24 55%, #0a0618); }
+.arm-booth { position: relative; flex: none; margin: -14px -4px 0; }
+.arm-sign { position: relative; z-index: 4; width: 78%; margin: 0 auto -10px; padding: 8px 10px 10px; border-radius: 16px; border: 4px solid var(--ink); text-align: center;
+  background: linear-gradient(#c4161c, #7a0a10); box-shadow: 0 6px 0 #0009, 0 0 24px #ff3b2f88, inset 0 3px 0 #ff8a7a;
+  background-image: radial-gradient(circle, #fff6b0 0 3px, #ffd23f 4px, transparent 5px), linear-gradient(#c4161c, #7a0a10); background-size: 16px 16px, 100% 100%; background-position: 4px 3px, 0 0; }
+.arm-sign b { position: relative; display: inline-block; padding: 2px 14px; border-radius: 10px; background: #5a0610; font: 26px/1.1 'Titan One'; letter-spacing: 1px;
+  background-image: linear-gradient(#fff6b0, #ffd23f 50%, #ff9a1a); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 #3a0006) drop-shadow(0 0 1px #3a0006); }
+.arm-sign::before { content: ''; position: absolute; inset: 6px 10px; border-radius: 10px; background: #5a0610; box-shadow: inset 0 0 12px #000; }
+.arm-stall { position: relative; height: 292px; border-radius: 14px 14px 12px 12px; overflow: hidden; border: 4px solid var(--ink);
+  background: radial-gradient(ellipse at 50% 60%, #ffcf7a 0, #e07a2a 35%, #7a2a0e 75%), #7a2a0e; box-shadow: 0 8px 0 #0009; }
+.arm-stall::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #0000 0 38px, #0002 38px 42px); }
+.arm-post { position: absolute; top: 0; bottom: 0; width: 18px; z-index: 3; border-left: 3px solid var(--ink); border-right: 3px solid var(--ink); background: linear-gradient(90deg, #6e3a16, #e7ad6a 45%, #8a4f22); }
+.arm-post.l { left: 0; } .arm-post.r { right: 0; }
+.arm-post::after { content: ''; position: absolute; left: 3px; right: 3px; top: 60px; bottom: 70px; background: radial-gradient(circle, #fff6b0 0 3px, #ffb21a 4px, #0000 6px) 0 0 / 12px 22px; }
+.arm-awning { position: absolute; left: 0; right: 0; top: 0; height: 52px; z-index: 2; background: repeating-linear-gradient(90deg, #e3262c 0 30px, #fff4d6 30px 60px);
+  -webkit-mask: radial-gradient(16px at 15px 52px, #0000 96%, #000) 0 0 / 30px 100%; mask: radial-gradient(16px at 15px 52px, #0000 96%, #000) 0 0 / 30px 100%; filter: drop-shadow(0 6px 0 #0007); }
+.arm-awning::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#fff5, #0000 40%, #0003); }
+.arm-bunting { position: absolute; left: 18px; right: 18px; top: 40px; z-index: 3; width: calc(100% - 36px); height: 54px; filter: drop-shadow(0 3px 2px #0006); }
+.arm-seller { position: absolute; left: 50%; bottom: 44px; z-index: 1; width: 206px; height: auto; transform: translateX(-60%); filter: drop-shadow(0 0 18px #0008); }
+.arm-counter { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 2; border-top: 4px solid var(--ink); display: grid; place-items: center;
+  background: linear-gradient(#ffd23f 0 8px, #8a4f1e 8px 11px, #0000 11px), repeating-linear-gradient(90deg, #c4161c 0 26px, #ffc400 26px 52px); box-shadow: inset 0 -10px 18px #0007; }
+.arm-bulbs { position: absolute; left: 0; right: 0; top: 14px; height: 10px; background: radial-gradient(circle, #fffbe0 0 3px, #ffd23f 4px, #0000 6px) 0 0 / 22px 10px; animation: bulbs 1.6s steps(2) infinite; }
+@keyframes bulbs { 50% { filter: brightness(1.5) drop-shadow(0 0 4px #ffd23f); } }
+.arm-counter span { position: relative; margin-top: 12px; padding: 3px 14px; border-radius: 10px; border: 3px solid var(--ink); background: linear-gradient(#fff3b0, #ffd23f 55%, #e09a12); font: 13px 'Titan One'; color: #6a2a0e; box-shadow: 0 3px 0 #0008; }
+.arm-bubble { position: absolute; right: 22px; top: 96px; z-index: 3; max-width: 40%; padding: 7px 10px; border-radius: 14px; border: 3px solid var(--ink); background: #fff; font: 800 13px/1.2 'Baloo 2'; color: #1a1a2a; box-shadow: 0 4px 0 #0007; }
 .arm-bubble::after { content: ''; position: absolute; left: -12px; top: 18px; border: 8px solid transparent; border-right-color: var(--ink); }
-.arm-wallet { margin: 0; text-align: center; font: 800 14px 'Baloo 2'; color: #ffe2c9; }
+.arm-wallet { margin: 4px 0 0; text-align: center; font: 800 14px 'Baloo 2'; color: #e9d9ff; }
 .arm-wallet b { color: #ffd23f; font-family: 'Titan One'; }
 .arm-wallet .ri { display: inline-block; width: 18px; height: 18px; vertical-align: -4px; }
-.arm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.arm-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 5px 8px; border-radius: 14px; border: 3px solid var(--ink); background: linear-gradient(#fff4d6, #f0d29a); box-shadow: 0 4px 0 #0008; text-align: center; }
-.arm-card.wide { grid-column: 1 / -1; flex-direction: row; text-align: left; gap: 10px; padding: 8px 12px; background: linear-gradient(#ffe1e1, #f3a7a7); }
-.arm-card.have { background: linear-gradient(#e2ffd9, #a9e39a); }
-.arm-card canvas { width: 76px; height: 76px; flex: none; }
-.arm-card.wide canvas { width: 92px; height: 92px; }
-.arm-info { display: flex; flex-direction: column; align-items: inherit; gap: 2px; min-width: 0; width: 100%; }
+/* tarjetas: cada objeto con su color, rayos de luz, brillo que pasa y etiqueta de exclusivo */
+.arm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.arm-card { position: relative; overflow: hidden; isolation: isolate; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 22px 6px 8px; border-radius: 18px; border: 3px solid var(--ink); text-align: center;
+  background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--c1) 70%, #fff 0%) 0, color-mix(in srgb, var(--c2) 85%, #000) 48%, #12081e 100%);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c1) 70%, transparent), 0 6px 0 #000a, 0 0 18px color-mix(in srgb, var(--c1) 45%, transparent); }
+.arm-card.wide { grid-column: 1 / -1; flex-direction: row; text-align: left; gap: 12px; padding: 14px 14px 12px; }
+.arm-rays { position: absolute; z-index: -1; left: 50%; top: 36%; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 50%;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--c1) 40%, transparent) 0 9deg, #0000 9deg 18deg);
+  -webkit-mask: radial-gradient(circle, #000 12%, #0000 62%); mask: radial-gradient(circle, #000 12%, #0000 62%); animation: armspin 16s linear infinite; }
+.arm-card.wide .arm-rays { left: 70px; top: 50%; }
+@keyframes armspin { to { transform: rotate(360deg); } }
+.arm-shine { position: absolute; z-index: 2; inset: 0; pointer-events: none; background: linear-gradient(105deg, #0000 38%, #ffffff55 48%, #ffffffaa 50%, #ffffff55 52%, #0000 62%); transform: translateX(-130%); animation: armshine 5s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes armshine { 0%, 62% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+.arm-rar { position: absolute; z-index: 3; left: -2px; top: -2px; padding: 3px 10px 4px 8px; border-radius: 0 0 12px 0; border: 2px solid var(--ink); background: linear-gradient(var(--c1), var(--c2));
+  font: 9px/1 'Titan One'; letter-spacing: .5px; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 2.5px var(--ink); }
+.arm-tick { position: absolute; z-index: 3; right: -2px; top: -2px; padding: 3px 8px 4px; border-radius: 0 0 0 12px; border: 2px solid var(--ink); background: linear-gradient(#7af585, #1fa83a); font: 9px/1 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 2.5px var(--ink); }
+.arm-art { flex: none; width: 84px; height: 84px; animation: armbob 3s ease-in-out infinite; animation-delay: var(--d); }
+.arm-card.wide .arm-art { width: 104px; height: 104px; }
+.arm-art canvas { width: 100%; height: 100%; filter: drop-shadow(0 8px 6px #0009) drop-shadow(0 0 10px color-mix(in srgb, var(--c1) 70%, transparent)); }
+@keyframes armbob { 50% { transform: translateY(-5px) rotate(-2deg); } }
+.arm-info { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; min-width: 0; }
 .arm-card.wide .arm-info { align-items: flex-start; }
-.arm-card h4 { margin: 0; font: 13px/1.05 'Titan One'; color: #3a1a0a; }
-.arm-card p { margin: 0; font: 700 11px/1.15 'Baloo 2'; color: #6a3a1a; }
-.arm-price { display: flex; flex-direction: column; align-items: inherit; }
-.arm-price b { display: flex; align-items: center; gap: 3px; font: 14px 'Titan One'; color: #3a1a0a; }
-.arm-price .ri { width: 16px; height: 16px; }
-.arm-price .arm-free { color: #1f8a2e; }
-.arm-price small { font: 700 10px/1.1 'Baloo 2'; color: #6a3a1a; }
-.arm-buy { width: 100%; margin-top: 3px; padding: 5px 4px; border-radius: 10px; border: 2px solid var(--ink); background: linear-gradient(#7af585, #1fa83a); font: 12px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); box-shadow: 0 3px 0 #0008; }
-.arm-card.wide .arm-buy { width: auto; padding: 6px 16px; }
-.arm-buy.sure { background: linear-gradient(#ffd23f, #ff8a1a); animation: badge .6s ease-in-out infinite; }
-.arm-buy.gift { background: linear-gradient(#b163ff, #6a2ad0); }
-.arm-buy:disabled { background: #8a7a6a; -webkit-text-stroke: 0; color: #f3e6d6; font: 800 11px 'Baloo 2'; }
-.arm-own { margin-top: 3px; font: 11px 'Titan One'; color: #1f7a2a; }
+.arm-card h4 { margin: 0; font: 13px/1.05 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); text-shadow: 0 2px 0 #0008; }
+.arm-card.wide h4 { font-size: 17px; }
+.arm-card p { margin: 0; font: 700 11px/1.15 'Baloo 2'; color: color-mix(in srgb, var(--c1) 35%, #fff); text-shadow: 0 1px 2px #000a; }
+.arm-price { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; padding: 2px 10px 3px 4px; border-radius: 20px; border: 2px solid var(--ink); background: linear-gradient(#3a2a10, #1a1206); font: 13px 'Titan One'; color: #ffd23f; }
+.arm-price .ri { width: 17px; height: 17px; }
+.arm-price.free { padding: 2px 10px; color: #7af5c0; flex-direction: column; gap: 0; line-height: 1; }
+.arm-price.free small { font: 700 9px 'Baloo 2'; color: #cfe; }
+.arm-btn { width: 100%; margin-top: 4px; padding: 6px 4px; border-radius: 12px; border: 3px solid var(--ink); font: 12px 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); box-shadow: inset 0 3px 0 #fff8, 0 4px 0 #000a; }
+.arm-card.wide .arm-btn { width: auto; padding: 7px 22px; }
+.arm-btn.buy { background: linear-gradient(#7af585, #1fa83a); }
+.arm-btn.sure { background: linear-gradient(#ffe766, #ff8a1a); box-shadow: inset 0 3px 0 #fff8, 0 4px 0 #000a, 0 0 14px #ffd23f; }
+.arm-btn.use { font-size: 15px; background: linear-gradient(#fff3b0, #ffd23f 45%, #ff8a1a); box-shadow: inset 0 3px 0 #fffc, 0 4px 0 #000a, 0 0 16px #ffd23faa; }
+.arm-btn.gift { background: linear-gradient(#c98bff, #6a2ad0); }
+.arm-btn:active { transform: translateY(3px); }
+.arm-short { margin-top: 4px; padding: 4px 8px; border-radius: 10px; background: #0007; font: 800 11px 'Baloo 2'; color: #ffd0d0; }
+.arm-card.just { animation: armjust .7s ease-out; }
+@keyframes armjust { 30% { transform: scale(1.06); box-shadow: 0 0 40px var(--c1), 0 6px 0 #000a; } }
+@media (prefers-reduced-motion: reduce) { .arm-rays, .arm-shine, .arm-art, .arm-bulbs { animation: none; } }
+#panel-armory .sheet-body > * { flex: none; }
+#panel-armory .sheet > .title { display: none; }
+#panel-armory .sheet-body { padding-top: 14px; }

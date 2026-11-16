@@ -729,11 +729,11 @@ console.log('34. Anti-autoclicker');
   await open(pg);
   await pg.evaluate(() => { AAP.giftTest.off = true; AAP.guardTest.on = true; AAP.guardTest.synthetic = true; });
   // toques con un ritmo y una posición dados: [intervalo en ms, dispersión en píxeles]
-  const burst = (n, gap, jitter, spread) => pg.evaluate(([n, gap, jitter, spread]) => new Promise(res => {
-    const b = document.querySelector('#btn-click'), r = b.getBoundingClientRect(); let i = 0;
-    const one = () => { if (i++ >= n) return res(); b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.x + r.width / 2 + (Math.random() - .5) * spread, clientY: r.y + r.height / 2 + (Math.random() - .5) * spread }));
-      setTimeout(one, gap + (Math.random() - .5) * jitter); };
-    one(); }), [n, gap, jitter, spread]);
+  // reloj simulado: el ritmo de cada toque es exacto aunque el ordenador vaya cargado
+  const burst = (n, gap, jitter, spread) => pg.evaluate(([n, gap, jitter, spread]) => {
+    const b = document.querySelector('#btn-click'), r = b.getBoundingClientRect(), G = AAP.guardTest; G.t = G.t ?? performance.now();
+    for (let i = 0; i < n; i++) { G.t += gap + (Math.random() - .5) * jitter; b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.x + r.width / 2 + (Math.random() - .5) * spread, clientY: r.y + r.height / 2 + (Math.random() - .5) * spread })); }
+  }, [n, gap, jitter, spread]);
   const isOpen = () => pg.evaluate(() => document.querySelector('#guard-overlay').classList.contains('open'));
   await burst(120, 110, 90, 24);
   check('persona pulsando deprisa (ritmo y dedo variables): nada', !(await isOpen()));

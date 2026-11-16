@@ -188,6 +188,21 @@ const fr = c => Object.values(c).reduce((a, x) => a + x.level * 100 + x.frags, 0
 check('Financiación ilegal PSOE: +5.000 pesetas, +2.000 tomates y 4 cartas épicas o legendarias', row.chest_tomatoes === before.chest_tomatoes + 2000 && row.chest_pesetas >= before.chest_pesetas + 5000
   && premium.cards.length === 4 && premium.cards.every(c => ['epic', 'legendary'].includes(c.rarity)) && fr(row.cards) > fr(before.cards), JSON.stringify(premium.cards.map(c => c.id)));
 
+console.log('P. Enlaces de pago de Stripe');
+{
+  // con enlace de pago, PAGAR lleva al enlace de Stripe diciendo quién compra (el pack lo sabe Stripe por el importe)
+  await page.evaluate(async () => { const c = (await import('./js/config.js')).CONFIG; c.PAYMENTS = true; c.PAY_LINKS.calderilla = 'https://buy.stripe.com/test_enlace199'; });
+  let went = null; await page.route('https://buy.stripe.com/**', r => { went = r.request().url(); return r.fulfill({ status: 200, contentType: 'text/html', body: 'stripe' }); });
+  const uid = db(email).user_id; payRequests.length = 0;
+  await page.evaluate(() => { document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); AAP.ui.closeAll(); });
+  await page.evaluate(() => import('./js/payments.js').then(m => m.openPack('calderilla'))); await page.waitForTimeout(300);
+  await page.check('#pay-ok', { force: true }); await page.click('#pay-go', { force: true }); await page.waitForTimeout(1500);
+  const u = went ? new URL(went) : null;
+  await page.goBack(); await page.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await page.waitForTimeout(800);
+  await page.evaluate(async () => { AAP.giftTest.off = true; AAP.levelTest.off = true; (await import('./js/config.js')).CONFIG.PAY_LINKS.calderilla = ''; });
+  check('PAGAR lleva al enlace de Stripe con el jugador (y sin pasar por «crear-pago»)', !!u && u.origin + u.pathname === 'https://buy.stripe.com/test_enlace199' && u.searchParams.get('client_reference_id') === uid && !!u.searchParams.get('prefilled_email') && payRequests.length === 0, went);
+}
+
 console.log('K. Niveles y ruleta en el servidor');
 {
   const LVjs = await page.evaluate(async () => { const L = await import('./js/levels.js'); const xs = Array.from({ length: 300 }, (_, i) => Math.floor(Math.pow(i / 299, 2.2) * 900000)); return { xs, lv: xs.map(L.levelOfXp), ids: L.WHEEL.map(w => w.id), ws: L.WHEEL.map(w => w.weight) }; });

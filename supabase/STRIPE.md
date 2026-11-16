@@ -76,3 +76,10 @@ En `js/config.js`, `PAYMENTS: true` (lo hace Claude cuando se le pida). Prueba u
 - Las pesetas solo las entrega el webhook, tras comprobar la firma de Stripe; `grant_pack` solo la puede usar la clave de servicio.
 - Cada pago se entrega una vez (la sesión de Stripe es la clave de la tabla `purchases`).
 - Devoluciones: si devuelves un pago desde Stripe, quita las pesetas a mano (o pide añadir el evento `charge.refunded`).
+
+## Alternativa: enlaces de pago de Stripe (sin clave para crear pagos)
+1. Stripe (modo real) → *Enlaces de pago* → *Crear*, uno por pack (1,99 € / 3,99 € / 9,95 €), con su producto.
+   - *Después del pago* → *No mostrar página de confirmación* → redirigir a `https://alaguapedro.es/?pago=ok&sesion={CHECKOUT_SESSION_ID}`.
+   - Sin códigos promocionales, sin cambiar la cantidad y sin impuestos automáticos (para que el importe sea exactamente 1,99 / 3,99 / 9,95).
+2. Copia los tres enlaces (`https://buy.stripe.com/...`) en `PAY_LINKS` de `js/config.js` (lo hace Claude).
+3. La función del aviso (`swift-processor`) deduce el pack por el importe cobrado (199 / 399 / 995 céntimos) y el jugador por `client_reference_id`, que añade el juego al enlace.

@@ -38,7 +38,15 @@ export function openPack(id) {
 }
 async function go() {
   const b = $('#pay-go'), label = b.innerHTML; b.disabled = true; b.textContent = 'Abriendo el pago…';
-  try { location.href = await sb.createCheckout(current.id, location.origin + location.pathname); }
+  try {
+    const link = CONFIG.PAY_LINKS?.[current.id];
+    if (link) {   // enlace de pago de Stripe: se le dice quién compra (el pack lo sabe Stripe por el importe)
+      const u = sb.auth.user; if (!u) throw new Error('Necesitas iniciar sesión para comprar');
+      const url = new URL(link); url.searchParams.set('client_reference_id', u.id); if (u.email) url.searchParams.set('prefilled_email', u.email);
+      location.href = url.href; return;
+    }
+    location.href = await sb.createCheckout(current.id, location.origin + location.pathname);
+  }
   catch (e) { fail(e); b.innerHTML = label; b.disabled = !$('#pay-ok').checked; }
 }
 

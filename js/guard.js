@@ -18,6 +18,7 @@ let taps = [], runStart = 0, lastTap = 0, active = false, got = 0, ui = null;
 // pruebas automáticas (?debug): apagado salvo que la prueba lo encienda
 export const guardTest = { on: !/[?&]debug\b/.test(location.search) };
 export const guardActive = () => active;
+const clock = () => guardTest.t ?? performance.now();   // las pruebas usan un reloj simulado (guardTest.t)
 
 export function initGuard(uiRef) {
   ui = uiRef;
@@ -32,7 +33,7 @@ export function allowTap(e) {
   if (!guardTest.on) return true;
   if (active) return false;
   if (e && e.isTrusted === false && !guardTest.synthetic) return false;   // toques lanzados por un programa desde la página
-  const now = performance.now(), x = e?.clientX || 0, y = e?.clientY || 0;
+  const now = clock(), x = e?.clientX || 0, y = e?.clientY || 0;
   if (now - lastTap > GUARD.pauseMs) { runStart = now; taps = []; }   // tras una pausa se empieza a mirar de cero
   lastTap = now;
   taps.push({ t: now, x, y }); if (taps.length > GUARD.window) taps.shift();
@@ -67,7 +68,7 @@ function challenge(why) {
 function hit() {
   got++; SFX.click?.(); $('#guard-count').textContent = `${got} / ${GUARD.goal}`;
   if (got < GUARD.goal) { place(); return; }
-  active = false; taps = []; runStart = performance.now(); lastTap = runStart;
+  active = false; taps = []; runStart = clock(); lastTap = runStart;
   $('#guard-overlay').classList.remove('open'); SFX.prize?.(false);
   ui?.showToast('👍 ¡Perfecto! Sigue dándole', 1800);
 }

@@ -7,11 +7,13 @@ export const LEVEL_NAMES = ['Perroflauta', 'Okupa', 'Anticapitalista', 'Anarquis
   'Patriota', 'Españolista', 'Derechista', 'Carlista', 'Anticomunista', 'Soberanista', 'Tradicionalista', 'Nacional-conservador', 'Voxista', 'Imperialista español',
   'Ultrapatriota', 'Ultraderechista', 'Reaccionario', 'Nacionalista radical', 'Falangista', 'Nacional-sindicalista', 'Nacionalcatólico', 'Legionario', 'Franquista', 'Caudillo Supremo'];
 export const MAX_LEVEL = LEVEL_NAMES.length;
-// XP total para llegar a cada nivel: XP_AT[L - 1]. Del nivel 10 en adelante, subir del k al k+1 cuesta 70·k^1.65 + 30 (redondeado a decenas).
-// Los primeros niveles cuestan algo más (300, 500, 700... XP) para que un jugador nuevo no esté todo el rato en la ruleta.
-export const XP_AT = [0, 300, 800, 1500, 2400, 3500, 4800, 6400, 8300, 10560, 13720, 17410, 21660, 26510, 31990, 38120, 44940, 52470, 60750, 69800, 79640, 90310, 101820,
-  114210, 127500, 141710, 156870, 173000, 190130, 208280, 227470, 247720, 269060, 291510, 315090, 339830, 365740, 392850, 421180, 450750, 481580, 513690, 547100,
-  581830, 617900, 655330, 694140, 734350, 775990, 819060];
+// XP total para llegar a cada nivel: XP_AT[L - 1]. Los primeros niveles: 300, 500, 700... XP; del nivel 10 en adelante,
+// subir del k al k+1 cuesta 12,6·k^2,4 (redondeado a decenas): llegar al 50 cuesta unos 2,1 millones de XP (igual que fn_level_of_xp).
+export const XP_AT = [0, 300, 800, 1500, 2400, 3500, 4800, 6400, 8300, 10560, 13720, 17700,
+  22600, 28540, 35640, 44020, 53800, 65110, 78080, 92850, 109550, 128330, 149330, 172690,
+  198560, 227100, 258450, 292780, 330240, 370990, 415190, 463010, 514620, 570190, 629880, 693870,
+  762340, 835460, 913420, 996390, 1084560, 1178110, 1277230, 1382110, 1492940, 1609910, 1733220, 1863060,
+  1999630, 2143130];
 export const XP = { thrown: 10, hit: 5, fall: 20 };
 export const xpOf = s => XP.thrown * (s.tomatoesThrown || 0) + XP.hit * (s.hits || 0) + XP.fall * (s.falls || 0);
 export function levelOfXp(xp) { let L = 1; while (L < MAX_LEVEL && xp >= XP_AT[L]) L++; return L; }

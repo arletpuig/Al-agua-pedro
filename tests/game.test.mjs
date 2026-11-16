@@ -427,11 +427,12 @@ console.log('28. iPhone: sin zoom ni movimientos al pulsar rápido');
 console.log('29. Niveles de jugador y ruleta');
 {
   const lv = await page.evaluate(async () => { const L = await import('./js/levels.js'); return { n: L.LEVEL_NAMES.length, first: L.LEVEL_NAMES[0], last: L.LEVEL_NAMES[49], l16: L.LEVEL_NAMES[15],
-    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round((70 * Math.pow(i, 1.65) + 30) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,300,800,1500,2400,3500,4800,6400,8300,10560',
-    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 299, 300, 799, 800, 819059, 819060, 1e9].map(L.levelOfXp) }; });
+    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round(12.6 * Math.pow(i, 2.4) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,300,800,1500,2400,3500,4800,6400,8300,10560',
+    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 299, 300, 799, 800, 2143129, 2143130, 1e9].map(L.levelOfXp), top: L.levelOfXp(610220) }; });
   check('50 niveles: de Perroflauta a Caudillo Supremo', lv.n === 50 && lv.first === 'Perroflauta' && lv.last === 'Caudillo Supremo' && lv.l16 === 'Sanchista');
   check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más (los primeros, algo más que antes)', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
-  check('límites de nivel exactos y tope en 50', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
+  check('límites de nivel exactos y tope en 50 (llegar al 50 cuesta unos 2,1 millones de XP)', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
+  check('el mejor jugador de ahora (610.000 XP) queda en el nivel 34 (antes, 44)', lv.top === 34, String(lv.top));
   check('la ruleta suma 100 (probabilidades en %)', lv.w === 100);
   const c7 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p7 = await c7.newPage(); const e7 = watchErrors(p7); await mockTime(p7);
   await open(p7, undefined, { levels: true });

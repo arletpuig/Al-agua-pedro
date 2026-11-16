@@ -34,6 +34,7 @@ export function load() {
       Object.assign(state.stats, d.stats || {});
       // partida de antes de los niveles: empieza en su nivel con una tirada de regalo (igual que el servidor)
       state.wheelLevel = d.wheelLevel || Math.max(1, levelOf(state.stats) - 1);
+      state.wheelLevel = Math.min(state.wheelLevel, Math.max(1, levelOf(state.stats)));   // curva nueva: si bajas de nivel, la siguiente subida da ruleta
       state.legendSpins = d.legendSpins | 0; state.legendAds = d.legendAds | 0; state.streak = d.streak | 0;
       // partida guardada cuando un tomate costaba 100 clics: se conserva lo ya ganado
       if (d.cpt !== CONFIG.CLICKS_PER_TOMATO && !state.stats.legacyClicks && state.stats.totalClicks > 0) {

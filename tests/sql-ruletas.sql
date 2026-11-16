@@ -3,7 +3,7 @@
 \set ON_ERROR_STOP 1
 insert into auth.users (email) values ('ruleta@test.es');
 select id as uid from auth.users where email = 'ruleta@test.es' \gset
-update public.profiles set tomatoes_thrown = 100000, hits = 0, falls = 0, wheel_level = 1, chest_pesetas = 2000000, total_clicks = 50000000 where user_id = :'uid';
+update public.profiles set tomatoes_thrown = 300000, hits = 0, falls = 0, wheel_level = 1, chest_pesetas = 2000000, total_clicks = 100000000 where user_id = :'uid';
 set role authenticated;
 select set_config('request.jwt.claim.sub', :'uid', false);
 create temp table log (src text, wheel text, id text, ok boolean, why text);

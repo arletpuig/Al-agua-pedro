@@ -14,5 +14,5 @@ drop view if exists public.region_ranking;
 drop view if exists public.region_leaders;
 
 H
-for f in schema schema_v2 schema_v3 schema_v4 schema_v5 schema_v6 schema_v7 schema_v8 schema_v9 schema_v10 schema_v11 schema_v12 schema_v13 schema_v14 schema_v15 schema_v16 schema_v17 schema_v18 schema_v19 schema_v20; do printf '\n-- ===================================================================== %s.sql\n' "$f"; cat $f.sql; done
+for f in schema schema_v2 schema_v3 schema_v4 schema_v5 schema_v6 schema_v7 schema_v8 schema_v9 schema_v10 schema_v11 schema_v12 schema_v13 schema_v14 schema_v15 schema_v16 schema_v17 schema_v18 schema_v19 schema_v20 schema_v21; do printf '\n-- ===================================================================== %s.sql\n' "$f"; cat $f.sql; done
 printf '\ncommit;\n'; } > schema_todo.sql

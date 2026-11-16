@@ -24,6 +24,9 @@ El botón «Entrar con Google» ya está en el juego; solo hay que activarlo (un
 
 Mientras no esté activado, el botón avisa de que Google todavía no está disponible y se puede entrar con el correo.
 
+## Si ya tenías la versión 20
+Solo ejecuta `schema_v21.sql` (o `schema_todo.sql`): los niveles altos cuestan bastante más (llegar al 50, unos 2,1 millones de XP).
+
 ## Si ya tenías la versión 19
 Solo ejecuta `schema_v20.sql` (o `schema_todo.sql`): el Falcón dura 2 minutos y las paguitas dan 3 pesetas por nivel.
 

@@ -49,6 +49,11 @@ export function consumeAuthHash() {
     history.replaceState(null, '', location.pathname + location.search); return h.get('type') === 'recovery' ? 'recovery' : 'oauth';
   }
   if (h.get('error_description')) { history.replaceState(null, '', location.pathname + location.search); throw new Error(decodeURIComponent(h.get('error_description').replace(/\+/g, ' '))); }
+  const q = new URLSearchParams(location.search);
+  if (q.get('error_description') || (q.get('error') && q.get('error_code'))) {
+    const m = q.get('error_description') || q.get('error'); ['error', 'error_code', 'error_description'].forEach(k => q.delete(k));
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '')); throw new Error(m);
+  }
   return false;
 }
 // Entrar con Google: Supabase redirige a Google y vuelve a esta misma página con la sesión en el hash.

@@ -29,7 +29,7 @@ export const CONFIG = {
   ADSENSE: { client: 'ca-pub-7829705078320776', slots: { profile: '', cards: '', shop: '' } },
   // Entrar con Google desde alaguapedro.es (botón oficial de Google): así Google muestra «alaguapedro.es» y no la dirección de Supabase.
   // Es el ID de cliente público de Google Cloud (no es secreto). Si no carga el botón de Google, se usa el acceso por Supabase de siempre.
-  GOOGLE_CLIENT_ID: '106705491572-lkpao83aeok1iv3ba3igpnptbv8lu676.apps.googleusercontent.com',
+  GOOGLE_CLIENT_ID: '1067054915728-lkpao83aeok1iv3ba3igpnptbv8lu676.apps.googleusercontent.com',   // el mismo que Supabase → Authentication → Google (lo comprueba la publicación)
   SUPABASE_URL: 'https://xfsvruccotcymcvxzymy.supabase.co',
   SUPABASE_KEY: 'sb_publishable_pjACLB15yr95O19i3NC8mQ_IOv0bQpP', // clave pública (anon), segura en el navegador
 };

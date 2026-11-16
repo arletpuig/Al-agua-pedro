@@ -33,6 +33,8 @@ async function bridge(page) {
         return id ? json(200, session({ id, email: body.email, user_metadata: {} })) : json(400, { msg: 'Invalid login credentials' });
       }
       if (p === '/auth/v1/logout') return json(204, {});
+      // entrar por la página de Google: aquí se simula que la persona cancela y vuelve al juego con el motivo
+      if (p === '/auth/v1/authorize') return route.fulfill({ status: 302, headers: { location: u.searchParams.get('redirect_to') + '#error=access_denied&error_description=' + encodeURIComponent('Acceso cancelado') } });
       if (p === '/auth/v1/user') return me ? json(200, me) : json(401, { msg: 'invalid token' });
       if (p === '/auth/v1/settings') return json(200, { external: { google: true, email: true } });
       // pagos: la función crear-pago (simulada) y la consulta de compras. El «webhook» se simula entregando el pack con la clave de servicio.
@@ -342,8 +344,11 @@ await p4.goto(URL_LOGIN); await p4.waitForFunction(() => window.AAP?.scene?.read
 check('se ve el botón oficial de Google (y no el de siempre)', await p4.locator('#fake-gsi').isVisible() && !(await p4.locator('#btn-google').isVisible()));
 check('y debajo, siempre, una segunda forma de entrar con Google', await p4.locator('#google-alt').isVisible());
 // un token que Supabase rechaza: se dice el motivo y se ofrece la otra forma
-await p4.evaluate(() => window.__gsi.callback({ credential: 'token-malo' })); await p4.waitForTimeout(800);
-check('si Google falla, se explica el motivo', /No se ha podido entrar con Google \(.+\)/.test(await p4.locator('#acc-msg').textContent()), await p4.locator('#acc-msg').textContent());
+const viaPage = p4.waitForRequest(r => r.url().includes('/auth/v1/authorize?provider=google'), { timeout: 10000 }).then(() => true, () => false);
+await p4.evaluate(() => window.__gsi.callback({ credential: 'token-malo' }));
+check('si el botón oficial falla, se entra solo por la página de Google', await viaPage);
+await p4.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await p4.waitForSelector('#fake-gsi', { timeout: 8000 }).catch(() => {}); await p4.waitForTimeout(500);
+check('y si tampoco se puede, se explica el motivo', /No se ha podido entrar con Google \(Acceso cancelado\)/.test(await p4.locator('#acc-msg').textContent()), await p4.locator('#acc-msg').textContent());
 await p4.click('#fake-gsi'); await p4.waitForFunction(() => document.querySelector('#acc-short').textContent === 'Lola Google', null, { timeout: 10000 }).catch(() => {});
 check('con el token de Google se entra en la cuenta (sin pasar por la página de Supabase)', (await p4.locator('#acc-short').textContent()) === 'Lola Google' && !(await p4.evaluate(() => document.querySelector('#panel-account').classList.contains('open'))));
 await ctx4.close();

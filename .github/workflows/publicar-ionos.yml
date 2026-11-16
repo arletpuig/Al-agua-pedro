@@ -29,6 +29,16 @@ jobs:
           echo "Archivos a publicar:"; find dist -type f | sort
           grep -o 'versión [0-9]*' dist/index.html | head -1
 
+      - name: Comprobar el acceso con Google (el ID del juego tiene que ser el de Supabase)
+        run: |
+          want=$(grep -o "GOOGLE_CLIENT_ID: '[^']*'" js/config.js | sed "s/.*'\(.*\)'/\1/")
+          sb=$(grep -o "SUPABASE_URL: '[^']*'" js/config.js | sed "s/.*'\(.*\)'/\1/")
+          got=$(curl -s -m 20 -o /dev/null -w '%{redirect_url}' "$sb/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Falaguapedro.es%2F" | grep -o 'client_id=[^&]*' | cut -d= -f2)
+          echo "juego: $want"; echo "Supabase: $got"
+          if [ -n "$got" ] && [ "$got" != "$want" ]; then echo "::error::El ID de cliente de Google de js/config.js no coincide con el de Supabase ($got). El botón de Google fallaría: cámbialo en js/config.js."; exit 1; fi
+          code=$(curl -s -m 20 -o /dev/null -w '%{redirect_url}' "https://accounts.google.com/o/oauth2/v2/auth?client_id=$want&redirect_uri=${sb//:/%3A}%2Fauth%2Fv1%2Fcallback&response_type=code&scope=email&state=x")
+          case "$code" in *authError*) echo "::error::Google no reconoce el ID de cliente $want"; exit 1;; *) echo "Google reconoce el ID de cliente";; esac
+
       - name: Comprobar los datos de acceso
         env:
           HOST: ${{ secrets.IONOS_SFTP_HOST }}

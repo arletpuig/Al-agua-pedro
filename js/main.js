@@ -206,7 +206,11 @@ function setupGoogleButton() {
 async function onGoogleCredential(resp) {
   ui.accMsg('Entrando con Google...');
   try { const u = await sb.signInWithGoogleToken(resp.credential); ui.accMsg(''); await afterLogin(u); ui.showToast('✅ Has entrado con Google'); }
-  catch (e) { ui.accMsg(`❌ No se ha podido entrar con Google (${googleWhy(e.message)}). Prueba con «¿No puedes entrar con Google?» o con tu correo.`, 'err'); $('#google-alt').classList.remove('hidden'); }
+  catch (e) {
+    if (/failed to fetch|network/i.test(e.message)) { ui.accMsg(`❌ No se ha podido entrar con Google (${googleWhy(e.message)}). Revisa la conexión e inténtalo otra vez.`, 'err'); return; }
+    // el botón oficial no ha funcionado: se prueba enseguida por la página de Google (no depende del botón)
+    ui.accMsg('Probando a entrar con Google por otro camino...'); googleRedirect(googleWhy(e.message));
+  }
 }
 // motivo del fallo, en castellano (para saber qué ajustar en Google o en Supabase)
 function googleWhy(m = '') {
@@ -223,14 +227,17 @@ $('#google-alt').addEventListener('click', () => $('#btn-google').click());
 // dentro de Instagram, TikTok, Facebook... Google bloquea el acceso: se avisa
 if (/FBAN|FBAV|Instagram|TikTok|musical_ly|Bytedance|Line\/|; wv\)/i.test(navigator.userAgent)) $('#google-inapp')?.classList.remove('hidden');
 setupGoogleButton();
-$('#btn-google').addEventListener('click', async () => {
-  const b = $('#btn-google'); b.disabled = true; ui.accMsg('Conectando con Google...');
+$('#btn-google').addEventListener('click', () => googleRedirect());
+// Entrar por la página de Google (a través de Supabase). Si el botón oficial falló, se recuerda el motivo para enseñarlo si esto también falla.
+async function googleRedirect(why = '') {
+  const b = $('#btn-google'); b.disabled = true; if (!why) ui.accMsg('Conectando con Google...');
+  try { if (why) sessionStorage.setItem('alaguapedro.gsiWhy', why); } catch (e) {}
   try {
     const st = await sb.authSettings();
     if (!st?.external?.google) throw new Error('El acceso con Google todavía no está activado. De momento, entra con tu correo.');
     location.href = sb.googleURL();
   } catch (e) { ui.accMsg('❌ ' + traducir(e.message), 'err'); b.disabled = false; }
-});
+}
 function busyForm(form, v) { form.querySelectorAll('button,input').forEach(el => el.disabled = v); }
 function onForm(id, fn) { $(id).addEventListener('submit', async e => { e.preventDefault(); const f = e.target; busyForm(f, true); try { await fn(f); } catch (err) { ui.accMsg('❌ ' + traducir(err.message), 'err'); } busyForm(f, false); }); }
 onForm('#form-register', async f => {
@@ -259,11 +266,11 @@ function traducir(m = '') {
   if (!hasBackend || TEST_HOST) return;          // pruebas: nunca entra en una cuenta real
   if (!GUEST_OK) ui.gate(true);                 // sin sesión no se juega
   let back = false;
-  try { back = sb.consumeAuthHash(); } catch (e) { ui.accMsg('❌ ' + traducir(e.message), 'err'); }
+  try { back = sb.consumeAuthHash(); } catch (e) { ui.accMsg(`❌ No se ha podido entrar con Google (${googleWhy(e.message)}). Prueba otra vez o entra con tu correo.`, 'err'); }
   if (back === 'recovery') { ui.showTab('newpass'); ui.accMsg('Escribe tu nueva contraseña'); return; }
   if (back === 'oauth') {                       // vuelta de Google
     try { const u = await sb.fetchUser(); await afterLogin(u); ui.showToast('✅ Has entrado con Google'); }
-    catch (e) { await sb.signOut(); if (!GUEST_OK) ui.gate(true); ui.accMsg('❌ No se ha podido entrar con Google. Inténtalo de nuevo.', 'err'); }
+    catch (e) { await sb.signOut(); if (!GUEST_OK) ui.gate(true); ui.accMsg(`❌ No se ha podido entrar con Google (${googleWhy(e.message)}). Inténtalo de nuevo.`, 'err'); }
     return;
   }
   const user = await sb.restoreSession();

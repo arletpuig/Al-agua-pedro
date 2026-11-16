@@ -1,0 +1,19 @@
+{
+  "name": "AL AGUA PEDRO",
+  "short_name": "Al agua Pedro",
+  "description": "Pulsa, consigue tomates y tira a Pedro al agua. Juego de humor satírico.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04071a",
+  "theme_color": "#04071a",
+  "lang": "es",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

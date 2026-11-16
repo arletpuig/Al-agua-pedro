@@ -24,8 +24,8 @@ jobs:
       - name: Preparar solo lo necesario para jugar
         run: |
           mkdir -p dist/assets
-          cp -r index.html .htaccess robots.txt sitemap.xml ads.txt css js legal dist/
-          cp -r assets/pedro assets/musica assets/fonts assets/favicon.svg assets/og.jpg dist/assets/
+          cp -r index.html .htaccess robots.txt sitemap.xml ads.txt manifest.webmanifest sw.js css js legal dist/
+          cp -r assets/pedro assets/musica assets/icons assets/fonts assets/favicon.svg assets/og.jpg dist/assets/
           echo "Archivos a publicar:"; find dist -type f | sort
           grep -o 'versión [0-9]*' dist/index.html | head -1
 
@@ -68,6 +68,13 @@ jobs:
           done
           echo "::warning::Los archivos se han subido, pero alaguapedro.es todavía no muestra «$want». Revisa que el dominio apunte a la carpeta IONOS_SFTP_DIR y que el SSL esté activo."
           echo "need_diag=1" >> "$GITHUB_ENV"
+
+      - name: Comprobar la app instalable (manifiesto, service worker e iconos)
+        run: |
+          for u in manifest.webmanifest sw.js assets/icons/icon-512.png assets/icons/apple-touch-icon.png; do
+            r=$(curl -sS -o /dev/null -w '%{http_code} %{content_type}' "https://alaguapedro.es/$u?c=$GITHUB_RUN_ID")
+            echo "$u → $r"; case "$r" in 200*) ;; *) echo "::warning::$u no responde bien ($r)";; esac
+          done
 
       - name: Diagnóstico (solo lectura) si la web no responde
         if: env.need_diag == '1'

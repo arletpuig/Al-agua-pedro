@@ -31,11 +31,17 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 </script>
 <meta name="theme-color" content="#04071a">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Al agua Pedro">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Google AdSense (verificación de la web y anuncios). Si un bloqueador lo impide, el juego funciona igual. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7829705078320776" crossorigin="anonymous"></script>
 <link rel="preload" href="assets/fonts/titan-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/baloo-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=46">
+<link rel="stylesheet" href="css/style.css?v=47">
 </head>
 <body>
 <div id="app">
@@ -146,6 +152,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
       <button class="row-btn" id="btn-music"><svg><use href="#ic-music"/></svg><span>Música</span><i class="switch" id="sw-music"></i></button>
       <button class="row-btn" id="btn-stats"><svg><use href="#ic-stats"/></svg><span>Estadísticas</span><i class="go">›</i></button>
       <button class="row-btn" id="btn-account"><svg><use href="#ic-user"/></svg><span>Perfil y cuenta <small id="acc-short">Invitado</small></span><i class="go">›</i></button>
+      <button class="row-btn install-row hidden" id="btn-install"><svg><use href="#ic-phone"/></svg><span>Instalar la app <small>¡Con regalo!</small></span><i class="go">›</i></button>
       <button class="row-btn" id="btn-help"><svg><use href="#ic-help"/></svg><span>Cómo se juega</span><i class="go">›</i></button>
       <p class="legal-links"><a href="legal/compras.html" target="_blank" rel="noopener">Compras</a><a href="legal/aviso-legal.html" target="_blank" rel="noopener">Aviso legal</a><a href="legal/privacidad.html" target="_blank" rel="noopener">Privacidad</a><a href="legal/cookies.html" target="_blank" rel="noopener">Cookies</a></p>
     </div>
@@ -239,6 +246,25 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     <div class="wheel-prize hidden" id="wheel-prize"></div>
   </div>
 
+  <!-- instalar la app (sin tiendas) -->
+  <div id="install-overlay" class="overlay install-ov">
+    <i class="rays"></i>
+    <div class="install-box" role="dialog" aria-labelledby="install-title">
+      <img class="install-icon" src="assets/icons/icon-192.png" alt="" width="96" height="96">
+      <h2 class="t-big" id="install-title">¡Llévate el juego!</h2>
+      <p class="install-sub">Instala AL AGUA PEDRO en tu móvil: a pantalla completa, más rápido y a un toque desde tu pantalla de inicio.</p>
+      <div class="install-gift"><svg><use href="#ic-chest-dia"/></svg><span><b>REGALO</b>Cofre de diamante + 150 pesetas<small>al abrir el juego desde la app</small></span></div>
+      <ol class="install-steps hidden" id="install-ios">
+        <li><i>1</i><span>En <b>Safari</b>, pulsa <b>Compartir</b> <svg class="ios-ic" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span></li>
+        <li><i>2</i><span>Elige <b>«Añadir a pantalla de inicio»</b> <svg class="ios-ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span></li>
+        <li><i>3</i><span>Abre el juego desde el icono nuevo y <b>entra con tu cuenta</b>: ahí te espera el regalo</span></li>
+      </ol>
+      <p class="install-other hidden" id="install-other">En el menú del navegador (⋮), elige <b>«Instalar aplicación»</b> o <b>«Añadir a pantalla de inicio»</b>. Luego abre el juego desde el icono nuevo.</p>
+      <button class="btn-gold big" id="install-go"><span>¡INSTALAR!</span></button>
+      <button class="install-later" id="install-later" type="button">Ahora no</button>
+    </div>
+  </div>
+
   <!-- apertura de cofre -->
   <div id="chest-overlay" class="overlay">
     <i class="rays"></i>
@@ -317,7 +343,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   <div id="toast" class="toast"></div>
   <div id="rotate" class="rotate"><svg viewBox="0 0 64 64"><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M50 40 a20 20 0 0 1 -20 18" stroke-linecap="round"/><path d="M28 54 l3 5 l4 -4" stroke-linecap="round"/></g></svg><span>Gira el móvil para jugar</span></div>
   <div id="test-badge" class="test-badge hidden">PRUEBAS · DESDE CERO</div>
-  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 46</small></div>
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparando la atracción...</span><small class="why" id="load-step">Cargando el juego</small><small class="ver">versión 47</small></div>
 </div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -340,6 +366,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 <symbol id="ic-wheel-legend" viewBox="0 0 64 64"><circle cx="32" cy="34" r="28" fill="#ffe766" stroke="#0a0b18" stroke-width="3"/><circle cx="32" cy="34" r="24.5" fill="#0a0b18"/><path d="M32 34 L32.0 10.0 A24 24 0 0 1 49.0 17.0Z" fill="#ffd23f"/><path d="M32 34 L49.0 17.0 A24 24 0 0 1 56.0 34.0Z" fill="#120a24"/><path d="M32 34 L56.0 34.0 A24 24 0 0 1 49.0 51.0Z" fill="#ffb21a"/><path d="M32 34 L49.0 51.0 A24 24 0 0 1 32.0 58.0Z" fill="#2a1650"/><path d="M32 34 L32.0 58.0 A24 24 0 0 1 15.0 51.0Z" fill="#fff3a0"/><path d="M32 34 L15.0 51.0 A24 24 0 0 1 8.0 34.0Z" fill="#120a24"/><path d="M32 34 L8.0 34.0 A24 24 0 0 1 15.0 17.0Z" fill="#ff9a1a"/><path d="M32 34 L15.0 17.0 A24 24 0 0 1 32.0 10.0Z" fill="#3a1a6a"/><g stroke="#0a0b18" stroke-width="2"><line x1="32" y1="34" x2="32.0" y2="10.0"/><line x1="32" y1="34" x2="49.0" y2="17.0"/><line x1="32" y1="34" x2="56.0" y2="34.0"/><line x1="32" y1="34" x2="49.0" y2="51.0"/><line x1="32" y1="34" x2="32.0" y2="58.0"/><line x1="32" y1="34" x2="15.0" y2="51.0"/><line x1="32" y1="34" x2="8.0" y2="34.0"/><line x1="32" y1="34" x2="15.0" y2="17.0"/></g><circle cx="32" cy="34" r="24" fill="none" stroke="#0a0b18" stroke-width="2.5"/><circle cx="32" cy="34" r="6.5" fill="#ffd23f" stroke="#0a0b18" stroke-width="2.5"/><path d="M32 15 L27 4 H37 Z" fill="#e3262c" stroke="#0a0b18" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 9 L25 2 L29 7 L32 1 L35 7 L39 2 L42 9 Z" fill="#ffd23f" stroke="#0a0b18" stroke-width="2" stroke-linejoin="round"/></symbol>
 <symbol id="ic-crown" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M8 50 L5 18 L20 32 L32 10 L44 32 L59 18 L56 50 Z" fill="#ffd23f"/><rect x="8" y="48" width="48" height="9" rx="3" fill="#ffb21a"/><circle cx="5" cy="17" r="4" fill="#fff3a0"/><circle cx="32" cy="9" r="4.5" fill="#fff3a0"/><circle cx="59" cy="17" r="4" fill="#fff3a0"/><path d="M32 30 L37 37 L32 44 L27 37 Z" fill="#ff3b6b" stroke-width="2"/><circle cx="18" cy="41" r="3.5" fill="#3fd2ff" stroke-width="2"/><circle cx="46" cy="41" r="3.5" fill="#8dff6a" stroke-width="2"/></g><path d="M14 24 Q16 34 15 44" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/></symbol>
 <symbol id="ic-play" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="#e3262c" stroke="#0a0b18" stroke-width="4"/><path d="M26 20 L46 32 L26 44 Z" fill="#fff" stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"/><path d="M14 24 Q18 14 30 11" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".5"/></symbol>
+<symbol id="ic-phone" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.5" stroke-linejoin="round"><rect x="17" y="5" width="30" height="54" rx="7" fill="#3fa2ff"/><rect x="21" y="12" width="22" height="36" rx="3" fill="#0f1a3a"/><circle cx="32" cy="53" r="2.5" fill="#fff" stroke-width="2"/></g><path d="M27 30 l4 4 l8 -9" fill="none" stroke="#8dff6a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="ic-coin" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="32" cy="35" rx="26" ry="25" fill="#9a5c00"/><circle cx="32" cy="31" r="26" fill="url(#gCoin)"/><circle cx="32" cy="31" r="19" fill="none" stroke="#b97400" stroke-width="2.4"/><path d="M27 43 V20 h8 a7.5 7.5 0 0 1 0 15 h-8 M22 30 h13" fill="none" stroke="#8a5200" stroke-width="5.5"/><path d="M14 22 Q20 12 32 11" stroke="#fff" stroke-width="3.5" fill="none" opacity=".75"/></g></symbol>
 <symbol id="ic-gear" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3.2" stroke-linejoin="round"><path d="M57.8,28.6 L57.8,35.4 L50.3,36.9 L48.5,41.5 L52.6,47.8 L47.8,52.6 L41.5,48.5 L36.9,50.3 L35.4,57.8 L28.6,57.8 L27.1,50.3 L22.5,48.5 L16.2,52.6 L11.4,47.8 L15.5,41.5 L13.7,36.9 L6.2,35.4 L6.2,28.6 L13.7,27.1 L15.5,22.5 L11.4,16.2 L16.2,11.4 L22.5,15.5 L27.1,13.7 L28.6,6.2 L35.4,6.2 L36.9,13.7 L41.5,15.5 L47.8,11.4 L52.6,16.2 L48.5,22.5 L50.3,27.1 Z" fill="#ffffff"/><circle cx="32" cy="32" r="9" fill="#3567f0"/></g></symbol>
 <symbol id="ic-plane" viewBox="0 0 64 64"><g stroke="#0a0b18" stroke-width="3" stroke-linejoin="round"><path d="M6 36 L28 30 L44 12 Q50 8 52 12 L42 32 L58 36 Q60 40 56 41 L40 40 L32 52 L26 52 L30 40 L10 42Z" fill="#ffffff"/><path d="M28 30 L42 32" stroke="#3567f0" stroke-width="4"/></g></symbol>
@@ -381,7 +408,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     if (window.__aapReady || window.__aapFailed) return; window.__aapFailed = true;
     var l = document.getElementById('loading'); if (!l) return;
     l.classList.remove('off');
-    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 46</small>';
+    l.innerHTML = '<span>No se ha podido cargar el juego</span><small class="why"></small><small class="why"></small><button class="btn-g" onclick="location.reload()">RECARGAR</button><small class="ver">versión 47</small>';
     var w = l.querySelectorAll('.why'); w[0].textContent = msg; w[1].textContent = 'Paso: ' + step;
   }
   window.__aapFail = fail;
@@ -396,7 +423,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
   setTimeout(function () { fail('Tarda demasiado en cargar.'); }, 15000);
 })();
 </script>
-<script type="module" src="js/main.js?v=46"></script>
+<script type="module" src="js/main.js?v=47"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>
 </html>

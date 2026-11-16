@@ -24,6 +24,7 @@ function localSpin(wheel, L, cost, rng, use = () => {}) {
   st.chestPesetas += reward.pesetas; st.chestTomatoes += reward.tomatoes; st.pesetasSpent += cost; changed(false);
   return { seg, wheel, reward, pending: Math.max(0, LV.levelOf(st) - state.wheelLevel), cost };
 }
+export const INSTALL_PESETAS = 150;
 export const backend = {
   get cloud() { return !!sb.auth.user; },
   setFlush(fn) { flush = fn; },
@@ -102,6 +103,13 @@ export const backend = {
     if (this.cloud) return cloudSpin(sb.spinLegend);
     if (state.legendSpins < 1) throw new Error('No tienes tiradas legendarias');
     return localSpin('legend', LV.levelOf(state.stats), 0, rng, () => { state.legendSpins--; });
+  },
+  // Regalo por instalar la app: cofre de diamante + 150 pesetas, una sola vez (con cuenta lo da el servidor)
+  async claimInstall() {
+    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimInstall()); applyServer(r.profile, sent); return r.reward; }
+    if (state.installClaimed) throw new Error('Ya has recogido el regalo de la app');
+    const reward = E.rollChest('diamond', state.cards); E.applyChestCards(state.cards, reward.cards); reward.pesetas += INSTALL_PESETAS;
+    state.installClaimed = true; applyChestLocal(reward, 0); return reward;
   },
   // Vídeo recompensado de la tienda (El Falcón o Sobre de la Moncloa). Con cuenta lo concede el servidor, con límite diario.
   async watchAd(placement) {

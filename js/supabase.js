@@ -86,7 +86,8 @@ export const offerWelcome = () => rpc('offer_welcome', {});                     
 export const claimWelcome = () => rpc('claim_welcome', {});                               // -> { reward, profile }
 export const spinWheel = () => rpc('spin_level_wheel', {});                               // -> { seg, wheel, level, pending, reward, profile }
 export const buySpin = () => rpc('buy_wheel_spin', {});                                   // ruleta de la tienda (pesetas)
-export const spinLegend = () => rpc('spin_legend_wheel', {});                             // tirada legendaria comprada
+export const spinLegend = () => rpc('spin_legend_wheel', {});
+export const claimInstall = () => rpc('claim_install_reward', {});                       // regalo por instalar la app -> { reward, profile }                             // tirada legendaria comprada
 // Pagos (Stripe): crea la página de pago en la función «crear-pago» y consulta si una compra ya se ha entregado
 export async function createCheckout(pack, returnUrl) { const d = await req(`/functions/v1/${CONFIG.PAY_FUNCTION || 'crear-pago'}`, { method: 'POST', body: { pack, returnUrl } }); if (!d?.url) throw new Error('No se ha podido iniciar el pago'); return d.url; }
 export async function getPurchase(session) { const rows = await req(`/rest/v1/purchases?select=*&stripe_session=eq.${encodeURIComponent(session)}`); return rows?.[0] || null; }

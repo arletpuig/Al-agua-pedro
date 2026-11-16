@@ -304,6 +304,15 @@ console.log('M. Carta nueva: Chantaje Pegasus en el servidor');
   check('y sale en los cofres como carta épica', psql(`select 'pegasus' = any (public.fn_rarity_cards('epic'))`) === 't');
 }
 
+console.log('N. Regalo por instalar la app, en el servidor');
+{
+  before = db(email);
+  const r1 = await page.evaluate(() => AAP.backend.claimInstall().then(r => ({ p: r.pesetas, n: r.cards.length }), e => ({ err: e.message })));
+  row = db(email);
+  check('regalo de la app: cofre de diamante + 150 pesetas, guardado en el servidor', row.install_claimed === true && r1.n >= 0 && r1.p >= 150 && row.chest_pesetas === before.chest_pesetas + r1.p && row.chests_opened === before.chests_opened + 1, JSON.stringify(r1));
+  check('y solo una vez por cuenta', await page.evaluate(() => AAP.backend.claimInstall().then(() => false, e => /Ya has recogido/.test(e.message))));
+}
+
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#panel-rank .sheet-body');
 check('ranking con podio para los tres primeros', await page.locator('#rank-podium .pd:not(.empty)').count() >= 2 && await page.locator('#rank-podium .crown').count() === 1);

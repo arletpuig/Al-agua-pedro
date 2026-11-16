@@ -621,5 +621,52 @@ console.log('31. Racha de lanzamientos y peineta');
   await c8.close();
 }
 
+console.log('32. App instalable (sin tiendas)');
+{
+  const mf = await page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); const m = await (await fetch(l.href)).json();
+    const ok = async u => (await fetch(u)).ok; return { name: m.name, display: m.display, start: m.start_url, icons: m.icons.map(i => i.sizes + ':' + i.purpose).join(), files: (await Promise.all(m.icons.map(i => ok(new URL(i.src, l.href))))).every(Boolean),
+      apple: await ok(document.querySelector('link[rel=apple-touch-icon]').href), sw: await ok('./sw.js') }; });
+  check('la web se puede instalar: nombre, pantalla completa, iconos 192/512/maskable e icono de iPhone', mf.name === 'AL AGUA PEDRO' && mf.display === 'standalone' && mf.icons === '192x192:any,512x512:any,512x512:maskable' && mf.files && mf.apple && mf.sw, JSON.stringify(mf));
+  // service worker: tras abrir el juego una vez, vuelve a abrir aunque no haya conexión
+  const c9 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p9 = await c9.newPage(); const e9 = watchErrors(p9); await mockTime(p9);
+  await open(p9, undefined, { install: true });
+  const sw = await p9.evaluate(() => navigator.serviceWorker.ready.then(r => r.active?.state || 'x'));
+  await p9.reload(); await p9.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
+  check('el juego registra su service worker', sw === 'activated' && await p9.evaluate(() => !!navigator.serviceWorker.controller), sw);
+  await c9.setOffline(true); await p9.reload().catch(() => {}); const offline = await p9.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }).then(() => true, () => false); await c9.setOffline(false);
+  check('sin conexión, el juego abre igual (lo último guardado)', offline);
+  // aviso para instalar: en iPhone, los pasos de Safari; «Ahora no» lo deja tranquilo 3 días
+  await p9.evaluate(async () => { AAP.giftTest.off = true; const m = await import('./js/install.js'); m.maybeOffer(3); });
+  await p9.waitForSelector('#install-overlay.open', { timeout: 8000 }).catch(() => {});
+  const ios = await p9.evaluate(() => ({ mode: document.querySelector('#install-overlay').dataset.mode, steps: !document.querySelector('#install-ios').classList.contains('hidden'), gift: document.querySelector('.install-gift').textContent, row: !document.querySelector('#btn-install').classList.contains('hidden') }));
+  check('en iPhone: ventana con los 3 pasos de Safari y el regalo (cofre de diamante + 150 pesetas)', ios.mode === 'ios' && ios.steps && /diamante \+ 150 pesetas/.test(ios.gift) && ios.row, JSON.stringify(ios));
+  await p9.screenshot({ path: 'tests/out/32-instalar-iphone.png' });
+  await p9.click('#install-later'); await p9.waitForTimeout(200);
+  const later = await p9.evaluate(async () => { const m = await import('./js/install.js'); await Promise.race([m.maybeOffer(5), new Promise(r => setTimeout(r, 1500))]); return document.querySelector('#install-overlay').classList.contains('open'); });
+  check('«Ahora no»: no vuelve a salir sola', !later);
+  // en Android: el aviso del propio navegador al pulsar ¡INSTALAR!
+  await p9.evaluate(() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => { window.__prompted = true; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); dispatchEvent(e); });
+  await p9.evaluate(() => import('./js/install.js').then(m => m.open())); await p9.waitForTimeout(200);
+  const and = await p9.evaluate(() => document.querySelector('#install-overlay').dataset.mode + '|' + document.querySelector('#install-go').textContent);
+  await p9.click('#install-go', { force: true }); await p9.waitForTimeout(300);
+  check('en Android: botón ¡INSTALAR! que abre el aviso del navegador', and === 'android|¡INSTALAR!' && await p9.evaluate(() => window.__prompted === true) && await p9.locator('#install-overlay.open').count() === 0, and);
+  check('instalar: sin errores en consola', e9.filter(x => !/ERR_INTERNET_DISCONNECTED|Failed to load resource|net::ERR/.test(x)).length === 0, e9.join(' | '));
+  await c9.close();
+  // abierto desde la app instalada: el regalo, una sola vez
+  const c10 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p10 = await c10.newPage(); await mockTime(p10);
+  await p10.addInitScript(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => (/display-mode: standalone/.test(q) ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q)); });
+  await open(p10, undefined, { install: true });
+  await p10.evaluate(() => { AAP.giftTest.off = true; });
+  await p10.waitForSelector('#chest-overlay.open', { timeout: 10000 }).catch(() => {});
+  const g0 = await S(p10);
+  const gotChest = await p10.locator('#chest-overlay.open').count() === 1;
+  if (gotChest) { await p10.click('#chest-btn'); await p10.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await p10.click('#chest-btn'); await p10.waitForTimeout(300); }
+  const g1 = await p10.evaluate(() => ({ claimed: AAP.state.installClaimed, row: document.querySelector('#btn-install').classList.contains('hidden') }));
+  check('abierto desde la app instalada: regalo de cofre de diamante + 150 pesetas', gotChest && g1.claimed && g1.row && g0.chestPesetas >= 150 + 10, JSON.stringify({ g1, cp: g0.chestPesetas }));
+  await p10.reload(); await p10.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await p10.waitForTimeout(2500);
+  check('y solo una vez', await p10.locator('#chest-overlay.open').count() === 0);
+  await c10.close();
+}
+
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));
 await browser.close(); process.exit(summary() ? 1 : 0);

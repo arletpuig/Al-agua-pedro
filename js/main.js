@@ -179,7 +179,7 @@ async function afterLogin(user) {
       applyServer(row); ui.showToast('☁️ Tu progreso se ha guardado en tu cuenta');
     } else if (row) { applyServer(row); ui.showToast('☁️ Progreso cargado de tu cuenta'); }
     ui.hud(); restoreGift(); maybeTour();   // jugador nuevo: guía de bienvenida
-    syncChip(); checkPending();        // niveles: si hay tiradas de ruleta pendientes, se ofrecen
+    await backend.syncWheelCap(); syncChip(); checkPending();        // niveles: si hay tiradas de ruleta pendientes, se ofrecen
     installRefresh(); installReward();  // abierto desde la app instalada: su regalo
     if (payReturn && !payReturn.done) { payReturn.done = true;
       if (payReturn.status === 'ok') awaitPurchase(payReturn.session);

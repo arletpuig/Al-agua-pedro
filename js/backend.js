@@ -31,7 +31,7 @@ export const backend = {
   // Hora del servidor (para el cofre diario). Si no hay conexión se usa la hora local, en zona Europe/Madrid.
   async syncTime() {
     if (serverChecked || !sb.hasBackend()) return;
-    try { const t = await sb.serverNow(); timeOffset = Date.parse(t.now) - Date.now(); nextMidnight = Date.parse(t.next_midnight); serverChecked = true; } catch (e) {}
+    try { const t = await sb.serverNow(); timeOffset = state.timeOffset = Date.parse(t.now) - Date.now(); nextMidnight = Date.parse(t.next_midnight); serverChecked = true; } catch (e) {}
   },
   now() { return Date.now() + timeOffset; },
   todayKey() { return madridDate(this.now()); },
@@ -71,7 +71,7 @@ export const backend = {
     if (state.welcomeClaimed || state.welcomeOfferedAt) return;
     if (this.cloud) {
       const { r } = await cloudOp(() => sb.offerWelcome());
-      timeOffset = Date.parse(r.now) - Date.now();
+      timeOffset = state.timeOffset = Date.parse(r.now) - Date.now();
       state.welcomeClaimed = !!r.claimed; state.welcomeOfferedAt = r.offered_at ? Date.parse(r.offered_at) : null;
     } else { if (state.stats.falls < 1) return; state.welcomeOfferedAt = this.now(); }
     changed(false);
@@ -103,6 +103,11 @@ export const backend = {
     if (this.cloud) return cloudSpin(sb.spinLegend);
     if (state.legendSpins < 1) throw new Error('No tienes tiradas legendarias');
     return localSpin('legend', LV.levelOf(state.stats), 0, rng, () => { state.legendSpins--; });
+  },
+  // Nivel que cuenta el servidor (para no ofrecer tiradas que el servidor aún no da)
+  async syncWheelCap() {
+    if (!this.cloud) { state.wheelCap = null; return null; }
+    try { await flush(); const s = state.stats, L = +(await sb.playerLevel(s.tomatoesThrown, s.hits, s.falls)); state.wheelCap = L < LV.levelOf(s) ? L : null; return L; } catch (e) { return null; }
   },
   // La Armería: comprar un objeto (desde el nivel 10, con pesetas; se queda para siempre). Con cuenta lo valida el servidor.
   async buyArmory(id, price) {

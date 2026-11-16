@@ -1378,3 +1378,45 @@ svg { display: block; }
 .chest-rewards { max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none; padding: 4px 2px; }
 .chest-rewards::-webkit-scrollbar { display: none; }
 #panel-armory .arm-intro, #panel-armory .arm-dream { border-radius: 22px; }
+
+/* v60: celebración al comprar en La Armería */
+.arm-win { position: absolute; inset: 0; z-index: 12; overflow: hidden; border-radius: 22px; display: grid; place-items: center; background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--c2) 70%, #000), #05020c 75%); }
+.arm-win.hidden { display: none; }
+.arm-win .fx-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+.win-rays { position: absolute; left: 50%; top: 42%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%; opacity: 0;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--c1) 55%, transparent) 0 8deg, #0000 8deg 16deg); -webkit-mask: radial-gradient(circle, #000 8%, #0000 60%); mask: radial-gradient(circle, #000 8%, #0000 60%); }
+.win-ring { position: absolute; left: 50%; top: 42%; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; opacity: 0; border: 6px dashed color-mix(in srgb, var(--c1) 80%, #fff); filter: drop-shadow(0 0 12px var(--c1)); }
+.win-flash { position: absolute; inset: 0; z-index: 6; background: #fff; opacity: 0; pointer-events: none; }
+.win-box { position: relative; z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; padding: 0 18px; margin-top: -4%; text-align: center; }
+.win-new { padding: 4px 14px; border-radius: 12px; border: 3px solid var(--ink); background: linear-gradient(#fff3b0, #ffd23f 50%, #ff9a1a); font: 14px 'Titan One'; color: #6a2a0e; opacity: 0; transform: translateY(-20px); }
+.win-crate { width: 150px; height: 140px; display: grid; place-items: center; }
+.win-crate svg { width: 100%; height: 100%; filter: drop-shadow(0 0 20px var(--c1)) drop-shadow(0 8px 0 #000a); }
+.win-art { display: none; width: 210px; height: 210px; }
+.win-art canvas { width: 100%; height: 100%; filter: drop-shadow(0 12px 10px #000a) drop-shadow(0 0 22px var(--c1)); }
+.win-tier { opacity: 0; padding: 3px 14px 4px; border-radius: 10px; border: 3px solid var(--ink); background: linear-gradient(var(--c1), var(--c2)); font: 13px 'Titan One'; letter-spacing: 1px; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); }
+.win-box h3 { opacity: 0; margin: 2px 0 0; font: 30px/1.05 'Titan One'; color: #fff; paint-order: stroke fill; -webkit-text-stroke: 7px var(--ink); text-shadow: 0 0 24px var(--c1), 0 5px 0 #000a; }
+.win-sub { opacity: 0; margin: 0; font: 800 14px 'Baloo 2'; color: color-mix(in srgb, var(--c1) 40%, #fff); }
+.win-btns { opacity: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(240px, 90%); margin-top: 10px; pointer-events: none; }
+.win-btns .arm-btn { font-size: 18px; padding: 10px; }
+.win-later { padding: 4px 10px; font: 700 14px 'Baloo 2'; color: #d9d0ff; text-decoration: underline; }
+/* 1) la caja tiembla y se carga de luz */
+.arm-win.s1 .win-crate { animation: wincharge 1.05s ease-in forwards; }
+.arm-win.s1 .win-rays { opacity: .5; animation: armspin 2.4s linear infinite; }
+@keyframes wincharge { 0% { transform: scale(.4); } 25% { transform: scale(1) rotate(-6deg); } 40% { transform: scale(1.02) rotate(6deg); } 55% { transform: scale(1.05) rotate(-9deg); } 70% { transform: scale(1.1) rotate(10deg); filter: brightness(1.4); } 85% { transform: scale(1.18) rotate(-12deg); filter: brightness(2); } 100% { transform: scale(1.3); filter: brightness(3); } }
+/* 2) destello y aparece el objeto */
+.arm-win.s2 .win-crate { display: none; }
+.arm-win.s2 .win-art { display: block; animation: winpop .7s cubic-bezier(.2, 1.6, .4, 1) both, winfloat 3s ease-in-out .7s infinite; }
+.arm-win.s2 .win-flash { animation: winflash .5s ease-out; }
+.arm-win.s2 .win-rays { opacity: 1; animation: armspin 9s linear infinite; }
+.arm-win.s2 .win-ring { opacity: 1; animation: armspin 6s linear infinite reverse; }
+.arm-win.s2 .win-new { animation: winin .4s .15s ease-out both; }
+.arm-win.s2 .win-tier { animation: winslam .45s .35s cubic-bezier(.2, 1.8, .4, 1) both; }
+.arm-win.s2 h3 { animation: winin .45s .5s ease-out both; }
+.arm-win.s2 .win-sub { animation: winin .4s .7s ease-out both; }
+.arm-win.s3 .win-btns { opacity: 1; pointer-events: auto; animation: winin .35s ease-out both; }
+.arm-win.s3 .win-btns .arm-btn { animation: badge 1.2s ease-in-out infinite; }
+@keyframes winflash { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes winpop { 0% { transform: scale(0) rotate(-200deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes winfloat { 50% { transform: translateY(-8px) rotate(3deg); } }
+@keyframes winin { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes winslam { from { opacity: 0; transform: scale(2.6); } to { opacity: 1; transform: none; } }

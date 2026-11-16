@@ -1,6 +1,6 @@
 // Estado del juego y guardado local. Las cantidades derivadas (tomates, pesetas) se calculan siempre a partir de los totales.
 import { CONFIG } from './config.js';
-import { emptyCards, CARD_IDS, refund } from './economy.js';
+import { emptyCards, CARD_IDS, refund, PAGUITA_RULES } from './economy.js';
 import { levelOf } from './levels.js';
 const KEY = 'alaguapedro.v2', OLD_KEY = 'alaguapedro.v1';
 const listeners = new Set();
@@ -17,7 +17,9 @@ export const state = {
   streak: 0,                                        // racha de lanzamientos: veces seguidas que Pedro ha caído al agua
   serverStreak: false,                              // el servidor guarda las pesetas de las rachas (schema_v17.sql)
   installClaimed: false,                            // regalo por instalar la app (una vez por cuenta)
-  armory: [],                                       // objetos de La Armería que tiene el jugador (no se gastan)
+  armory: [],
+  timeOffset: 0,                                    // diferencia entre la hora del servidor y la del móvil
+  wheelCap: null,                                   // nivel según el servidor, si va por detrás del juego (las tiradas esperan)                                       // objetos de La Armería que tiene el jugador (no se gastan)
 };
 // Los tomates conseguidos cuando costaban 100 clics se conservan (legacy); desde entonces cuestan CLICKS_PER_TOMATO.
 export function derive() {
@@ -58,7 +60,7 @@ export function save() {
 export function onChange(fn) { listeners.add(fn); }
 export function changed(sync = true) { derive(); if (sync) state.dirty = true; save(); listeners.forEach(f => f(state)); }
 
-export function falconActive() { return state.falconUntil > Date.now(); }
+export function falconActive() { return state.falconUntil > Date.now() + (state.timeOffset || 0) + 3000; }
 // Suma clics (ya multiplicados). Devuelve cuántos tomates se han conseguido con esta pulsación.
 export function addClicks(n) {
   const before = state.stats.tomatoesEarned;
@@ -104,6 +106,7 @@ export function applyServer(row, sent) {
   state.legendSpins = +(row.legend_spins || 0); state.legendAds = +(row.legend_ads || 0);
   state.serverStreak = 'streak_pesetas' in row; if ('install_claimed' in row) state.installClaimed = !!row.install_claimed;
   if ('armory' in row) state.armory = Array.isArray(row.armory) ? row.armory.slice() : [];
+  PAGUITA_RULES.mult = +row.rules >= 27 ? 3 : 1;       // paguitas ×3 cuando el servidor está al día
   if ('welcome_claimed' in row) { state.welcomeClaimed = !!row.welcome_claimed; state.welcomeOfferedAt = row.welcome_offered_at ? Date.parse(row.welcome_offered_at) : null; }
   state.updatedAt = row.updated_at || null; state.dirty = pending;
   derive(); save(); listeners.forEach(f => f(state));
@@ -111,6 +114,6 @@ export function applyServer(row, sent) {
 export function hasProgress() { const s = state.stats; return s.totalClicks > 0 || s.chestsOpened > 0 || s.tomatoesThrown > 0; }
 // Vacía el progreso local (al cerrar sesión: el progreso queda en la cuenta).
 export function resetProgress() {
-  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false; state.welcomeOfferedAt = null; state.welcomeClaimed = false; state.wheelLevel = 1; state.noWheel = false; state.legendSpins = 0; state.legendAds = 0; state.streak = 0; state.serverStreak = false; state.installClaimed = false; state.armory = [];
+  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false; state.welcomeOfferedAt = null; state.welcomeClaimed = false; state.wheelLevel = 1; state.noWheel = false; state.legendSpins = 0; state.legendAds = 0; state.streak = 0; state.serverStreak = false; state.installClaimed = false; state.armory = []; state.wheelCap = null; PAGUITA_RULES.mult = 3;
   derive(); save(); listeners.forEach(f => f(state));
 }

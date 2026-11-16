@@ -15,7 +15,7 @@ const INTRO_KEY = 'alaguapedro.levelsIntro';
 let ui, isBusy, fail, reload = null, lastOffer = 0, fxUp = null, fxWheel = null, shownXp = null, queue = Promise.resolve(), running = false, spinning = false, waitingSpin = null;
 export const levelTest = { rng: null, fast: false, off: !!window.__AAP_NOLEVELUP };   // pruebas automáticas: premio fijo, animaciones rápidas o sin celebraciones
 export function levelTestReset() { lastOffer = 0; }
-export const pending = () => (state.noWheel ? 0 : Math.max(0, LV.levelOf(state.stats) - state.wheelLevel));
+export const pending = () => (state.noWheel ? 0 : Math.max(0, Math.min(LV.levelOf(state.stats), state.wheelCap ?? 99) - state.wheelLevel));
 export const celebrating = () => running;
 
 export function initLevels(uiRef, busyFn, failFn, reloadFn) {
@@ -202,6 +202,8 @@ async function spin(src) {
     return go().catch(async e2 => {
       // el servidor y el juego no cuentan igual los niveles: este móvil tiene una versión vieja del juego guardada
       if (!/No tienes tiradas/.test(e2.message)) throw e2;
+      // ¿el servidor cuenta otro nivel? entonces las tiradas esperan a que suba allí también
+      const sL = await backend.syncWheelCap(); if (sL != null && sL < LV.levelOf(state.stats)) { syncChip(); throw new Error('Tus tiradas llegarán en cuanto el servidor termine de contar tu nivel'); }
       ui.showToast('🔄 Actualizando el juego a la última versión…', 4000);
       const { forceUpdate } = await import('./update.js'); if (await forceUpdate()) await new Promise(() => {});
       throw e2;

@@ -70,8 +70,8 @@ reset role;
 update public.profiles set cards = jsonb_set(cards, '{paguitas}', '{"level": 15, "frags": 0}'), paguitas_pesetas = 0, updated_at = now() - interval '112 seconds' where user_id = :'uid';
 set role authenticated;
 do $$ declare r public.profiles; begin
-  r := public.save_progress(0, 0, 0, 0, 0, 0, 0, 1000);
-  -- 112 s / 75 s = 1 lluvia (+2 de margen) = 3 × 3 monedas × 15 (nivel 15: 45 por lluvia) = 135 como mucho
-  if r.paguitas_pesetas <> 135 then raise exception 'MAL paguitas: %', r.paguitas_pesetas; end if;
-  raise notice 'ok paguitas nivel 15: como mucho 135 pesetas en 112 s (3 monedas de 15)';
+  -- 112 s / 75 s = 1 lluvia (+2 de margen) = 3 × 3 monedas × 45 (nivel 15: 135 por lluvia) = 405 como mucho
+  r := public.save_progress(0, 0, 0, 0, 0, 0, 0, 5000);
+  if r.paguitas_pesetas <> 405 then raise exception 'MAL paguitas: %', r.paguitas_pesetas; end if;
+  raise notice 'ok paguitas nivel 15: como mucho 405 pesetas en 112 s (3 monedas de 45)';
 end $$;

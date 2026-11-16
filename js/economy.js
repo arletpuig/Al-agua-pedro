@@ -106,7 +106,8 @@ export const PAGUITA = 3;                       // monedas por lluvia
 export const PAGUITA_EVERY = 75;                 // segundos entre lluvias de paguitas (igual que fn_paguitas_every)
 // Lo que suman las 3 monedas de cada lluvia: sube en todos los niveles (igual que fn_paguitas_total)
 // nivel 1: 3 pesetas; nivel 2: 6; nivel 3: 9... (cada moneda vale el nivel de la carta)
-export const paguitaTotal = L => 3 * Math.max(0, Math.min(15, L));
+export const PAGUITA_RULES = { mult: 3 };        // con un servidor anterior a schema_v27 vale 1 (cada moneda = nivel)
+export const paguitaTotal = L => 3 * PAGUITA_RULES.mult * Math.max(0, Math.min(15, L));
 // lo que vale cada una de las 3 monedas (repartido: si no sale exacto, alguna vale 1 más)
 export function paguitaCoins(L) { const t = paguitaTotal(L), b = Math.floor(t / PAGUITA); return Array.from({ length: PAGUITA }, (_, i) => b + (i < t - b * PAGUITA ? 1 : 0)); }
 export const paguitaValue = L => Math.max(...paguitaCoins(L));   // la moneda que más vale

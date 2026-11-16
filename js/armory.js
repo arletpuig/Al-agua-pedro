@@ -6,6 +6,7 @@ import { levelOf } from './levels.js';
 import { SFX } from './audio.js';
 import { drawIcon } from './game/weapons.js';
 import { dream } from './game/preview.js';
+import { createFx } from './fx.js';
 
 export const UNLOCK_LEVEL = 10;
 // c1/c2: colores de la tarjeta de cada objeto (cada uno con su estilo de «exclusivo»)
@@ -22,7 +23,7 @@ const $ = s => document.querySelector(s);
 const fmt = n => n.toLocaleString('es-ES');
 const SEEN_KEY = 'alaguapedro.armorySeen', INTRO_KEY = 'alaguapedro.armoryIntro';
 export const armoryTest = { off: false, noIntro: false };
-let ui, scene, isBusy, fail, openInstall, wasUnlocked = null, confirmId = null, confirmTimer = 0, buying = false, shopKey = '', stopDream = null;
+let ui, scene, isBusy, fail, openInstall, wasUnlocked = null, confirmId = null, confirmTimer = 0, buying = false, shopKey = '', stopDream = null, fxWin = null, winId = null;
 
 export const unlocked = () => levelOf(state.stats) >= UNLOCK_LEVEL;
 const owned = id => state.armory.includes(id);
@@ -33,7 +34,10 @@ export function initArmory(uiRef, sceneRef, busyFn, failFn, installFn) {
   $('#armory-btn').addEventListener('click', () => { SFX.ui(); if (unlocked() || state.armory.length) openArmory(); else tease(); });
   document.addEventListener('pointerdown', e => { if (!e.target.closest?.('#armory-tease, #armory-btn')) $('#armory-tease').classList.add('hidden'); });
   $('#arm-grid').addEventListener('click', onCard);
-  $('#panel-armory .sheet').append($('#arm-intro'), $('#arm-dream'));   // fuera de la parte que se desliza: siempre a la vista
+  $('#panel-armory .sheet').append($('#arm-intro'), $('#arm-dream'), $('#arm-win'));
+  fxWin = createFx($('#arm-win'));
+  $('#win-use').addEventListener('click', () => { const id = winId; closeWin(); ui.closeAll(); setTimeout(() => use(id), 250); });
+  $('#win-later').addEventListener('click', () => { SFX.ui(); closeWin(); });   // fuera de la parte que se desliza: siempre a la vista
   $('#arm-dream').addEventListener('click', wake);
   $('#arm-intro-ok').addEventListener('click', () => { SFX.ui(); $('#arm-intro').classList.add('hidden'); try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {} });
   new MutationObserver(() => { if (!$('#panel-armory').classList.contains('open')) wake(); }).observe($('#panel-armory'), { attributes: true, attributeFilter: ['class'] });
@@ -120,11 +124,26 @@ async function onCard(e) {
   $('#arm-grid').querySelectorAll('button').forEach(x => x.disabled = true);
   try {
     await backend.buyArmory(id, it.price);
-    SFX.prize?.(true); ui.showToast(`🛒 ¡${it.name} es tuyo! Pulsa ¡USAR! cuando quieras`, 3200); ui.hud();
+    ui.hud(); celebrate(it);
   } catch (err) { fail?.(err); }
   buying = false; renderShop(); refresh();
   $(`.arm-card[data-id="${id}"]`)?.classList.add('just');
 }
+// ---------- compra: celebración especial (redoble y caja que tiembla → destello → el objeto sale con rayos, confeti y lluvia de monedas)
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function celebrate(it) {
+  const w = $('#arm-win'); winId = it.id;
+  w.style.setProperty('--c1', it.c1); w.style.setProperty('--c2', it.c2);
+  $('#win-tier').textContent = it.tier; $('#win-name').textContent = it.name;
+  drawIcon($('#win-cv'), it.id);
+  w.className = 'arm-win s1'; SFX.drumroll?.(1.0);
+  await wait(armoryTest.fast ? 30 : 1050);
+  w.className = 'arm-win s2'; SFX.levelUp?.(); SFX.prize?.(true); navigator.vibrate?.([40, 60, 140]);
+  const r = w.getBoundingClientRect(); fxWin.resize?.(); fxWin.burst?.(r.width / 2, r.height * 0.42, 160); setTimeout(() => { fxWin.rain?.(70); fxWin.rain?.(28, 'coin'); }, 250);
+  await wait(armoryTest.fast ? 30 : 900);
+  w.classList.add('s3');
+}
+function closeWin() { $('#arm-win').className = 'arm-win hidden'; fxWin?.clear?.(); }
 // usar un objeto contra Pedro (solo si es tuyo y no está pasando otra cosa)
 export async function use(id) {
   if (!owned(id)) { ui.showToast('Ese objeto no lo tienes: cómpralo en La Armería', 2400, true); return false; }

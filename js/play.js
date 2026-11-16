@@ -100,7 +100,7 @@ export async function throwTomatoes(n) {
     const d = decide(res, n);
     registerThrow(res.kind, d, n);
     // Plus Ultra: si fallas, a veces recuperas los tomates
-    if (!d.fall && (testRng.fn || Math.random)() < E.recoverChance(state.cards)) { d.recovered = n; recoverTomatoes(n); }
+    if (!d.fall && res.kind !== 'near' && res.kind !== 'perfect' && (testRng.fn || Math.random)() < E.recoverChance(state.cards)) { d.recovered = n; recoverTomatoes(n); }
     // racha de lanzamientos: cada caída la sube (y da pesetas extra); un fallo la corta
     if (d.fall) { const sk = ++state.streak, canBank = (!backend.cloud || state.serverStreak) && !streakTest.off, b = canBank ? STREAK.bonus(sk, d.pesetas) : 0; d.streak = sk; d.streakBonus = b; if (b) addStreakPesetas(b); }
     else if (state.streak >= 2 && (testRng.fn || Math.random)() < E.streakShield(state.cards)) d.streakSaved = state.streak;   // Chantaje Pegasus

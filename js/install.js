@@ -19,11 +19,12 @@ export function initInstall(uiRef, busyFn, failFn) {
   $('#install-go').addEventListener('click', go);
   $('#install-later').addEventListener('click', later);
   $('#btn-install').addEventListener('click', () => { ui.closeAll(); open(); });
+  $('#install-fab').addEventListener('click', () => { SFX.ui?.(); open(); });
   if ('serviceWorker' in navigator && !window.__AAP_NOSW) navigator.serviceWorker.register('./sw.js').catch(() => {});
   refresh();
 }
-// fila de Ajustes: solo si se puede instalar y no se ha recogido el regalo
-export function refresh() { $('#btn-install')?.classList.toggle('hidden', isStandalone() || !!state.installClaimed); }
+// fila de Ajustes y botón de la pantalla de juego: solo si se puede instalar y no se ha recogido el regalo
+export function refresh() { const off = isStandalone() || !!state.installClaimed; $('#btn-install')?.classList.toggle('hidden', off); $('#install-fab')?.classList.toggle('hidden', off); }
 
 const screenBusy = () => !!document.querySelector('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour') || isBusy?.() || ui.gated();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -46,7 +47,7 @@ export function open() {
 function close() { $('#install-overlay').classList.remove('open'); }
 async function go() {
   if (!deferred) { close(); return; }
-  try { deferred.prompt(); const r = await deferred.userChoice; if (r?.outcome !== 'accepted') ui.showToast('Cuando quieras, en Ajustes → Instalar la app', 2600); }
+  try { deferred.prompt(); const r = await deferred.userChoice; if (r?.outcome !== 'accepted') ui.showToast('Cuando quieras, toca el icono 🎁 de la app', 2600); }
   catch (e) {}
   deferred = null; close();
 }

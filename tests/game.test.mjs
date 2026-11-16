@@ -642,6 +642,14 @@ console.log('32. App instalable (sin tiendas)');
   check('en iPhone: ventana con los 3 pasos de Safari y el regalo (cofre de diamante + 150 pesetas)', ios.mode === 'ios' && ios.steps && /diamante \+ 150 pesetas/.test(ios.gift) && ios.row, JSON.stringify(ios));
   await p9.screenshot({ path: 'tests/out/32-instalar-iphone.png' });
   await p9.click('#install-later'); await p9.waitForTimeout(200);
+  // en la pantalla de juego, a la vista: el icono de la app con su regalo, que abre la misma ventana
+  const fab = await p9.evaluate(() => { const b = document.querySelector('#install-fab'), r = b.getBoundingClientRect(), g = document.querySelector('#btn-settings').getBoundingClientRect();
+    return { shown: !b.classList.contains('hidden') && r.width > 40, right: r.right <= innerWidth, below: r.top >= g.bottom - 2, img: b.querySelector('img').naturalWidth }; });
+  check('pantalla de juego: icono de la app con regalo, debajo de Ajustes', fab.shown && fab.right && fab.below && fab.img === 192, JSON.stringify(fab));
+  await p9.screenshot({ path: 'tests/out/32b-boton-app.png' });
+  await p9.click('#install-fab', { force: true }); await p9.waitForTimeout(200);
+  check('al tocarlo se abre la ventana de instalar', await p9.locator('#install-overlay.open').count() === 1);
+  await p9.click('#install-later'); await p9.waitForTimeout(200);
   const later = await p9.evaluate(async () => { const m = await import('./js/install.js'); await Promise.race([m.maybeOffer(5), new Promise(r => setTimeout(r, 1500))]); return document.querySelector('#install-overlay').classList.contains('open'); });
   check('«Ahora no»: no vuelve a salir sola', !later);
   // en Android: el aviso del propio navegador al pulsar ¡INSTALAR!
@@ -661,7 +669,7 @@ console.log('32. App instalable (sin tiendas)');
   const g0 = await S(p10);
   const gotChest = await p10.locator('#chest-overlay.open').count() === 1;
   if (gotChest) { await p10.click('#chest-btn'); await p10.waitForFunction(() => document.querySelector('#chest-btn').textContent === 'RECOGER' && !document.querySelector('#chest-btn').disabled, null, { timeout: 15000 }); await p10.click('#chest-btn'); await p10.waitForTimeout(300); }
-  const g1 = await p10.evaluate(() => ({ claimed: AAP.state.installClaimed, row: document.querySelector('#btn-install').classList.contains('hidden') }));
+  const g1 = await p10.evaluate(() => ({ claimed: AAP.state.installClaimed, row: document.querySelector('#btn-install').classList.contains('hidden') && document.querySelector('#install-fab').classList.contains('hidden') }));
   check('abierto desde la app instalada: regalo de cofre de diamante + 150 pesetas', gotChest && g1.claimed && g1.row && g0.chestPesetas >= 150 + 10, JSON.stringify({ g1, cp: g0.chestPesetas }));
   await p10.reload(); await p10.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await p10.waitForTimeout(2500);
   check('y solo una vez', await p10.locator('#chest-overlay.open').count() === 0);

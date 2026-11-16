@@ -1220,3 +1220,17 @@ svg { display: block; }
 .install-other { margin: 0; max-width: 340px; font: 600 14px/1.4 'Baloo 2'; color: #dfe6ff; }
 .install-other b { color: #ffe766; }
 .install-later { padding: 6px 12px; font: 700 14px 'Baloo 2'; color: #b9c6ff; text-decoration: underline; }
+
+/* ======================================================================== v48: botón de instalar la app en la pantalla de juego */
+.install-fab { position: absolute; right: 8px; top: calc(98px + var(--safe-top)); z-index: 5; width: 62px; padding: 0; border: 0; background: none;
+  display: flex; flex-direction: column; align-items: center; animation: giftbob 1.8s ease-in-out .3s infinite; }
+.install-fab img { position: relative; display: block; width: 48px; height: 48px; border-radius: 13px; border: 2.5px solid var(--ink); background: #c4161c;
+  box-shadow: 0 0 0 2px #ffd23f, 0 4px 0 2px #000a; }
+.install-fab .if-glow { position: absolute; left: 50%; top: 26px; width: 80px; height: 80px; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, #fff6b0aa, #ffd23f44 45%, #ffd23f00 70%); animation: glowpulse 1.6s ease-in-out infinite; pointer-events: none; }
+.install-fab .if-gift { position: absolute; right: -4px; top: -10px; width: 28px; height: 26px; filter: drop-shadow(0 2px 0 #000a); animation: badge .9s ease-in-out infinite; }
+.install-fab span { position: relative; margin-top: -7px; padding: 0 7px; border-radius: 9px; border: 2.5px solid var(--ink); background: linear-gradient(#6ff07d, #1fa83a);
+  font: 11px/16px 'Titan One'; color: #fff; white-space: nowrap; paint-order: stroke fill; -webkit-text-stroke: 3px var(--ink); box-shadow: 0 3px 0 #0008; }
+.install-fab:active img { transform: translateY(3px); }
+#falcon-badge:not(.hidden) ~ .install-fab { top: calc(128px + var(--safe-top)); }
+@media (prefers-reduced-motion: reduce) { .install-fab, .install-fab .if-gift, .install-fab .if-glow { animation: none; } }

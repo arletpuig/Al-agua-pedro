@@ -27,7 +27,7 @@ jobs:
           cp -r index.html .htaccess robots.txt sitemap.xml ads.txt manifest.webmanifest sw.js favicon.ico css js legal dist/
           cp -r assets/pedro assets/musica assets/icons assets/fonts assets/favicon.svg assets/og.jpg dist/assets/
           echo "Archivos a publicar:"; find dist -type f | sort
-          grep -o 'versión [0-9]*' dist/index.html | head -1
+          grep -o 'versión [0-9][0-9]*' dist/index.html | head -1
 
       - name: Comprobar el acceso con Google (el ID del juego tiene que ser el de Supabase)
         run: |
@@ -69,9 +69,9 @@ jobs:
 
       - name: Comprobar que la web responde con la versión nueva
         run: |
-          want=$(grep -o 'versión [0-9]*' dist/index.html | head -1)
+          want=$(grep -o 'versión [0-9][0-9]*' dist/index.html | head -1)
           for i in 1 2 3 4 5 6; do
-            got=$(curl -fsSL -H 'Cache-Control: no-cache' "https://alaguapedro.es/?c=$GITHUB_RUN_ID" | grep -o 'versión [0-9]*' | head -1 || true)
+            got=$(curl -fsSL -H 'Cache-Control: no-cache' "https://alaguapedro.es/?c=$GITHUB_RUN_ID" | grep -o 'versión [0-9][0-9]*' | head -1 || true)
             echo "intento $i: alaguapedro.es responde «$got» (esperada «$want»)"
             [ "$got" = "$want" ] && exit 0
             sleep 10

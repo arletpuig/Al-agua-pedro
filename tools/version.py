@@ -12,11 +12,11 @@ root = pathlib.Path(__file__).resolve().parent.parent
 v = int(sys.argv[1])
 mods = sorted(p.relative_to(root).as_posix() for p in (root / 'js').rglob('*.js'))
 imap = {'imports': {f'./{m}': f'./{m}?v={v}' for m in mods}}
-block = ('<!-- versión de cada módulo (lo genera tools/version.py): nadie se queda con código viejo guardado -->\n'
+block = ('<!-- cada módulo con su ?v= (lo genera tools/version.py): nadie se queda con código viejo guardado -->\n'
          f'<script type="importmap">{json.dumps(imap, separators=(",", ":"))}</script>\n')
 
 p = root / 'index.html'; s = p.read_text()
-s = re.sub(r'<!-- versión de cada módulo[^\n]*\n<script type="importmap">[^\n]*</script>\n', '', s)
+s = re.sub(r'<!-- (versión de cada módulo|cada módulo con su \?v=)[^\n]*\n<script type="importmap">[^\n]*</script>\n', '', s)
 s = re.sub(r'\?v=\d+\b', f'?v={v}', s)
 s = re.sub(r'versión \d+', f'versión {v}', s)
 i = s.index('<script type="module" src="js/main.js')

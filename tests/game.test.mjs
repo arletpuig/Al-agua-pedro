@@ -427,24 +427,24 @@ console.log('28. iPhone: sin zoom ni movimientos al pulsar rápido');
 console.log('29. Niveles de jugador y ruleta');
 {
   const lv = await page.evaluate(async () => { const L = await import('./js/levels.js'); return { n: L.LEVEL_NAMES.length, first: L.LEVEL_NAMES[0], last: L.LEVEL_NAMES[49], l16: L.LEVEL_NAMES[15],
-    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round(16 * Math.pow(i, 2.4) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,450,1300,2450,3950,5850,8200,11050,14400,18250',
-    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 449, 450, 1299, 1300, 2726329, 2726330, 1e9].map(L.levelOfXp), top: L.levelOfXp(610220) }; });
+    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round(24 * Math.pow(i, 2.4) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,600,1900,3600,5850,8700,12200,16450,21450,27200',
+    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 599, 600, 1899, 1900, 4089259, 4089260, 1e9].map(L.levelOfXp), top: L.levelOfXp(610220) }; });
   check('50 niveles: de Perroflauta a Caudillo Supremo', lv.n === 50 && lv.first === 'Perroflauta' && lv.last === 'Caudillo Supremo' && lv.l16 === 'Sanchista');
   check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más (progresión pausada)', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
-  check('límites de nivel exactos y tope en 50 (llegar al 50 cuesta unos 2,7 millones de XP)', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
-  check('un jugador con 610.000 XP queda en el nivel 32 (antes, 34)', lv.top === 32, String(lv.top));
+  check('límites de nivel exactos y tope en 50 (llegar al 50 cuesta unos 4,1 millones de XP)', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
+  check('un jugador con 610.000 XP queda en el nivel 28 (antes, 32)', lv.top === 28, String(lv.top));
   check('la ruleta suma 100 (probabilidades en %)', lv.w === 100);
   const c7 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p7 = await c7.newPage(); const e7 = watchErrors(p7); await mockTime(p7);
   await open(p7, undefined, { levels: true });
-  await p7.evaluate(() => { AAP.giftTest.off = true; AAP.levelTest.fast = true; AAP.state.tutorialSeen = true; AAP.state.stats.chestTomatoes += 60; return import('./js/state.js').then(m => m.changed(false)); }); await noCombo(p7);
+  await p7.evaluate(() => { AAP.giftTest.off = true; AAP.levelTest.fast = true; AAP.state.tutorialSeen = true; AAP.state.stats.chestTomatoes += 75; return import('./js/state.js').then(m => m.changed(false)); }); await noCombo(p7);
   const chip0 = await p7.evaluate(() => [document.querySelector('#lvl-num').textContent, document.querySelector('#lvl-name').textContent, document.querySelector('#lvl-xp').textContent].join('|'));
-  check('jugador nuevo: barra de nivel 1 «Perroflauta» con 0/450 XP', chip0 === '1|Perroflauta|0 / 450 XP', chip0);
+  check('jugador nuevo: barra de nivel 1 «Perroflauta» con 0/600 XP', chip0 === '1|Perroflauta|0 / 600 XP', chip0);
   await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p7, 0, 8); await idle(p7);
   await p7.waitForSelector('.xp-float', { timeout: 3000 }).catch(() => {});
   const g1 = await p7.evaluate(() => [document.querySelector('.xp-float')?.textContent, document.querySelector('#lvl-xp').textContent, document.querySelector('#lvl-chip').classList.contains('gain')]);
-  check('al acertar: «+35 XP» sale volando y la barra sube (35/450)', g1[0] === '+35 XP' && g1[1] === '35 / 450 XP' && g1[2], JSON.stringify(g1));
+  check('al acertar: «+35 XP» sale volando y la barra sube (35/600)', g1[0] === '+35 XP' && g1[1] === '35 / 600 XP' && g1[2], JSON.stringify(g1));
   check('sin subir de nivel no hay ruleta', await p7.locator('#lvlup-overlay.open').count() === 0);
-  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(45); })); await stopAt(p7, 0, 8); await idle(p7);
+  await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(60); })); await stopAt(p7, 0, 8); await idle(p7);
   await p7.waitForSelector('#lvlup-overlay.open', { timeout: 8000 }).catch(() => {});
   await p7.waitForFunction(() => document.querySelector('#lvlup-overlay').classList.contains('ready'), null, { timeout: 5000 }).catch(() => {});
   const up = await p7.evaluate(() => ({ num: document.querySelector('#lvlup-num').textContent, name: document.querySelector('#lvlup-name').textContent, banner: document.querySelector('#lvlup-banner').textContent, cnt: document.querySelector('#lvlup-cnt').textContent, conf: !!document.querySelector('#lvlup-overlay .fx-canvas') }));
@@ -500,7 +500,7 @@ console.log('29. Niveles de jugador y ruleta');
   // ruleta legendaria en el nivel 10, ruleta de la tienda con pesetas y tirada legendaria comprada
   const lg = await p7.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats;
     const legend10 = [1, 9, 10, 11, 20, 50].map(L.isLegendLevel).join(), ids = L.WHEELS.legend.segs.map(s => s.id).join();
-    st.tomatoesThrown = 1500; st.hits = 1000; st.falls = 0; AAP.state.wheelLevel = 9; (await import('./js/state.js')).changed(false);
+    st.tomatoesThrown = 2200; st.hits = 1200; st.falls = 0; AAP.state.wheelLevel = 9; (await import('./js/state.js')).changed(false);
     const a = await AAP.backend.spinWheel(() => 0.01);
     const p0 = AAP.state.pesetas, price = L.shopSpinPrice(L.levelOf(st)); const b = await AAP.backend.buySpin(() => 0.5); const paid = p0 - AAP.state.pesetas;
     const leg0 = AAP.backend.spinLegend(() => 0.1).then(() => 'dejó', e => e.message);
@@ -550,7 +550,7 @@ console.log('29. Niveles de jugador y ruleta');
   await p7.evaluate(() => { AAP.levelTest.rng = null; });
   // ruleta al final de la barra de nivel (la legendaria si el siguiente nivel es múltiplo de 10)
   const pzb = await p7.evaluate(async () => { const st = AAP.state.stats, m = await import('./js/levelup.js'), r = [];
-    for (const [t, h] of [[0, 0], [1500, 0]]) { st.tomatoesThrown = t; st.hits = h; st.falls = 0; AAP.state.wheelLevel = 50; m.syncChip(); const L = (await import('./js/levels.js')).levelOf(st), e = document.querySelector('#lvl-prize');
+    for (const [t, h] of [[0, 0], [2200, 0]]) { st.tomatoesThrown = t; st.hits = h; st.falls = 0; AAP.state.wheelLevel = 50; m.syncChip(); const L = (await import('./js/levels.js')).levelOf(st), e = document.querySelector('#lvl-prize');
       r.push({ L, vis: e.offsetWidth > 0, href: e.querySelector('use').getAttribute('href'), leg: e.classList.contains('legend') }); }
     return r; });
   check('al final de la barra de nivel se ve la ruleta del premio (legendaria antes del nivel 10)', pzb[0].vis && pzb[0].href === '#ic-wheel' && pzb[1].L === 9 && pzb[1].href === '#ic-wheel-legend' && pzb[1].leg, JSON.stringify(pzb));
@@ -639,6 +639,21 @@ console.log('32. App instalable (sin tiendas)');
     const fd = await pf.evaluate(() => { const st = getComputedStyle(document.querySelector('#lvl-name')); return { on: document.documentElement.classList.contains('fd'), rules: document.querySelector('#darkfix')?.sheet.cssRules.length, w: st.webkitTextStrokeWidth, sh: st.textShadow.split('px').length > 8 }; });
     check('Samsung Internet en modo oscuro: los contornos de las letras pasan a sombras que el navegador no aclara', fd.on && fd.rules > 50 && fd.w === '0px' && fd.sh, JSON.stringify(fd));
     await pf.close();
+  }
+  {
+    // versiones: todos los módulos se piden con ?v=N (nada de código viejo guardado) y, si hay una versión nueva publicada, el juego se actualiza solo
+    const cu = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const pu = await cu.newPage(); await mockTime(pu);
+    await open(pu);
+    const mods = await pu.evaluate(() => { const v = new URL(document.querySelector('script[src*="js/main.js"]').src).searchParams.get('v');
+      const js = performance.getEntriesByType('resource').map(e => new URL(e.name)).filter(u => u.origin === location.origin && u.pathname.endsWith('.js'));
+      return { v, n: js.length, stale: js.filter(u => u.searchParams.get('v') !== v).map(u => u.pathname) }; });
+    check('todos los módulos del juego se cargan con su versión (?v=)', +mods.v > 0 && mods.n > 15 && mods.stale.length === 0, JSON.stringify(mods));
+    await pu.route(/\?nv=/, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<small class="ver">versión 9999</small>' }));
+    const nav = pu.waitForNavigation({ timeout: 15000 }).then(() => true, () => false);
+    await pu.evaluate(() => import('./js/update.js').then(m => m.checkVersion()));
+    const reloaded = await nav; await pu.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
+    check('si hay una versión nueva publicada, el juego se actualiza solo (y no entra en bucle)', reloaded && await pu.evaluate(() => import('./js/update.js').then(m => m.forceUpdate()).then(r => r === false)), String(reloaded));
+    await cu.close();
   }
   {
     // Samsung Internet con modo oscuro: aviso con los pasos para dejar el navegador en modo normal

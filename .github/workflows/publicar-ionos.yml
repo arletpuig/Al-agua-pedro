@@ -75,6 +75,8 @@ jobs:
             r=$(curl -sS -o /dev/null -w '%{http_code} %{content_type}' "https://alaguapedro.es/$u?c=$GITHUB_RUN_ID")
             echo "$u → $r"; case "$r" in 200*) ;; *) echo "::warning::$u no responde bien ($r)";; esac
           done
+          # el código no se debe guardar sin preguntar: si falta «no-cache», los móviles pueden quedarse con una versión vieja
+          for u in index.html js/levels.js; do echo "$u → $(curl -sSI "https://alaguapedro.es/$u?c=$GITHUB_RUN_ID" | grep -i '^cache-control' | tr -d '\r')"; done
 
       - name: Diagnóstico (solo lectura) si la web no responde
         if: env.need_diag == '1'

@@ -7,14 +7,14 @@ export const LEVEL_NAMES = ['Perroflauta', 'Okupa', 'Anticapitalista', 'Anarquis
   'Patriota', 'Españolista', 'Derechista', 'Carlista', 'Anticomunista', 'Soberanista', 'Tradicionalista', 'Nacional-conservador', 'Voxista', 'Imperialista español',
   'Ultrapatriota', 'Ultraderechista', 'Reaccionario', 'Nacionalista radical', 'Falangista', 'Nacional-sindicalista', 'Nacionalcatólico', 'Legionario', 'Franquista', 'Caudillo Supremo'];
 export const MAX_LEVEL = LEVEL_NAMES.length;
-// XP total para llegar a cada nivel: XP_AT[L - 1]. Progresión pausada (v52): subir de nivel cuesta 450, 850, 1.150, 1.500... XP
-// hasta el 10; del nivel 10 en adelante, subir del k al k+1 cuesta 16·k^2,4 (redondeado a decenas). Llegar al 50: unos 2,7 millones de XP.
-// Un jugador nuevo: nivel 2 en un par de minutos, nivel 5 en torno a una hora de juego y nivel 10 en unas 6 horas (igual que fn_level_of_xp).
-export const XP_AT = [0, 450, 1300, 2450, 3950, 5850, 8200, 11050, 14400, 18250, 22270, 27320,
-  33550, 41090, 50100, 60740, 73160, 87520, 103990, 122750, 143960, 167810, 194470, 224140,
-  257000, 293240, 333060, 376650, 424220, 475970, 532100, 592830, 658370, 728930, 804730, 885990,
-  972940, 1065790, 1164780, 1270140, 1382100, 1500900, 1626770, 1759950, 1900690, 2049230, 2205810, 2370690,
-  2544110, 2726330];
+// XP total para llegar a cada nivel: XP_AT[L - 1]. Progresión lenta (v53): subir de nivel cuesta 600, 1.300, 1.700, 2.250... XP
+// hasta el 10; del nivel 10 en adelante, subir del k al k+1 cuesta 24·k^2,4 (redondeado a decenas). Llegar al 50: unos 4,1 millones de XP.
+// Un jugador nuevo: nivel 2 en un par de minutos, nivel 3 en unos 20, nivel 5 en unas 2 horas y nivel 10 en unas 9 horas (igual que fn_level_of_xp).
+export const XP_AT = [0, 600, 1900, 3600, 5850, 8700, 12200, 16450, 21450, 27200, 33230, 40810,
+  50150, 61470, 74990, 90940, 109570, 131110, 155820, 183950, 215770, 251540, 291540, 336040,
+  385330, 439690, 499410, 564800, 636150, 713770, 797970, 889060, 987360, 1093200, 1206900, 1328790,
+  1459210, 1598490, 1746980, 1905020, 2072960, 2251150, 2439950, 2639720, 2850820, 3073620, 3308490, 3555800,
+  3815930, 4089260];
 export const XP = { thrown: 10, hit: 5, fall: 20 };
 export const xpOf = s => XP.thrown * (s.tomatoesThrown || 0) + XP.hit * (s.hits || 0) + XP.fall * (s.falls || 0);
 export function levelOfXp(xp) { let L = 1; while (L < MAX_LEVEL && xp >= XP_AT[L]) L++; return L; }

@@ -198,7 +198,14 @@ async function spin(src) {
   const go = () => SOURCES[src].go(levelTest.rng);
   const req = go().catch(async e => {
     if (src !== 'level' || !reload || !/No tienes tiradas/.test(e.message)) throw e;
-    await reload(); if (!pending()) throw new Error('Esta tirada ya estaba girada'); return go();
+    await reload(); if (!pending()) throw new Error('Esta tirada ya estaba girada');
+    return go().catch(async e2 => {
+      // el servidor y el juego no cuentan igual los niveles: este móvil tiene una versión vieja del juego guardada
+      if (!/No tienes tiradas/.test(e2.message)) throw e2;
+      ui.showToast('🔄 Actualizando el juego a la última versión…', 4000);
+      const { forceUpdate } = await import('./update.js'); if (await forceUpdate()) await new Promise(() => {});
+      throw e2;
+    });
   }).then(r => { result = r; }, e => { error = e; });
   const fast = levelTest.fast, MAXV = leg ? 1100 : 900;   // grados por segundo
   let v = 0, t0 = performance.now(), last = t0, lastSeg = Math.floor(angle / SEG);

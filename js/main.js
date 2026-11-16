@@ -1,6 +1,7 @@
 // Punto de entrada: une estado, escena (canvas), interfaz, economía y cuenta.
 import './nozoom.js';
 import { applyDarkFix, maybeWarnDark } from './darkfix.js';
+import { checkVersion } from './update.js';
 applyDarkFix();   // Samsung Internet en modo oscuro: contornos de las letras que el navegador no puede aclarar   // iPhone: sin zoom ni movimientos al pulsar rápido
 import { CONFIG } from './config.js';
 import { state, load, onChange, applyServer, snapshot, hasProgress, resetProgress, falconActive } from './state.js';
@@ -53,6 +54,9 @@ const start = () => {
   window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { afterThrow(); pushNow(); if (r?.[0]?.fall) maybeOffer(); offerInstall(levelOf(state.stats)); } });
   initInstall(ui, isBusy, e => fail(e)); if (!ui.gated()) installReward();
   maybeWarnDark();   // Samsung Internet en modo oscuro: cómo verlo con sus colores
+  // ¿hay una versión nueva publicada? (también al volver a la app tras un rato): se actualiza sola
+  checkVersion(); let lastCheck = Date.now();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - lastCheck > 300e3) { lastCheck = Date.now(); checkVersion(); } });
   initLevels(ui, isBusy, e => fail(e), async () => { if (!sb.auth.user) return; await pushNow(); const row = await sb.getProfile(); state.updatedAt = null; applyServer(row); ui.hud(); });
   initGift(ui, e => fail(e)); if (!ui.gated()) { restoreGift(); maybeTour(); checkPending(); }
   initPayments(ui, e => fail(e), async () => { const row = await sb.getProfile(); state.updatedAt = null; applyServer(row); ui.hud(); }, pack => { if (pack === 'ruleta') openWheelFrom('legend'); });

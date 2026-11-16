@@ -2,7 +2,7 @@
 // - Código y páginas: primero la red (siempre la última versión publicada); sin conexión, lo último guardado.
 // - Imágenes y fuentes: lo guardado al momento y se actualiza por detrás.
 // - Supabase, Google, anuncios, pagos y la música: no pasan por aquí (van directos).
-const CACHE = 'aap-v6';
+const CACHE = 'aap-v53';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil((async () => {
   for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k);
@@ -19,7 +19,8 @@ self.addEventListener('fetch', e => {
     }));
     return;
   }
-  e.respondWith(fetch(r).then(res => {
+  // código y páginas: siempre se pregunta al servidor si hay algo nuevo (nunca se usa una copia vieja si hay conexión)
+  e.respondWith((r.mode === 'navigate' ? fetch(r) : fetch(r, { cache: 'no-cache' })).then(res => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(r, copy)); }
     return res;
   }).catch(async () => (await caches.match(r)) || (r.mode === 'navigate' ? caches.match('./') : Response.error())));

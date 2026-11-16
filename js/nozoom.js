@@ -1,7 +1,7 @@
 // iPhone/iPad: al pulsar muy rápido, Safari hacía zoom (doble toque), movía la página o seleccionaba texto.
 // Aquí se bloquea todo eso. Solo se puede desplazar dentro de las ventanas con lista (.sheet-body).
 const opt = { passive: false };
-const SCROLL = '.sheet-body';
+const SCROLL = '.sheet-body, .chest-rewards';
 const TAPPABLE = 'button:not(#btn-click), a, input, label, select, textarea';   // botones normales: su toque sigue funcionando
 
 // zoom con dos dedos (gestos propios de Safari)

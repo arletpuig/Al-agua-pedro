@@ -91,7 +91,6 @@ async function buyChest(kind, n = 1) {
   if (opening || isBusy()) return; opening = true;
   const got = [];
   try {
-    if (n > 1) ui.showToast(`📦 Abriendo ${n} cofres…`, 1800);
     for (let i = 0; i < n; i++) got.push(await backend.openChest(kind));
   } catch (e) { fail(e); }
   if (got.length) {

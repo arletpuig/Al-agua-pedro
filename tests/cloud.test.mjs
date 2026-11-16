@@ -322,25 +322,25 @@ console.log('O. La Armería en el servidor');
   // por debajo del nivel 10, el servidor no vende
   psql(`update public.profiles set tomatoes_thrown = 10, hits = 0, falls = 0 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
-  check('por debajo del nivel 10 el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /nivel 10/.test(e.message))));
+  check('por debajo del nivel 10 el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /nivel 10/.test(e.message))));
   psql(`update public.profiles set tomatoes_thrown = 3000, hits = 0, falls = 0, wheel_level = greatest(wheel_level, public.fn_player_level(3000, 0, 0)), chest_pesetas = chest_pesetas + 100000 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
   before = db(email);
-  const r1 = await page.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => 'ok', e => e.message));
+  const r1 = await page.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => 'ok', e => e.message));
   row = db(email); s = await S(page);
-  check('comprar en el servidor: cobra 60.000 y guarda el objeto', r1 === 'ok' && row.pesetas_spent === before.pesetas_spent + 60000 && row.armory.includes('slipper') && s.pesetas === row.pesetas
+  check('comprar en el servidor: cobra 40.000 y guarda el objeto', r1 === 'ok' && row.pesetas_spent === before.pesetas_spent + 40000 && row.armory.includes('slipper') && s.pesetas === row.pesetas
     && await page.evaluate(() => AAP.state.armory.includes('slipper')), JSON.stringify({ r1, a: row.armory }));
-  check('no se puede comprar dos veces (ni cobrar dos veces)', await page.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /Ya tienes/.test(e.message))) && db(email).pesetas_spent === row.pesetas_spent);
-  check('sin pesetas suficientes, el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('stamp', 1000000).then(() => false, e => /pesetas suficientes/.test(e.message))) && !db(email).armory.includes('stamp'));
+  check('no se puede comprar dos veces (ni cobrar dos veces)', await page.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /Ya tienes/.test(e.message))) && db(email).pesetas_spent === row.pesetas_spent);
+  check('sin pesetas suficientes, el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('stamp', 650000).then(() => false, e => /pesetas suficientes/.test(e.message))) && !db(email).armory.includes('stamp'));
   check('el martillo no se vende (es regalo) y un objeto inventado tampoco', await page.evaluate(() => Promise.all(['hammer', 'misil'].map(id => AAP.backend.buyArmory(id, 1).then(() => false, e => /no se vende/.test(e.message))))).then(r => r.every(Boolean)));
   check('un jugador no puede darse objetos a sí mismo', (() => { try { psql(`update public.profiles set armory = '["stamp"]'`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
   // dos compras a la vez: solo se cobra una
   psql(`update public.profiles set chest_pesetas = chest_pesetas + 125000 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
   before = db(email);
-  const twice = await page.evaluate(() => Promise.allSettled([AAP.backend.buyArmory('goose', 125000), AAP.backend.buyArmory('goose', 125000)]).then(r => r.map(x => x.status).join()));
+  const twice = await page.evaluate(() => Promise.allSettled([AAP.backend.buyArmory('goose', 80000), AAP.backend.buyArmory('goose', 80000)]).then(r => r.map(x => x.status).join()));
   row = db(email);
-  check('dos compras seguidas del mismo objeto: se cobra una sola vez', row.pesetas_spent === before.pesetas_spent + 125000 && row.armory.filter(x => x === 'goose').length === 1, twice);
+  check('dos compras seguidas del mismo objeto: se cobra una sola vez', row.pesetas_spent === before.pesetas_spent + 80000 && row.armory.filter(x => x === 'goose').length === 1, twice);
 }
 
 console.log('F. Ranking');

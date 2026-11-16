@@ -427,12 +427,12 @@ console.log('28. iPhone: sin zoom ni movimientos al pulsar rápido');
 console.log('29. Niveles de jugador y ruleta');
 {
   const lv = await page.evaluate(async () => { const L = await import('./js/levels.js'); return { n: L.LEVEL_NAMES.length, first: L.LEVEL_NAMES[0], last: L.LEVEL_NAMES[49], l16: L.LEVEL_NAMES[15],
-    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round(24 * Math.pow(i, 2.4) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,600,1900,3600,5850,8700,12200,16450,21450,27200',
-    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 599, 600, 1899, 1900, 4089259, 4089260, 1e9].map(L.levelOfXp), top: L.levelOfXp(610220) }; });
+    mono: L.XP_AT.every((v, i) => i < 2 || v - L.XP_AT[i - 1] > L.XP_AT[i - 1] - L.XP_AT[i - 2]), formula: L.XP_AT.every((v, i) => i < 10 || v - L.XP_AT[i - 1] === Math.round(5750 * Math.pow(i / 9, 1.7) / 10) * 10) && L.XP_AT.slice(0, 10).join() === '0,600,1900,3600,5850,8700,12200,16450,21450,27200',
+    w: L.WHEEL_TOTAL, xp: L.xpOf({ tomatoesThrown: 3, hits: 2, falls: 1 }), lv: [0, 599, 600, 1899, 1900, 1917089, 1917090, 1e9].map(L.levelOfXp), top: L.levelOfXp(610220) }; });
   check('50 niveles: de Perroflauta a Caudillo Supremo', lv.n === 50 && lv.first === 'Perroflauta' && lv.last === 'Caudillo Supremo' && lv.l16 === 'Sanchista');
   check('experiencia: 10 por tomate, 5 por impacto, 20 por caída; cada nivel cuesta más (progresión pausada)', lv.xp === 30 + 10 + 20 && lv.mono && lv.formula);
-  check('límites de nivel exactos y tope en 50 (llegar al 50 cuesta unos 4,1 millones de XP)', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
-  check('un jugador con 610.000 XP queda en el nivel 28 (antes, 32)', lv.top === 28, String(lv.top));
+  check('límites de nivel exactos y tope en 50 (llegar al 50 cuesta unos 1,9 millones de XP)', lv.lv.join() === '1,1,2,2,3,49,50,50', lv.lv.join());
+  check('un jugador con 610.000 XP queda en el nivel 32', lv.top === 32, String(lv.top));
   check('la ruleta suma 100 (probabilidades en %)', lv.w === 100);
   const c7 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p7 = await c7.newPage(); const e7 = watchErrors(p7); await mockTime(p7);
   await open(p7, undefined, { levels: true });
@@ -775,7 +775,7 @@ console.log('35. La Armería');
   await pa.click('#armory-btn'); await pa.waitForTimeout(200);
   check('jugador nuevo: La Armería cerrada (candado, «NV 10») y aviso de cuándo se abre', lock0.locked && lock0.tag === 'NV 10' && await vis('#armory-tease') && /nivel 10/.test(await pa.textContent('#armory-tease'))
     && !(await pa.evaluate(() => document.querySelector('#panel-armory').classList.contains('open'))), JSON.stringify(lock0));
-  check('sin nivel 10 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /nivel 10/.test(e.message))));
+  check('sin nivel 10 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /nivel 10/.test(e.message))));
   const btn = await pa.evaluate(() => { const r = document.querySelector('#armory-btn').getBoundingClientRect(); return { x: r.x, w: r.width, top: r.top }; });
   check('el botón está a un lado (fuera del menú de abajo) y no tapa el juego', btn.x < 20 && btn.w < 80 && btn.top > 150, JSON.stringify(btn));
   // nivel 10 con el sistema de niveles de verdad: se abre sola
@@ -783,12 +783,24 @@ console.log('35. La Armería');
   await pa.waitForTimeout(300);
   check('al llegar al nivel 10 se desbloquea sola', await pa.evaluate(() => !document.querySelector('#armory-btn').classList.contains('locked') && (AAP.state.stats.tomatoesThrown * 10 + AAP.state.stats.hits * 5) >= 27200));
   await pa.click('#armory-btn'); await pa.waitForTimeout(400);
+  const intro = await pa.evaluate(() => { const e = document.querySelector('#arm-intro'); return !e.classList.contains('hidden') && /Bienvenido a La Armería/.test(e.textContent) && /para siempre/.test(e.textContent); });
+  await pa.click('#arm-intro-ok', { force: true }); await pa.waitForTimeout(150);
+  check('la primera vez explica qué es La Armería', intro && await pa.evaluate(() => document.querySelector('#arm-intro').classList.contains('hidden')));
   const shop = await pa.evaluate(() => ({ open: document.querySelector('#panel-armory').classList.contains('open'), seller: document.querySelector('.arm-seller').naturalWidth, cards: [...document.querySelectorAll('.arm-card')].map(c => c.dataset.id),
     wide: document.querySelector('.arm-card.wide')?.dataset.id, cols: getComputedStyle(document.querySelector('#arm-grid')).gridTemplateColumns.split(' ').length, prices: [...document.querySelectorAll('.arm-price')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
-    poor: !document.querySelector('[data-buy="slipper"]') && /Te faltan/.test(document.querySelector('[data-id="slipper"] .arm-short')?.textContent) }));
+    poor: !document.querySelector('[data-buy="slipper"]') && /Te faltan/.test(document.querySelector('[data-id="slipper"] [data-dream]')?.textContent) }));
   check('la tienda: Abascal tras el mostrador y 7 objetos (3 + 3 + el sello a lo ancho)', shop.open && shop.seller > 0 && shop.cards.join() === 'hammer,slipper,goose,bull,vacuum,press,stamp' && shop.wide === 'stamp' && shop.cols === 3, JSON.stringify(shop));
-  check('precios: gratis, 60.000, 125.000, 250.000, 400.000, 650.000 y 1.000.000', shop.prices.join('|') === 'GRATIS al instalar la app|60.000|125.000|250.000|400.000|650.000|1.000.000', shop.prices.join('|'));
+  check('precios: gratis, 40.000, 80.000, 150.000, 250.000, 400.000 y 650.000', shop.prices.join('|') === 'GRATIS al instalar la app|40.000|80.000|150.000|250.000|400.000|650.000', shop.prices.join('|'));
   check('sin pesetas suficientes no se puede comprar', shop.poor);
+  // sin pesetas: al tocarlo, bocadillo de sueño con la animación en pequeño (sin sonido)
+  const snd0 = await pa.evaluate(() => import('./js/audio.js').then(m => m.isEnabled()));
+  await pa.click('[data-dream="bull"]', { force: true }); await pa.waitForTimeout(1600);
+  const dr = await pa.evaluate(() => { const cv = document.querySelector('#dream-cv'), d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 0; i < d.length; i += 400) if (d[i] + d[i + 1] + d[i + 2] > 30) n++;
+    return { open: !document.querySelector('#arm-dream').classList.contains('hidden'), txt: document.querySelector('#dream-txt').textContent, drawn: n > 50 }; });
+  check('no te llega: «¡Imagínatelo!» con la animación en un bocadillo de sueño', dr.open && dr.drawn && /Te faltan/.test(dr.txt) && /soñar es gratis/.test(dr.txt), JSON.stringify(dr));
+  await pa.screenshot({ path: 'tests/out/35-sueno.png' });
+  await pa.click('#arm-dream', { force: true }); await pa.waitForTimeout(200);
+  check('al tocar, se despierta y el sonido vuelve como estaba', await pa.evaluate(() => document.querySelector('#arm-dream').classList.contains('hidden')) && await pa.evaluate(() => import('./js/audio.js').then(m => m.isEnabled())) === snd0);
   await pa.screenshot({ path: 'tests/out/35-armeria.png' });
   await pa.evaluate(async () => { AAP.state.stats.chestPesetas += 200000; (await import('./js/state.js')).changed(false); }); await pa.waitForTimeout(200);
   const p0 = (await S(pa)).pesetas;
@@ -798,8 +810,8 @@ console.log('35. La Armería');
   await pa.click('[data-buy="slipper"]', { force: true }); await pa.waitForTimeout(400);
   const after = await pa.evaluate(() => ({ owned: AAP.state.armory.filter(x => x === 'slipper').length, own: document.querySelector('[data-id="slipper"] .arm-tick')?.textContent, btn: !!document.querySelector('[data-buy="slipper"]') }));
   const p1 = (await S(pa)).pesetas;
-  check('comprar: descuenta 60.000 pesetas y va a la mochila (una vez)', after.owned === 1 && p0 - p1 === 60000 && /TUYO/.test(after.own) && !after.btn, JSON.stringify({ after, p0, p1 }));
-  check('no se puede comprar dos veces', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 60000).then(() => false, e => /Ya tienes/.test(e.message))) && (await S(pa)).pesetas === p1);
+  check('comprar: descuenta 40.000 pesetas y es tuyo (una vez)', after.owned === 1 && p0 - p1 === 40000 && /TUYO/.test(after.own) && !after.btn, JSON.stringify({ after, p0, p1 }));
+  check('no se puede comprar dos veces', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /Ya tienes/.test(e.message))) && (await S(pa)).pesetas === p1);
   // lo comprado se usa desde su tarjeta («¡USAR!»): se cierra la tienda y empieza la animación
   const uses = await pa.evaluate(() => [...document.querySelectorAll('#arm-grid [data-use]')].map(b => b.dataset.use).join());
   check('solo lo que tienes tiene el botón ¡USAR!', uses === 'slipper', uses);

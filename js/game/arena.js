@@ -20,7 +20,7 @@ export const pick = arr => { let x; do { x = arr[Math.floor(Math.random() * arr.
 const PED = { s: 0.3, x: 430 };                         // escala de Pedro y posición en el tablón
 const ROI = { x0: 20, x1: 1080, y0: 215, y1: 1770 };   // parte del escenario que siempre se ve (con sitio para los bocadillos)
 const AIM = { y: TARGET.y };
-const EASE = {
+export const EASE = {
   l: x => x, i: x => x * x, o: x => 1 - (1 - x) ** 3, io: x => (x < 0.5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2),
   b: x => { const c = 1.7; return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2; },
   bounce: x => { const n = 7.5625, d = 2.75; if (x < 1 / d) return n * x * x; if (x < 2 / d) return n * (x -= 1.5 / d) * x + 0.75; if (x < 2.5 / d) return n * (x -= 2.25 / d) * x + 0.9375; return n * (x -= 2.625 / d) * x + 0.984375; },

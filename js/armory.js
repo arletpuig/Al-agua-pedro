@@ -5,24 +5,24 @@ import { backend } from './backend.js';
 import { levelOf } from './levels.js';
 import { SFX } from './audio.js';
 import { drawIcon } from './game/weapons.js';
+import { dream } from './game/preview.js';
 
 export const UNLOCK_LEVEL = 10;
 // c1/c2: colores de la tarjeta de cada objeto (cada uno con su estilo de «exclusivo»)
 export const ARMORY = [
   { id: 'hammer', name: 'Martillo de goma', price: 0, desc: '¡BONK! Un golpe de juguete', tier: 'REGALO', c1: '#36f0b0', c2: '#0a7a5a' },
-  { id: 'slipper', name: 'Chancla boomerang', price: 60000, desc: 'Sale disparada, le da y vuelve', tier: 'RARO', c1: '#4ab4ff', c2: '#1a3fa8' },
-  { id: 'goose', name: 'Oca furiosa', price: 125000, desc: 'Lo persigue a picotazos', tier: 'ÉPICO', c1: '#c07bff', c2: '#5a1ab8' },
-  { id: 'bull', name: 'Toro de lidia', price: 250000, desc: 'Embestida con coro de ¡OLÉ!', tier: 'LEGENDARIO', c1: '#ff9a1a', c2: '#b3101a' },
-  { id: 'vacuum', name: 'Aspiradora monstruosa', price: 400000, desc: 'Lo succiona y lo escupe', tier: 'LEGENDARIO', c1: '#ff4fa3', c2: '#8a0f5a' },
-  { id: 'press', name: 'Prensa hidráulica', price: 650000, desc: 'Lo deja hecho un acordeón', tier: 'MÍTICO', c1: '#6ff3ff', c2: '#145a8a' },
-  { id: 'stamp', name: 'Sello «CORRUPTO»', price: 1000000, desc: 'Lo marca de rojo de la cabeza a los pies', tier: 'DEFINITIVO', c1: '#ffd23f', c2: '#c4161c' },
+  { id: 'slipper', name: 'Chancla boomerang', price: 40000, desc: 'Sale disparada, le da y vuelve', tier: 'RARO', c1: '#4ab4ff', c2: '#1a3fa8' },
+  { id: 'goose', name: 'Oca furiosa', price: 80000, desc: 'Lo persigue a picotazos', tier: 'ÉPICO', c1: '#c07bff', c2: '#5a1ab8' },
+  { id: 'bull', name: 'Toro de lidia', price: 150000, desc: 'Embestida con coro de ¡OLÉ!', tier: 'LEGENDARIO', c1: '#ff9a1a', c2: '#b3101a' },
+  { id: 'vacuum', name: 'Aspiradora monstruosa', price: 250000, desc: 'Lo succiona y lo escupe', tier: 'LEGENDARIO', c1: '#ff4fa3', c2: '#8a0f5a' },
+  { id: 'press', name: 'Prensa hidráulica', price: 400000, desc: 'Lo deja hecho un acordeón', tier: 'MÍTICO', c1: '#6ff3ff', c2: '#145a8a' },
+  { id: 'stamp', name: 'Sello «CORRUPTO»', price: 650000, desc: 'Lo marca de rojo de la cabeza a los pies', tier: 'DEFINITIVO', c1: '#ffd23f', c2: '#c4161c' },
 ];
-const SELLER = ['¡Pasen y vean, que me lo quitan de las manos!', '¡Género de primera, recién traído!', '¡Hoy la chancla sale volando!', '¡El toro no se devuelve!', '¡Aquí se viene a disfrutar!'];
 const $ = s => document.querySelector(s);
 const fmt = n => n.toLocaleString('es-ES');
-const SEEN_KEY = 'alaguapedro.armorySeen';
-export const armoryTest = { off: false };
-let ui, scene, isBusy, fail, openInstall, wasUnlocked = null, confirmId = null, confirmTimer = 0, buying = false, shopKey = '';
+const SEEN_KEY = 'alaguapedro.armorySeen', INTRO_KEY = 'alaguapedro.armoryIntro';
+export const armoryTest = { off: false, noIntro: false };
+let ui, scene, isBusy, fail, openInstall, wasUnlocked = null, confirmId = null, confirmTimer = 0, buying = false, shopKey = '', stopDream = null;
 
 export const unlocked = () => levelOf(state.stats) >= UNLOCK_LEVEL;
 const owned = id => state.armory.includes(id);
@@ -33,6 +33,10 @@ export function initArmory(uiRef, sceneRef, busyFn, failFn, installFn) {
   $('#armory-btn').addEventListener('click', () => { SFX.ui(); if (unlocked() || state.armory.length) openArmory(); else tease(); });
   document.addEventListener('pointerdown', e => { if (!e.target.closest?.('#armory-tease, #armory-btn')) $('#armory-tease').classList.add('hidden'); });
   $('#arm-grid').addEventListener('click', onCard);
+  $('#panel-armory .sheet').append($('#arm-intro'), $('#arm-dream'));   // fuera de la parte que se desliza: siempre a la vista
+  $('#arm-dream').addEventListener('click', wake);
+  $('#arm-intro-ok').addEventListener('click', () => { SFX.ui(); $('#arm-intro').classList.add('hidden'); try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {} });
+  new MutationObserver(() => { if (!$('#panel-armory').classList.contains('open')) wake(); }).observe($('#panel-armory'), { attributes: true, attributeFilter: ['class'] });
   buildBooth();
   onChange(refresh); refresh();
 }
@@ -41,6 +45,14 @@ function buildBooth() {
   const n = 13, W = 400, flags = Array.from({ length: n }, (_, i) => { const x = 10 + i * (W - 20) / (n - 1), y = 8 + Math.sin(i / (n - 1) * Math.PI) * 18;
     return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${((i % 2) * 2 - 1) * 3})"><clipPath id="pf${i}"><path d="M-12 0 L12 0 L0 30Z"/></clipPath><g clip-path="url(#pf${i})"><rect x="-12" y="0" width="24" height="9" fill="#c60b1e"/><rect x="-12" y="9" width="24" height="12" fill="#ffc400"/><rect x="-12" y="21" width="24" height="9" fill="#c60b1e"/></g><path d="M-12 0 L12 0 L0 30Z" fill="none" stroke="#0a0b18" stroke-width="2.2" stroke-linejoin="round"/></g>`; }).join('');
   $('#arm-bunting').innerHTML = `<path d="M0 6 Q200 44 400 6" fill="none" stroke="#0a0b18" stroke-width="3"/>${flags}`;
+  // estanterías del puesto con los objetos expuestos
+  const shelf = ids => ids.map(id => `<div class="arm-slot"><canvas width="120" height="120" data-icon="${id}"></canvas></div>`).join('');
+  $('#arm-shelf-l').innerHTML = shelf(['hammer', 'slipper', 'goose']); $('#arm-shelf-r').innerHTML = shelf(['bull', 'vacuum', 'press']);
+  document.querySelectorAll('.arm-shelf canvas[data-icon]').forEach(cv => drawIcon(cv, cv.dataset.icon));
+  // nube del bocadillo de sueño (contorno de bultos)
+  const nb = 22, pts = Array.from({ length: nb }, (_, i) => { const a = i / nb * Math.PI * 2; return [200 + Math.cos(a) * 186, 150 + Math.sin(a) * 132]; });
+  const d = pts.map((p, i) => { const q = pts[(i + 1) % nb], m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], o = [(m[0] - 200) * 0.13, (m[1] - 150) * 0.15]; return `${i ? '' : `M${p[0].toFixed(1)} ${p[1].toFixed(1)}`} Q${(m[0] + o[0]).toFixed(1)} ${(m[1] + o[1]).toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`; }).join(' ') + 'Z';
+  $('#dream-cloud').innerHTML = `<path d="${d}" fill="#fff" stroke="#0a0b18" stroke-width="6" stroke-linejoin="round"/>`;
 }
 
 // botón de la pantalla de juego (y aviso al desbloquearla)
@@ -64,16 +76,25 @@ function tease() {
 // ---------- el puesto
 function openArmory() {
   try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
-  $('#arm-bubble').textContent = unlocked() ? SELLER[Math.floor(Math.random() * SELLER.length)] : `¡Vuelve en el nivel ${UNLOCK_LEVEL} y te vendo de todo!`;
+  let intro = true; try { intro = !localStorage.getItem(INTRO_KEY); } catch (e) {}
+  $('#arm-intro').classList.toggle('hidden', !intro || armoryTest.noIntro);       // la primera vez: qué es La Armería
   confirmId = null; renderShop(); ui.openPanel('#panel-armory'); refresh();
 }
+// «¡Imagínatelo!»: lo que no puedes comprar todavía se ve en un bocadillo de sueño, con su animación en pequeño
+function showDream(id) {
+  const it = ARMORY.find(x => x.id === id); wake();
+  $('#dream-txt').innerHTML = !unlocked() ? `<b>${it.name}</b><br>Se desbloquea en el nivel ${UNLOCK_LEVEL}… ¡pero soñar es gratis!` : `<b>${it.name}</b><br>Te faltan ${fmt(it.price - state.pesetas)} pesetas… ¡pero soñar es gratis!`;
+  $('#arm-dream').classList.remove('hidden'); SFX.ui();
+  stopDream = dream($('#dream-cv'), scene, id);
+}
+function wake() { stopDream?.(); stopDream = null; $('#arm-dream')?.classList.add('hidden'); }
 function cardHTML(it, i) {
   const have = owned(it.id), gift = !it.price, short = it.price - state.pesetas;
   let btn;
   if (have) btn = `<button class="arm-btn use" data-use="${it.id}">¡USAR!</button>`;
   else if (gift) btn = `<button class="arm-btn gift" data-gift="1">🎁 INSTALA LA APP</button>`;
-  else if (!unlocked()) btn = `<span class="arm-short">🔒 Nivel ${UNLOCK_LEVEL}</span>`;
-  else if (short > 0) btn = `<span class="arm-short">Te faltan ${fmt(short)}</span>`;
+  else if (!unlocked()) btn = `<button class="arm-btn dream" data-dream="${it.id}">🔒 Nivel ${UNLOCK_LEVEL} · 💭 Imagínatelo</button>`;
+  else if (short > 0) btn = `<button class="arm-btn dream" data-dream="${it.id}">Te faltan ${fmt(short)} · 💭 Imagínatelo</button>`;
   else btn = `<button class="arm-btn buy${confirmId === it.id ? ' sure' : ''}" data-buy="${it.id}">${confirmId === it.id ? '¿SEGURO? ¡COMPRAR!' : 'COMPRAR'}</button>`;
   const price = have ? '' : gift ? '<div class="arm-price free">GRATIS <small>al instalar la app</small></div>' : `<div class="arm-price"><svg class="ri"><use href="#ic-coin"/></svg>${fmt(it.price)}</div>`;
   return `<div class="arm-card${have ? ' have' : ''}${it.id === 'stamp' ? ' wide' : ''}" data-id="${it.id}" style="--c1:${it.c1};--c2:${it.c2};--d:${(i * 0.6).toFixed(1)}s">
@@ -88,9 +109,10 @@ function renderShop() {
   $('#arm-grid').querySelectorAll('canvas[data-icon]').forEach(cv => drawIcon(cv, cv.dataset.icon));
 }
 async function onCard(e) {
-  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const b = e.target.closest('button') || e.target.closest('.arm-card')?.querySelector('[data-dream]'); if (!b || b.disabled) return;   // la tarjeta entera abre el sueño
   if (b.dataset.gift) { ui.closeAll(); openInstall?.(); return; }
   if (b.dataset.use) { ui.closeAll(); setTimeout(() => use(b.dataset.use), 250); return; }
+  if (b.dataset.dream) { showDream(b.dataset.dream); return; }
   const id = b.dataset.buy; if (!id || buying) return;
   // dos toques para comprar: así no se compra nada sin querer
   if (confirmId !== id) { confirmId = id; SFX.ui(); clearTimeout(confirmTimer); confirmTimer = setTimeout(() => { confirmId = null; renderShop(); }, 5000); renderShop(); return; }
@@ -99,7 +121,6 @@ async function onCard(e) {
   try {
     await backend.buyArmory(id, it.price);
     SFX.prize?.(true); ui.showToast(`🛒 ¡${it.name} es tuyo! Pulsa ¡USAR! cuando quieras`, 3200); ui.hud();
-    $('#arm-bubble').textContent = '¡Gran elección! Úsalo con cariño.';
   } catch (err) { fail?.(err); }
   buying = false; renderShop(); refresh();
   $(`.arm-card[data-id="${id}"]`)?.classList.add('just');

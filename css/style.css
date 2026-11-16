@@ -1294,15 +1294,13 @@ svg { display: block; }
 .arm-awning { position: absolute; left: 0; right: 0; top: 0; height: 52px; z-index: 2; background: repeating-linear-gradient(90deg, #e3262c 0 30px, #fff4d6 30px 60px);
   -webkit-mask: radial-gradient(16px at 15px 52px, #0000 96%, #000) 0 0 / 30px 100%; mask: radial-gradient(16px at 15px 52px, #0000 96%, #000) 0 0 / 30px 100%; filter: drop-shadow(0 6px 0 #0007); }
 .arm-awning::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#fff5, #0000 40%, #0003); }
-.arm-bunting { position: absolute; left: 18px; right: 18px; top: 40px; z-index: 3; width: calc(100% - 36px); height: 54px; filter: drop-shadow(0 3px 2px #0006); }
-.arm-seller { position: absolute; left: 50%; bottom: 44px; z-index: 1; width: 206px; height: auto; transform: translateX(-60%); filter: drop-shadow(0 0 18px #0008); }
+.arm-bunting { position: absolute; left: 18px; right: 18px; top: 38px; z-index: 3; width: calc(100% - 36px); height: 34px; filter: drop-shadow(0 3px 2px #0006); }
+.arm-seller { position: absolute; left: 50%; bottom: 34px; z-index: 1; width: 150px; height: auto; transform: translateX(-50%); filter: drop-shadow(0 0 18px #0008); }
 .arm-counter { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 2; border-top: 4px solid var(--ink); display: grid; place-items: center;
   background: linear-gradient(#ffd23f 0 8px, #8a4f1e 8px 11px, #0000 11px), repeating-linear-gradient(90deg, #c4161c 0 26px, #ffc400 26px 52px); box-shadow: inset 0 -10px 18px #0007; }
 .arm-bulbs { position: absolute; left: 0; right: 0; top: 14px; height: 10px; background: radial-gradient(circle, #fffbe0 0 3px, #ffd23f 4px, #0000 6px) 0 0 / 22px 10px; animation: bulbs 1.6s steps(2) infinite; }
 @keyframes bulbs { 50% { filter: brightness(1.5) drop-shadow(0 0 4px #ffd23f); } }
 .arm-counter span { position: relative; margin-top: 12px; padding: 3px 14px; border-radius: 10px; border: 3px solid var(--ink); background: linear-gradient(#fff3b0, #ffd23f 55%, #e09a12); font: 13px 'Titan One'; color: #6a2a0e; box-shadow: 0 3px 0 #0008; }
-.arm-bubble { position: absolute; right: 22px; top: 96px; z-index: 3; max-width: 40%; padding: 7px 10px; border-radius: 14px; border: 3px solid var(--ink); background: #fff; font: 800 13px/1.2 'Baloo 2'; color: #1a1a2a; box-shadow: 0 4px 0 #0007; }
-.arm-bubble::after { content: ''; position: absolute; left: -12px; top: 18px; border: 8px solid transparent; border-right-color: var(--ink); }
 .arm-wallet { margin: 4px 0 0; text-align: center; font: 800 14px 'Baloo 2'; color: #e9d9ff; }
 .arm-wallet b { color: #ffd23f; font-family: 'Titan One'; }
 .arm-wallet .ri { display: inline-block; width: 18px; height: 18px; vertical-align: -4px; }
@@ -1349,3 +1347,34 @@ svg { display: block; }
 #panel-armory .sheet-body > * { flex: none; }
 #panel-armory .sheet > .title { display: none; }
 #panel-armory .sheet-body { padding-top: 14px; }
+
+/* v59: estanterías del puesto, explicación de la primera vez y bocadillo de sueño («¡Imagínatelo!») */
+.arm-shelf { position: absolute; top: 84px; bottom: 70px; z-index: 1; width: 25%; display: flex; flex-direction: column; justify-content: space-around; }
+.arm-shelf.l { left: 22px; } .arm-shelf.r { right: 22px; }
+.arm-slot { position: relative; height: 30%; display: grid; place-items: center; }
+.arm-slot::after { content: ''; position: absolute; left: -4px; right: -4px; bottom: 0; height: 8px; border: 2px solid var(--ink); border-radius: 3px; background: linear-gradient(#e7ad6a, #8a4f22); box-shadow: 0 4px 0 #0006; }
+.arm-slot canvas { width: 46px; height: 46px; margin-bottom: 4px; filter: drop-shadow(0 3px 2px #0008); }
+.arm-btn.dream { font: 800 11px/1.15 'Baloo 2'; -webkit-text-stroke: 0; color: #fff; background: linear-gradient(#5a4a8a, #2c2050); }
+.arm-card.wide .arm-btn.dream { padding: 7px 14px; }
+.arm-intro, .arm-dream { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: #0a0618cc; animation: fade .2s ease-out; }
+.arm-intro.hidden, .arm-dream.hidden { display: none; }
+.arm-intro-box { width: min(320px, 100%); padding: 18px 16px 16px; border-radius: 20px; border: 4px solid var(--ink); background: linear-gradient(#3a1250, #1a0a2a); box-shadow: 0 8px 0 #000a, 0 0 40px #c07bff55; text-align: center; }
+.arm-intro-box h3 { margin: 0 0 8px; font: 22px 'Titan One'; color: #ffd23f; paint-order: stroke fill; -webkit-text-stroke: 5px var(--ink); }
+.arm-intro-box ul { margin: 0 0 14px; padding: 0; list-style: none; display: grid; gap: 7px; text-align: left; font: 700 14px/1.3 'Baloo 2'; color: #fff; }
+.arm-intro-box li { padding: 7px 10px; border-radius: 12px; background: #ffffff12; border: 2px solid #ffffff1a; }
+.arm-intro-box li b { color: #ffe766; }
+.dream-box { position: relative; width: min(340px, 92%); aspect-ratio: 4 / 3.4; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14% 12% 10%; animation: dreampop .35s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes dreampop { from { transform: scale(.3); opacity: 0; } }
+.dream-bg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 8px 0 #0008) drop-shadow(0 0 30px #9cc0ff88); }
+.dream-box canvas { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 50% / 46%; -webkit-mask: radial-gradient(closest-side, #000 72%, #0000); mask: radial-gradient(closest-side, #000 72%, #0000); }
+.dream-box p { position: relative; margin: 4px 0 0; text-align: center; font: 700 12px/1.25 'Baloo 2'; color: #2a2050; }
+.dream-box p b { font: 15px 'Titan One'; color: #6a2ad0; }
+.dream-box small { position: relative; font: 700 10px 'Baloo 2'; color: #8a80a8; }
+.dream-dot { position: absolute; border-radius: 50%; border: 4px solid var(--ink); background: #fff; }
+.dream-dot.d1 { width: 34px; height: 30px; left: calc(50% + 70px); top: calc(50% + 150px); }
+.dream-dot.d2 { width: 22px; height: 20px; left: calc(50% + 100px); top: calc(50% + 190px); }
+.dream-dot.d3 { width: 14px; height: 13px; left: calc(50% + 120px); top: calc(50% + 220px); }
+/* cofres: si salen muchas cosas, se puede deslizar para verlas todas */
+.chest-rewards { max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none; padding: 4px 2px; }
+.chest-rewards::-webkit-scrollbar { display: none; }
+#panel-armory .arm-intro, #panel-armory .arm-dream { border-radius: 22px; }

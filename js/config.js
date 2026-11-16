@@ -28,7 +28,7 @@ export const CONFIG = {
   PAY_FUNCTION: 'rapid-handler',
   // Enlaces de pago de Stripe (https://buy.stripe.com/...), uno por pack. Si hay enlace, se usa en vez de «crear-pago».
   // En Stripe, cada enlace redirige al terminar a https://alaguapedro.es/?pago=ok&sesion={CHECKOUT_SESSION_ID}
-  PAY_LINKS: { calderilla: '', maletin: '', camara: '' },
+  PAY_LINKS: { calderilla: 'https://buy.stripe.com/7sY28s3qC08W1a72YIdQQ02', maletin: 'https://buy.stripe.com/14A6oIbX8bRE9GD7eYdQQ03', camara: 'https://buy.stripe.com/cNi3cw6CO08W9GD2YIdQQ04' },
   ADSENSE: { client: 'ca-pub-7829705078320776', slots: { profile: '', cards: '', shop: '' } },
   // Entrar con Google desde alaguapedro.es (botón oficial de Google): así Google muestra «alaguapedro.es» y no la dirección de Supabase.
   // Es el ID de cliente público de Google Cloud (no es secreto). Si no carga el botón de Google, se usa el acceso por Supabase de siempre.

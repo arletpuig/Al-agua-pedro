@@ -169,15 +169,13 @@ export class Arena {
     const t0 = this.now; this.plankWobble = () => Math.sin((this.now - t0) * 30) * shake.a;
     this.play('wobble', { keepPlace: false });
     await this.wait(0.9); this.plankWobble = null;
-    // siempre la peineta, con frase
-    this.play('peineta'); SFX.laugh();
-    this.say(pick(LINES.near), 3.0);
+    // siempre la peineta, sin bocadillo (taparía la animación)
+    this.hush(); this.play('peineta'); SFX.laugh();
     await this.wait(last ? 2.2 : 1.2);
   }
   async miss(last) {
     SFX.miss(); this.bigText('¡FALLO!', '#9fb0ff');
-    this.play('peineta'); SFX.laugh();                 // siempre la peineta
-    this.say(pick(LINES.miss), 2.8);
+    this.hush(); this.play('peineta'); SFX.laugh();    // siempre la peineta, sin bocadillo (taparía la animación)
     await this.wait(last ? 2.2 : 1.2);
   }
   async catchIt(res) {

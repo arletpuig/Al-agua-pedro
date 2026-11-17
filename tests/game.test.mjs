@@ -46,13 +46,19 @@ console.log('9. Fallos y cercano con ×1');
 await throwN(1); await page.waitForFunction(() => AAP.scene.aim); await page.click('#btn-click');   // el botón grande lanza
 check('pulsar el botón grande mientras apuntas lanza (no suma clics)', await page.evaluate(() => !AAP.scene.aim) && (await S(page)).totalClicks === 450);
 await idle(page);
-await throwN(1); await stopAt(page, 160, 195, 'R'); await page.waitForTimeout(900); await shot('03-fallo-derecha'); await idle(page); s = await S(page);
+await throwN(1); await stopAt(page, 160, 195, 'R'); await page.waitForTimeout(900); await shot('03-fallo-derecha');
+const peineta = await page.evaluate(() => ({ clip: AAP.scene.clipName, bubble: !!AAP.scene.bubble }));
+check('al fallar: peineta sin bocadillo (no tapa la animación)', peineta.clip === 'peineta' && !peineta.bubble, JSON.stringify(peineta));
+await idle(page); s = await S(page);
 check('fallo a la derecha: no cae, sin pesetas, tomate gastado', s.falls === 1 && s.pesetas === 11 && s.tomatoesThrown === 3);
 await throwN(1); await stopAt(page, 170, 280, 'L'); await page.waitForTimeout(1500); await shot('03b-fallo-izquierda-pedro-lo-coge');
 check('fallo a la izquierda: Pedro coge el tomate y se lo pone de nariz', await page.evaluate(() => AAP.scene.clipName === 'catchNose'));
 await idle(page); s = await S(page);
 check('el tomate cogido cuenta como fallo', s.falls === 1 && s.hits === 1 && s.tomatoesThrown === 4);
-await throwN(1); await stopAt(page, 80, 140); await page.waitForTimeout(600); await shot('04-cercano'); await idle(page); s = await S(page);
+await throwN(1); await stopAt(page, 80, 140); await page.waitForTimeout(600); await shot('04-cercano');
+await page.waitForFunction(() => AAP.scene.clipName === 'peineta', null, { timeout: 4000 }).catch(() => {});
+check('«¡CASI!»: peineta sin bocadillo', await page.evaluate(() => AAP.scene.clipName === 'peineta' && !AAP.scene.bubble));
+await idle(page); s = await S(page);
 check('cercano sin Apagón: cuenta como impacto pero no cae', s.hits === 2 && s.falls === 1 && s.perfects === 1);
 check('la mancha se queda en la diana', await page.evaluate(() => AAP.scene.splats.length > 0));
 

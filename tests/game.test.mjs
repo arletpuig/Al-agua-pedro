@@ -831,6 +831,11 @@ console.log('35. La Armería');
   const ham = await pa.evaluate(() => AAP.backend.claimInstall().then(r => r.item, e => 'err ' + e.message));
   check('martillo de goma: regalo al instalar la app', ham === 'hammer' && await pa.evaluate(() => AAP.state.armory.includes('hammer')));
   check('y solo una vez', await pa.evaluate(() => AAP.backend.claimInstall().then(() => false, e => /Ya has recogido/.test(e.message)) && AAP.state.armory.filter(x => x === 'hammer').length === 1));
+  // después de recoger el regalo se puede volver a instalar desde Ajustes (si quitaste la app)
+  const re = await pa.evaluate(async () => { const m = await import('./js/install.js'); m.refresh(); m.open(); const r = { row: !document.querySelector('#btn-install').classList.contains('hidden'), txt: document.querySelector('#btn-install small').textContent,
+    fab: document.querySelector('#install-fab').classList.contains('hidden'), gift: document.querySelector('#install-overlay .install-gift').classList.contains('hidden'), open: document.querySelector('#install-overlay').classList.contains('open') };
+    document.querySelector('#install-overlay').classList.remove('open'); return r; });
+  check('con el regalo ya recogido, en Ajustes se puede volver a instalar la app (sin regalo)', re.row && /Vuelve a instalarla/.test(re.txt) && re.fab && re.gift && re.open, JSON.stringify(re));
   // se guarda al cerrar y volver a abrir
   await pa.reload(); await pa.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
   check('el inventario se conserva al volver a abrir', await pa.evaluate(() => AAP.state.armory.slice().sort().join()) === 'hammer,slipper');

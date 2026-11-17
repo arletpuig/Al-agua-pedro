@@ -24,7 +24,12 @@ export function initInstall(uiRef, busyFn, failFn) {
   refresh();
 }
 // fila de Ajustes y botón de la pantalla de juego: solo si se puede instalar y no se ha recogido el regalo
-export function refresh() { const off = isStandalone() || !!state.installClaimed; $('#btn-install')?.classList.toggle('hidden', off); $('#install-fab')?.classList.toggle('hidden', off); }
+// Ajustes: siempre que no estés ya dentro de la app (para volver a instalarla si la quitas). El botón de la pantalla, solo con el regalo pendiente.
+export function refresh() {
+  const app = isStandalone(), claimed = !!state.installClaimed;
+  $('#btn-install')?.classList.toggle('hidden', app); $('#install-fab')?.classList.toggle('hidden', app || claimed);
+  const sm = $('#btn-install small'); if (sm) sm.textContent = claimed ? 'Vuelve a instalarla' : '¡Con regalo!';
+}
 
 const screenBusy = () => !!document.querySelector('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour') || isBusy?.() || ui.gated();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -39,6 +44,7 @@ export async function maybeOffer(level) {
 export function open() {
   const mode = deferred ? 'android' : isIOS() ? 'ios' : 'other';
   const ov = $('#install-overlay'); ov.dataset.mode = mode;
+  $('#install-overlay .install-gift')?.classList.toggle('hidden', !!state.installClaimed);   // el regalo ya se recogió: solo se instala
   $('#install-ios').classList.toggle('hidden', mode !== 'ios');
   $('#install-other').classList.toggle('hidden', mode !== 'other');
   $('#install-go span').textContent = mode === 'android' ? '¡INSTALAR!' : '¡ENTENDIDO!';

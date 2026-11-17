@@ -1420,3 +1420,4 @@ svg { display: block; }
 @keyframes winfloat { 50% { transform: translateY(-8px) rotate(3deg); } }
 @keyframes winin { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @keyframes winslam { from { opacity: 0; transform: scale(2.6); } to { opacity: 1; transform: none; } }
+.install-gift.hidden { display: none; }

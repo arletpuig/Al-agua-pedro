@@ -14,6 +14,7 @@ export const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navi
 export function initInstall(uiRef, busyFn, failFn) {
   ui = uiRef; isBusy = busyFn; fail = failFn;
   // Android (Chrome, Edge, Samsung...): el navegador avisa de que se puede instalar; se guarda para lanzarlo con nuestro botón
+  if (window.__aapInstall) deferred = window.__aapInstall;            // el aviso llegó antes de que arrancara el juego
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; refresh(); });
   addEventListener('appinstalled', () => { deferred = null; close(); SFX.upgrade(); ui.showToast('📲 ¡App instalada! Ábrela desde tu pantalla de inicio para recoger tu regalo', 4500); });
   $('#install-go').addEventListener('click', go);

@@ -707,6 +707,18 @@ console.log('32. App instalable (sin tiendas)');
   check('en Android: botón ¡INSTALAR! que abre el aviso del navegador', and === 'android|¡INSTALAR!' && await p9.evaluate(() => window.__prompted === true) && await p9.locator('#install-overlay.open').count() === 0, and);
   check('instalar: sin errores en consola', e9.filter(x => !/ERR_INTERNET_DISCONNECTED|Failed to load resource|net::ERR/.test(x)).length === 0, e9.join(' | '));
   await c9.close();
+  // Android: el aviso de Chrome llega antes de que arranque el juego (al terminar de leer la página): no se pierde
+  {
+    const ce = await browser.newContext({ ...devices['Pixel 7'], deviceScaleFactor: 1 }); const pe = await ce.newPage(); await mockTime(pe);
+    await pe.addInitScript(() => { document.addEventListener('readystatechange', () => { if (document.readyState !== 'interactive') return;
+      const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => { window.__prompted = true; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); dispatchEvent(e); }); });
+    await open(pe, undefined, { install: true });
+    await pe.evaluate(() => { AAP.giftTest.off = true; return import('./js/install.js').then(m => m.open()); }); await pe.waitForTimeout(200);
+    const early = await pe.evaluate(() => document.querySelector('#install-overlay').dataset.mode + '|' + document.querySelector('#install-go').textContent);
+    await pe.click('#install-go', { force: true }); await pe.waitForTimeout(300);
+    check('Android: aunque Chrome avise antes de que arranque el juego, sale ¡INSTALAR! y abre el aviso', early === 'android|¡INSTALAR!' && await pe.evaluate(() => window.__prompted === true), early);
+    await ce.close();
+  }
   // abierto desde la app instalada: el regalo, una sola vez
   const c10 = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const p10 = await c10.newPage(); await mockTime(p10);
   await p10.addInitScript(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => (/display-mode: standalone/.test(q) ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q)); });

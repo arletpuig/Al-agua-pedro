@@ -15,11 +15,15 @@ async function refresh() {
   const s = await req('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: session.refresh_token }, auth: false, retry: false });
   setSession(s);
 }
+export const netTest = { timeout: 15000 };
 async function req(path, { method = 'GET', body, auth: useAuth = true, keepalive = false, extra = {}, retry = true } = {}) {
   // la sesión dura una hora: se renueva sola antes de caducar o si el servidor responde 401
   if (useAuth && retry && session?.refresh_token && session.expires_at * 1000 < Date.now() + 30000) { try { await refresh(); } catch (e) {} }
   const h = headers(extra); if (!useAuth) delete h.Authorization;
-  const r = await fetch(URL + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive });
+  const ctl = keepalive ? null : new AbortController(), tm = ctl && setTimeout(() => ctl.abort(), netTest.timeout);
+  let r; try { r = await fetch(URL + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive, signal: ctl?.signal }); }
+  catch (e) { if (ctl?.signal.aborted) throw new Error('La conexión va muy lenta: inténtalo otra vez'); throw e; }
+  finally { clearTimeout(tm); }
   if (r.status === 401 && useAuth && retry && session?.refresh_token) { try { await refresh(); return req(path, { method, body, auth: useAuth, keepalive, extra, retry: false }); } catch (e) {} }
   const text = await r.text(); let data = null;
   try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }

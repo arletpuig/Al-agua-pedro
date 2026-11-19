@@ -457,11 +457,19 @@ console.log('29. Niveles de jugador y ruleta');
   check('subida de 2 niveles de golpe: celebración del nivel 3 «Anticapitalista» y 2 tiradas', up.num === '3' && up.name === 'Anticapitalista' && up.banner === '¡+2 NIVELES!' && up.cnt === '×2' && up.conf, JSON.stringify(up));
   await p7.screenshot({ path: 'tests/out/29-nivel.png' });
   // si se cierra con la ✕, la tirada no se pierde: tocar la barra la abre y tras el siguiente lanzamiento se vuelve a ofrecer
-  await p7.click('#lvlup-spin', { force: true }); await p7.waitForSelector('#wheel-overlay.open'); await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300);
+  // al subir de nivel, la ruleta sale sola tras la celebración (sin tener que tocar nada)
+  const tAuto = Date.now(); await p7.waitForSelector('#wheel-overlay.open', { timeout: 5000 }).catch(() => {});
+  check('al subir de nivel, la ruleta sale sola después de la celebración', await p7.locator('#wheel-overlay.open').count() === 1 && await p7.locator('#lvlup-overlay.open').count() === 0, `${Date.now() - tAuto} ms`);
+  await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300);
   check('cerrar la ruleta con la ✕ no gasta la tirada', await p7.evaluate(() => AAP.state.wheelLevel) === 1 && await p7.locator('#lvl-dot:not(.hidden)').count() === 1);
   await p7.click('#lvl-chip'); await p7.waitForSelector('#wheel-overlay.open', { timeout: 5000 }).catch(() => {});
   check('con una tirada pendiente, tocar la barra de nivel abre la ruleta', await p7.locator('#wheel-overlay.open').count() === 1 && (await p7.locator('#wheel-title').textContent()) === 'RULETA · NIVEL 2');
   await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300);
+  // algo «abierto» pero invisible, o una celebración que se quedó colgada: tocar el nivel abre la ruleta igual
+  await p7.evaluate(async () => { const d = document.createElement('div'); d.className = 'overlay open'; d.id = 'fantasma'; d.style.display = 'none'; document.body.appendChild(d); });
+  await p7.click('#lvl-chip'); await p7.waitForSelector('#wheel-overlay.open', { timeout: 4000 }).catch(() => {});
+  check('aunque haya algo invisible «abierto», tocar el nivel abre la ruleta', await p7.locator('#wheel-overlay.open').count() === 1);
+  await p7.click('#wheel-close', { force: true }); await p7.waitForTimeout(300); await p7.evaluate(() => document.querySelector('#fantasma').remove());
   await p7.evaluate(() => import('./js/levelup.js').then(m => m.levelTestReset?.()));
   await p7.evaluate(() => import('./js/play.js').then(m => { m.throwTomatoes(1); })); await stopAt(p7, 0, 8); await idle(p7);
   await p7.waitForSelector('#wheel-overlay.open', { timeout: 6000 }).catch(() => {});

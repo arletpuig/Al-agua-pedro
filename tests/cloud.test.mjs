@@ -221,7 +221,7 @@ console.log('K. Niveles y ruleta en el servidor');
   await page.evaluate(() => import('./js/levelup.js').then(m => m.checkPending()));
   await page.waitForFunction(() => document.querySelector('#lvlup-overlay').classList.contains('ready'), null, { timeout: 10000 });
   check('al entrar con tiradas pendientes se presentan los niveles', /NIVELES|PREMIO PENDIENTE/.test(await txt('#lvlup-banner')) && (await txt('#lvlup-num')) === String(lvl));
-  await page.click('#lvlup-spin', { force: true }); await page.waitForSelector('#wheel-overlay.open'); await page.click('#wheel-btn', { force: true });
+  await page.evaluate(() => document.querySelector('#lvlup-overlay.open #lvlup-spin')?.click()); await page.waitForSelector('#wheel-overlay.open'); await page.click('#wheel-btn', { force: true });
   const out = await (await spinResp).json(); await page.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 10000 });
   row = db(email); s = await S(page);
   check('el servidor decide el premio y la ruleta se para en esa casilla', (await page.locator('#wheel-svg .seg.win').getAttribute('data-i')) === String(out.seg), `(casilla ${out.seg}: ${out.reward.id})`);
@@ -276,7 +276,7 @@ console.log('K2. Subir de nivel jugando (con cuenta): siempre sale la ruleta');
     const btn = shown ? await page.locator('#lvlup-spin').textContent() : '';
     let prize = '';
     if (shown) {
-      await page.click('#lvlup-spin', { force: true });
+      await page.evaluate(() => document.querySelector('#lvlup-overlay.open #lvlup-spin')?.click());
       const w = await page.waitForSelector('#wheel-overlay.open', { timeout: 8000 }).then(() => true, () => false);
       if (w) { await page.click('#wheel-btn', { force: true }); prize = await page.waitForSelector('#wheel-prize:not(.hidden)', { timeout: 15000 }).then(() => page.locator('#wheel-prize').textContent(), async () => 'SIN PREMIO: ' + (await page.locator('#toast').textContent())); }
       for (let k = 0; k < 4; k++) {
@@ -466,6 +466,16 @@ console.log('R. Falcón: los clics hechos con él no se pierden; la ruleta del n
     document.querySelector('#lvl-chip').click(); await new Promise(r => setTimeout(r, 1500)); return { wheel: document.querySelector('#wheel-overlay').classList.contains('open'), cap: AAP.state.wheelCap }; });
   check('y al tocar el nivel se comprueba con el servidor y sale la ruleta', w2.wheel && w2.cap === null, JSON.stringify(w2));
   await page.evaluate(() => { document.querySelector('#wheel-close').click(); }); await page.waitForTimeout(400);
+  // con mala cobertura: el servidor no contesta mientras gira. La ruleta no se queda girando para siempre: avisa y se puede cerrar
+  await page.evaluate(async () => { (await import('./js/supabase.js')).netTest.timeout = 1500; AAP.levelTest.fast = true; });
+  await page.route('**/rest/v1/rpc/spin_level_wheel', () => {});   // nunca responde
+  await page.evaluate(() => document.querySelector('#lvl-chip').click()); await page.waitForSelector('#wheel-overlay.open', { timeout: 5000 }).catch(() => {});
+  await page.evaluate(() => document.querySelector('#wheel-btn').click()); await page.waitForTimeout(3500);
+  const hang = await page.evaluate(() => ({ spinning: document.querySelector('#wheel-overlay').classList.contains('spinning'), toast: document.querySelector('#toast').textContent }));
+  await page.unroute('**/rest/v1/rpc/spin_level_wheel');
+  await page.evaluate(() => document.querySelector('#wheel-close').click()); await page.waitForTimeout(400);
+  check('si el servidor no contesta, la ruleta deja de girar, avisa y se puede cerrar', !hang.spinning && /conexión/.test(hang.toast) && await page.locator('#wheel-overlay.open').count() === 0, JSON.stringify(hang));
+  await page.evaluate(async () => { (await import('./js/supabase.js')).netTest.timeout = 15000; AAP.levelTest.fast = false; });
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
 }
 

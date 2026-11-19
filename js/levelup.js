@@ -21,7 +21,7 @@ export const celebrating = () => running;
 export function initLevels(uiRef, busyFn, failFn, reloadFn) {
   ui = uiRef; isBusy = busyFn; fail = failFn; reload = reloadFn;
   fxUp = createFx($('#lvlup-overlay')); fxWheel = createFx($('#wheel-overlay'));
-  $('#lvl-chip').addEventListener('click', async () => { SFX.ui(); if (!pending() && state.wheelCap != null) { await backend.syncWheelCap(); syncChip(); } if (pending() > 0 && !running) openWheelFrom('level'); else openLevels(); });
+  $('#lvl-chip').addEventListener('click', async () => { SFX.ui(); if (!pending() && state.wheelCap != null) { await backend.syncWheelCap(); syncChip(); } if (pending() > 0) openWheelFrom('level'); else openLevels(); });
   $('#levels-body').addEventListener('click', e => { if (e.target.closest('[data-spin]')) openWheelFrom('level'); else if (e.target.closest('[data-wait]')) backend.syncWheelCap().then(() => { syncChip(); renderLevels(); if (pending()) openWheelFrom('level'); }); else if (e.target.closest('[data-legend]')) openWheelFrom('legend'); });
   $('#wheel-close').addEventListener('click', () => { if (!spinning) closeWheel(); });
   buildLights();
@@ -71,15 +71,24 @@ function xpFloater(n) {
 export function checkPending() { if (pending() > 0) queueCelebrate({ mode: 'pending' }); }
 
 // ---------- celebración (en cola, cuando no haya nada delante) ----------
-const screenBusy = () => !!document.querySelector('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour') || isBusy?.() || ui.gated();
+const seen = el => { const cs = getComputedStyle(el); return cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0 && el.getClientRects().length > 0; };
+const screenBusy = () => [...document.querySelectorAll('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour')].some(seen) || isBusy?.() || ui.gated();
+const showing = () => ['#lvlup-overlay', '#wheel-overlay', '#chest-overlay'].some(s => $(s).classList.contains('open'));
+let gen = 0;   // cada celebración tiene su número: si una se queda colgada, la siguiente no la espera
 async function whenFree() { let ok = 0; while (ok < 2) { await sleep(levelTest.fast ? 50 : 300); ok = screenBusy() ? 0 : ok + 1; } }
+const stale = opts => (opts.mode === 'wheel' ? !SOURCES[opts.src || 'level'].can() : opts.mode !== 'up' && !pending());
+async function run(opts) {
+  const my = ++gen; running = true;
+  try { if (opts.mode === 'wheel') await wheelSession(opts.src || 'level'); else await celebrate(opts); } catch (e) { fail?.(e); }
+  if (gen === my) { running = false; syncChip(); }
+}
 function queueCelebrate(opts) {
   if (levelTest.off && opts.mode !== 'wheel') return queue;
   queue = queue.then(async () => {
-    if (opts.mode === 'wheel' ? !SOURCES[opts.src || 'level'].can() : opts.mode !== 'up' && !pending()) return;
-    await whenFree(); running = true;
-    try { if (opts.mode === 'wheel') await wheelSession(opts.src || 'level'); else await celebrate(opts); } catch (e) { fail?.(e); }
-    running = false; syncChip();
+    if (stale(opts)) return;
+    await whenFree();
+    if (stale(opts)) return;        // mientras esperaba, ya se giró (por ejemplo, tocando el nivel)
+    await run(opts);
   });
   return queue;
 }
@@ -112,8 +121,8 @@ async function celebrate({ mode, from, to }) {
   if (navigator.vibrate) try { navigator.vibrate([30, 40, 80]); } catch (e) {}
   await sleep(fast ? 20 : 550); ov.classList.add('named'); SFX.stamp();
   await sleep(fast ? 20 : 700); ov.classList.add('ready');
-  await new Promise(res => { $('#lvlup-spin').onclick = () => { SFX.ui(); res(); }; });
-  ov.classList.remove('open'); fxUp.clear();
+  await new Promise(res => { $('#lvlup-spin').onclick = () => { SFX.ui(); res(); }; if (pending()) setTimeout(res, 1800); });   // con tirada: la ruleta sale sola
+  $('#lvlup-spin').onclick = null; ov.classList.remove('open'); fxUp.clear();
   if (pending()) await wheelSession('level');
 }
 
@@ -125,9 +134,14 @@ const SOURCES = {
   legend: { wheel: () => 'legend', L: () => LV.levelOf(state.stats), can: () => state.legendSpins > 0, left: () => state.legendSpins, go: rng => backend.spinLegend(rng) },
 };
 // Abrir una ruleta desde la tienda o la lista de niveles
-export function openWheelFrom(src) {
+export async function openWheelFrom(src) {
   if (!SOURCES[src].can()) { if (src === 'shop') fail?.(new Error('No tienes pesetas suficientes')); return; }
-  ui.closeAll(); queueCelebrate({ mode: 'wheel', src });
+  ui.closeAll();
+  if (showing()) return;                                   // ya hay una celebración o una ruleta delante
+  if (running) { await sleep(levelTest.fast ? 100 : 1500); if (showing()) return; }   // está a punto de salir
+  if (isBusy?.() || !SOURCES[src].can()) return queueCelebrate({ mode: 'wheel', src });
+  queue = Promise.resolve();                               // lo que se quedara esperando ya no bloquea las siguientes
+  await run({ mode: 'wheel', src });
 }
 const N = 8, SEG = 360 / N;
 let angle = 0;

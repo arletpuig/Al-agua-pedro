@@ -110,7 +110,7 @@ export function applyServer(row, sent) {
   state.serverStreak = 'streak_pesetas' in row; if ('install_claimed' in row) state.installClaimed = !!row.install_claimed;
   if ('armory' in row) state.armory = Array.isArray(row.armory) ? row.armory.slice() : [];
   PAGUITA_RULES.mult = +row.rules >= 27 ? 3 : 1;
-  if ('daily' in row) state.daily = row.daily || {};
+  if ('daily' in row || 'user_id' in row) state.daily = row.daily || {};   // con cuenta, los logros de hoy son siempre los del servidor
   if ('invites_paid' in row) state.invite = { code: row.invite_code || state.invite.code, paid: +row.invites_paid || 0, seen: +row.invites_seen || 0 };       // paguitas ×3 cuando el servidor está al día
   if ('welcome_claimed' in row) { state.welcomeClaimed = !!row.welcome_claimed; state.welcomeOfferedAt = row.welcome_offered_at ? Date.parse(row.welcome_offered_at) : null; }
   state.updatedAt = row.updated_at || null; state.dirty = pending;

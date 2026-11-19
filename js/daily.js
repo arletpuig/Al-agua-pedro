@@ -56,7 +56,7 @@ let inv = { total: 0, pending: 0 };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 // ---------- estado de hoy
-const today = () => D.todayState(state.daily, state.stats, backend.todayKey());
+const today = () => D.todayState(backend.cloud && state.daily?.local ? {} : state.daily, state.stats, backend.todayKey());
 const missions = d => [0, 1, 2].map(i => { const m = D.missionFor(d.date, i); return { ...m, prog: Math.min(m.goal, D.progress(d, state.stats, m)), done: d.done.includes(String(i)) }; });
 const key = () => { const d = today(); return [d.date, d.done.join(), d.bonus, d.login_date, ...missions(d).map(m => m.prog), state.pesetas].join('|'); };
 export function claimable() {

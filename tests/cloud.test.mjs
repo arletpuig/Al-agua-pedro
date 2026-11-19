@@ -387,6 +387,17 @@ console.log('Q. Logros diarios e invitaciones en el servidor');
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
   before = db(email); const d7 = await page.evaluate(() => AAP.backend.claimLoginDay().then(r => r, e => ({ err: e.message }))); row = db(email);
   check('calendario: día 7 seguido = cofre de diamante + 200 pesetas', d7.day === 7 && d7.cards?.length >= 3 && row.chest_pesetas >= before.chest_pesetas + 200 && row.chests_opened === before.chests_opened + 1, JSON.stringify({ day: d7.day, err: d7.err }));
+  // jugador veterano que entra por primera vez hoy, con unos logros viejos en el móvil (contados desde 0):
+  // los retos empiezan a contar desde ahora, no desde que tiene el juego
+  psql(`update public.profiles set daily = '{}'::jsonb, tomatoes_thrown = tomatoes_thrown + 5000, falls = falls + 4000, perfects = perfects + 4000, hits = hits + 5000, total_clicks = total_clicks + 900000, chests_opened = chests_opened + 50 where user_id = '${row.user_id}'`);
+  await page.evaluate(() => { const k = 'alaguapedro.v2', d = JSON.parse(localStorage.getItem(k)); d.daily = { date: AAP.backend.todayKey(), base: { t: 0, f: 0, c: 0, h: 0, p: 0, o: 0 }, done: [], bonus: false, local: true }; localStorage.setItem(k, JSON.stringify(d)); });
+  await page.reload(); await page.waitForFunction(() => window.AAP?.scene?.ready && AAP.backend.cloud, null, { timeout: 15000 }); await page.waitForTimeout(1500);
+  await page.click('#daily-btn', { force: true }); await page.waitForTimeout(1200);
+  const fresh = await page.evaluate(() => ({ claim: document.querySelectorAll('[data-mission]:not(:disabled)').length, pct: [...document.querySelectorAll('.dl-mis')].map(e => e.textContent.match(/(\d+)%/)?.[1]), bar: document.querySelector('#daily-fill').style.width }));
+  row = db(email);
+  check('veterano que entra hoy: los retos empiezan a contar desde ahora (0%, nada por recoger)', fresh.claim === 0 && fresh.pct.every(x => x === '0') && fresh.bar === '0%' && +row.daily.base.t === row.tomatoes_thrown, JSON.stringify(fresh));
+  check('y el servidor tampoco da una misión sin hacerla', await page.evaluate(() => AAP.backend.claimMission(2).then(() => false, e => /Todavía no/.test(e.message))));
+  await page.click('#panel-daily [data-close]', { force: true }).catch(() => {}); await page.waitForTimeout(300);
   // invitaciones: un amigo nuevo usa el código
   const code = await page.evaluate(() => AAP.backend.inviteCode());
   check('cada jugador tiene su código de invitación', /^[0-9A-F]{6}$/.test(code) && db(email).invite_code === code, code);

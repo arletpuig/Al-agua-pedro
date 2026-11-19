@@ -113,14 +113,14 @@ export const backend = {
   // ---------- logros diarios
   async dailySync() {
     if (this.cloud) { const { r, sent } = await cloudOp(sb.dailySync); applyServer(r, sent); return state.daily; }
-    state.daily = D.todayState(state.daily, state.stats, this.todayKey()); changed(false); return state.daily;
+    state.daily = { ...D.todayState(state.daily, state.stats, this.todayKey()), local: true }; changed(false); return state.daily;
   },
   async claimMission(slot) {
     if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimDailyMission(slot)); applyServer(r.profile, sent); return r.reward; }
     const d = D.todayState(state.daily, state.stats, this.todayKey()), m = D.missionFor(d.date, slot);
     if (d.done.includes(String(slot))) throw new Error('Ya has recogido esa misión');
     if (D.progress(d, state.stats, m) < m.goal) throw new Error('Todavía no has completado esa misión');
-    const rw = D.rewardFor(slot, LV.levelOf(state.stats)); d.done.push(String(slot)); state.daily = d;
+    const rw = D.rewardFor(slot, LV.levelOf(state.stats)); d.done.push(String(slot)); state.daily = { ...d, local: true };
     state.stats.chestTomatoes += rw.tomatoes; state.stats.chestPesetas += rw.pesetas; changed(false); return rw;
   },
   async claimDailyBonus() {
@@ -128,14 +128,14 @@ export const backend = {
     const d = D.todayState(state.daily, state.stats, this.todayKey());
     if (d.done.length < 3) throw new Error('Te faltan misiones de hoy');
     if (d.bonus) throw new Error('Ya has recogido el cofre de hoy');
-    const rw = E.rollChest('diamond', state.cards); E.applyChestCards(state.cards, rw.cards); d.bonus = true; state.daily = d; applyChestLocal(rw, 0); return rw;
+    const rw = E.rollChest('diamond', state.cards); E.applyChestCards(state.cards, rw.cards); d.bonus = true; state.daily = { ...d, local: true }; applyChestLocal(rw, 0); return rw;
   },
   async claimLoginDay() {
     if (this.cloud) { const { r, sent } = await cloudOp(sb.claimLoginDay); applyServer(r.profile, sent); return r.reward; }
     const key = this.todayKey(), d = D.todayState(state.daily, state.stats, key), L = D.loginDay(d, key);
     if (L.claimed) throw new Error('Ya has recogido el premio de hoy');
     const g = D.LOGIN[L.day - 1]; let rw = { tomatoes: g.tomatoes || 0, pesetas: g.pesetas || 0, cards: [] };
-    d.login_date = key; d.login_streak = L.day; state.daily = d;
+    d.login_date = key; d.login_streak = L.day; state.daily = { ...d, local: true };
     if (g.chest) { const c = E.rollChest(g.chest, state.cards); E.applyChestCards(state.cards, c.cards); c.pesetas += rw.pesetas; rw = { ...c, chest: g.chest }; applyChestLocal(rw, 0); }
     else { state.stats.chestTomatoes += rw.tomatoes; state.stats.chestPesetas += rw.pesetas; changed(false); }
     return { ...rw, day: L.day };

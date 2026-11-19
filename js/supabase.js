@@ -93,6 +93,14 @@ export const spinWheel = () => rpc('spin_level_wheel', {});                     
 export const buySpin = () => rpc('buy_wheel_spin', {});                                   // ruleta de la tienda (pesetas)
 export const spinLegend = () => rpc('spin_legend_wheel', {});
 export const playerLevel = (t, h, f) => rpc('fn_player_level', { p_thrown: t, p_hits: h, p_falls: f });   // nivel según el servidor
+export const dailySync = () => rpc('daily_sync', {});                                        // logros diarios -> profile
+export const claimDailyMission = slot => rpc('claim_daily_mission', { p_slot: slot });           // -> { reward, profile }
+export const claimDailyBonus = () => rpc('claim_daily_bonus', {});
+export const claimLoginDay = () => rpc('claim_login_day', {});
+export const myInviteCode = () => rpc('my_invite_code', {});                                     // invitaciones
+export const redeemInvite = code => rpc('redeem_invite', { p_code: code });                      // -> { reward, inviter, profile }
+export const claimInvites = () => rpc('claim_invites', {});                                      // -> { paid, pesetas, total, pending, profile }
+export const ackInvites = () => rpc('ack_invites', {});
 export const buyArmory = item => rpc('buy_armory_item', { p_item: item });              // La Armería: comprar un objeto -> profile
 export const claimInstall = () => rpc('claim_install_reward', {});                       // regalo por instalar la app -> { reward, profile }                             // tirada legendaria comprada
 // Pagos (Stripe): crea la página de pago en la función «crear-pago» y consulta si una compra ya se ha entregado

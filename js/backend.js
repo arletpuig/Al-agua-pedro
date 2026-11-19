@@ -4,6 +4,7 @@ import * as E from './economy.js';
 import { state, applyServer, applyChestLocal, changed, snapshot, falconActive } from './state.js';
 import { showVideo, videosOn } from './ads.js';
 import * as LV from './levels.js';
+import * as D from './daily-rules.js';
 
 let timeOffset = 0, nextMidnight = null, serverChecked = false, flush = async () => {};
 // Antes de una operación en la nube se envía el progreso pendiente, para que el servidor conozca las pesetas ganadas.
@@ -109,6 +110,51 @@ export const backend = {
     if (!this.cloud) { state.wheelCap = null; return null; }
     try { await flush(); const s = state.stats, L = +(await sb.playerLevel(s.tomatoesThrown, s.hits, s.falls)); state.wheelCap = L < LV.levelOf(s) ? L : null; return L; } catch (e) { return null; }
   },
+  // ---------- logros diarios
+  async dailySync() {
+    if (this.cloud) { const { r, sent } = await cloudOp(sb.dailySync); applyServer(r, sent); return state.daily; }
+    state.daily = D.todayState(state.daily, state.stats, this.todayKey()); changed(false); return state.daily;
+  },
+  async claimMission(slot) {
+    if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimDailyMission(slot)); applyServer(r.profile, sent); return r.reward; }
+    const d = D.todayState(state.daily, state.stats, this.todayKey()), m = D.missionFor(d.date, slot);
+    if (d.done.includes(String(slot))) throw new Error('Ya has recogido esa misión');
+    if (D.progress(d, state.stats, m) < m.goal) throw new Error('Todavía no has completado esa misión');
+    const rw = D.rewardFor(slot, LV.levelOf(state.stats)); d.done.push(String(slot)); state.daily = d;
+    state.stats.chestTomatoes += rw.tomatoes; state.stats.chestPesetas += rw.pesetas; changed(false); return rw;
+  },
+  async claimDailyBonus() {
+    if (this.cloud) { const { r, sent } = await cloudOp(sb.claimDailyBonus); applyServer(r.profile, sent); return r.reward; }
+    const d = D.todayState(state.daily, state.stats, this.todayKey());
+    if (d.done.length < 3) throw new Error('Te faltan misiones de hoy');
+    if (d.bonus) throw new Error('Ya has recogido el cofre de hoy');
+    const rw = E.rollChest('diamond', state.cards); E.applyChestCards(state.cards, rw.cards); d.bonus = true; state.daily = d; applyChestLocal(rw, 0); return rw;
+  },
+  async claimLoginDay() {
+    if (this.cloud) { const { r, sent } = await cloudOp(sb.claimLoginDay); applyServer(r.profile, sent); return r.reward; }
+    const key = this.todayKey(), d = D.todayState(state.daily, state.stats, key), L = D.loginDay(d, key);
+    if (L.claimed) throw new Error('Ya has recogido el premio de hoy');
+    const g = D.LOGIN[L.day - 1]; let rw = { tomatoes: g.tomatoes || 0, pesetas: g.pesetas || 0, cards: [] };
+    d.login_date = key; d.login_streak = L.day; state.daily = d;
+    if (g.chest) { const c = E.rollChest(g.chest, state.cards); E.applyChestCards(state.cards, c.cards); c.pesetas += rw.pesetas; rw = { ...c, chest: g.chest }; applyChestLocal(rw, 0); }
+    else { state.stats.chestTomatoes += rw.tomatoes; state.stats.chestPesetas += rw.pesetas; changed(false); }
+    return { ...rw, day: L.day };
+  },
+  // ---------- invitaciones (solo con cuenta: el servidor comprueba que el amigo se ha registrado y ha jugado)
+  async inviteCode() {
+    if (!this.cloud) throw new Error('Necesitas una cuenta para invitar a tus amigos');
+    if (!state.invite.code) state.invite.code = await sb.myInviteCode();
+    return state.invite.code;
+  },
+  async redeemInvite(code) {
+    if (!this.cloud) throw new Error('Necesitas una cuenta para usar una invitación');
+    const { r, sent } = await cloudOp(() => sb.redeemInvite(code)); applyServer(r.profile, sent); return r;
+  },
+  async claimInvites() {
+    if (!this.cloud) return { paid: 0, pesetas: 0, total: 0, pending: 0 };
+    const { r, sent } = await cloudOp(sb.claimInvites); applyServer(r.profile, sent); return r;
+  },
+  async ackInvites() { if (this.cloud) { await sb.ackInvites(); state.invite.seen = state.invite.paid; } },
   // La Armería: comprar un objeto (desde el nivel 10, con pesetas; se queda para siempre). Con cuenta lo valida el servidor.
   async buyArmory(id, price) {
     if (this.cloud) { const { r, sent } = await cloudOp(() => sb.buyArmory(id)); applyServer(r, sent); return; }

@@ -12,12 +12,12 @@ export const UNLOCK_LEVEL = 10;
 // c1/c2: colores de la tarjeta de cada objeto (cada uno con su estilo de «exclusivo»)
 export const ARMORY = [
   { id: 'hammer', name: 'Martillo de goma', price: 0, desc: '¡BONK! Un golpe de juguete', tier: 'REGALO', c1: '#36f0b0', c2: '#0a7a5a' },
-  { id: 'slipper', name: 'Chancla boomerang', price: 40000, desc: 'Sale disparada, le da y vuelve', tier: 'RARO', c1: '#4ab4ff', c2: '#1a3fa8' },
-  { id: 'goose', name: 'Oca furiosa', price: 80000, desc: 'Lo persigue a picotazos', tier: 'ÉPICO', c1: '#c07bff', c2: '#5a1ab8' },
-  { id: 'bull', name: 'Toro de lidia', price: 150000, desc: 'Embestida con coro de ¡OLÉ!', tier: 'LEGENDARIO', c1: '#ff9a1a', c2: '#b3101a' },
-  { id: 'vacuum', name: 'Aspiradora monstruosa', price: 250000, desc: 'Lo succiona y lo escupe', tier: 'LEGENDARIO', c1: '#ff4fa3', c2: '#8a0f5a' },
-  { id: 'press', name: 'Prensa hidráulica', price: 400000, desc: 'Lo deja hecho un acordeón', tier: 'MÍTICO', c1: '#6ff3ff', c2: '#145a8a' },
-  { id: 'stamp', name: 'Sello «CORRUPTO»', price: 650000, desc: 'Lo marca de rojo de la cabeza a los pies', tier: 'DEFINITIVO', c1: '#ffd23f', c2: '#c4161c' },
+  { id: 'slipper', name: 'Chancla boomerang', price: 30000, desc: 'Sale disparada, le da y vuelve', tier: 'RARO', c1: '#4ab4ff', c2: '#1a3fa8' },
+  { id: 'goose', name: 'Oca furiosa', price: 60000, desc: 'Lo persigue a picotazos', tier: 'ÉPICO', c1: '#c07bff', c2: '#5a1ab8' },
+  { id: 'bull', name: 'Toro de lidia', price: 110000, desc: 'Embestida con coro de ¡OLÉ!', tier: 'LEGENDARIO', c1: '#ff9a1a', c2: '#b3101a' },
+  { id: 'vacuum', name: 'Aspiradora monstruosa', price: 180000, desc: 'Lo succiona y lo escupe', tier: 'LEGENDARIO', c1: '#ff4fa3', c2: '#8a0f5a' },
+  { id: 'press', name: 'Prensa hidráulica', price: 290000, desc: 'Lo deja hecho un acordeón', tier: 'MÍTICO', c1: '#6ff3ff', c2: '#145a8a' },
+  { id: 'stamp', name: 'Sello «CORRUPTO»', price: 480000, desc: 'Lo marca de rojo de la cabeza a los pies', tier: 'DEFINITIVO', c1: '#ffd23f', c2: '#c4161c' },
 ];
 const $ = s => document.querySelector(s);
 const fmt = n => n.toLocaleString('es-ES');

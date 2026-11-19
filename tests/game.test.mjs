@@ -189,7 +189,7 @@ await page.click('#panel-cards [data-close]');
 before = await S(page); await tap(page, 10); s = await S(page);
 check('Inflación nivel 2: 3 clics por pulsación', s.totalClicks === before.totalClicks + 30 && (await txt('#cpt-badge')).includes('+3'));
 check('Joyas de Zapatero: 2 o 3 pesetas, y cada nivel da menos', await page.evaluate(() => { const E = AAP.E, c = { joyas: { level: 10 } }, p = E.CARDS.joyas.value(10), v = E.CARDS.joyas.value; return E.rollFallPesetas(c, () => p / 6) === 3 && E.rollFallPesetas(c, () => p / 2) === 2 && E.rollFallPesetas(c, () => 0.99) === 1 && E.rollFallPesetas({ joyas: { level: 0 } }, () => 0) === 1 && v(2) - v(1) > v(25) - v(24) && v(25) < 0.45; }));
-check('muchos más niveles de mejora', await page.evaluate(() => { const C = AAP.E.CARDS; return C.inflacion.max === 30 && C.joyas.max === 25 && C.mariscada.max === 25 && C.apagon.max === 25 && C.amnistia.max === 20 && C.plusultra.max === 25 && C.hacienda.max === 20 && C.puerta.max === 20 && C.paguitas.max === 15; }));
+check('muchos más niveles de mejora', await page.evaluate(() => { const C = AAP.E.CARDS; return C.inflacion.max === 30 && C.joyas.max === 25 && C.mariscada.max === 25 && C.apagon.max === 25 && C.amnistia.max === 30 && C.plusultra.max === 25 && C.hacienda.max === 30 && C.puerta.max === 30 && C.pegasus.max === 30 && C.paguitas.max === 20; }));
 check('Apagón: el centro de la diana crece', await page.evaluate(() => AAP.E.perfectRadius({ apagon: { level: 10 } }, 46) > 46 * 1.2 && AAP.E.perfectRadius({}, 46) === 46));
 check('las cartas al máximo ya no salen en los cofres', await page.evaluate(() => { const E = AAP.E, c = E.emptyCards(); c.inflacion = { level: 30, frags: 0 }; for (let i = 0; i < 300; i++) if (E.rollChest('wood', c).cards.some(x => x.id === 'inflacion')) return false; return true; }));
 check('con toda la colección al máximo el cofre da pesetas', await page.evaluate(() => { const E = AAP.E, c = {}; E.CARD_IDS.forEach(id => c[id] = { level: E.CARDS[id].max, frags: 0 }); const r = E.rollChest('diamond', c); return r.cards.length === 0 && r.pesetas >= 9; }));
@@ -793,7 +793,7 @@ console.log('35. La Armería');
   await pa.click('#armory-btn'); await pa.waitForTimeout(200);
   check('jugador nuevo: La Armería cerrada (candado, «NV 10») y aviso de cuándo se abre', lock0.locked && lock0.tag === 'NV 10' && await vis('#armory-tease') && /nivel 10/.test(await pa.textContent('#armory-tease'))
     && !(await pa.evaluate(() => document.querySelector('#panel-armory').classList.contains('open'))), JSON.stringify(lock0));
-  check('sin nivel 10 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /nivel 10/.test(e.message))));
+  check('sin nivel 10 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /nivel 10/.test(e.message))));
   const btn = await pa.evaluate(() => { const r = document.querySelector('#armory-btn').getBoundingClientRect(); return { x: r.x, w: r.width, top: r.top }; });
   check('el botón está a un lado (fuera del menú de abajo) y no tapa el juego', btn.x < 20 && btn.w < 80 && btn.top > 150, JSON.stringify(btn));
   // nivel 10 con el sistema de niveles de verdad: se abre sola
@@ -808,7 +808,7 @@ console.log('35. La Armería');
     wide: document.querySelector('.arm-card.wide')?.dataset.id, cols: getComputedStyle(document.querySelector('#arm-grid')).gridTemplateColumns.split(' ').length, prices: [...document.querySelectorAll('.arm-price')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
     poor: !document.querySelector('[data-buy="slipper"]') && /Te faltan/.test(document.querySelector('[data-id="slipper"] [data-dream]')?.textContent) }));
   check('la tienda: Abascal tras el mostrador y 7 objetos (3 + 3 + el sello a lo ancho)', shop.open && shop.seller > 0 && shop.cards.join() === 'hammer,slipper,goose,bull,vacuum,press,stamp' && shop.wide === 'stamp' && shop.cols === 3, JSON.stringify(shop));
-  check('precios: gratis, 40.000, 80.000, 150.000, 250.000, 400.000 y 650.000', shop.prices.join('|') === 'GRATIS al instalar la app|40.000|80.000|150.000|250.000|400.000|650.000', shop.prices.join('|'));
+  check('precios: gratis, 30.000, 60.000, 110.000, 180.000, 290.000 y 480.000', shop.prices.join('|') === 'GRATIS al instalar la app|30.000|60.000|110.000|180.000|290.000|480.000', shop.prices.join('|'));
   check('sin pesetas suficientes no se puede comprar', shop.poor);
   // sin pesetas: al tocarlo, bocadillo de sueño con la animación en pequeño (sin sonido)
   const snd0 = await pa.evaluate(() => import('./js/audio.js').then(m => m.isEnabled()));
@@ -834,8 +834,8 @@ console.log('35. La Armería');
   await pa.click('#win-later', { force: true }); await pa.waitForTimeout(200);
   const after = await pa.evaluate(() => ({ owned: AAP.state.armory.filter(x => x === 'slipper').length, own: document.querySelector('[data-id="slipper"] .arm-tick')?.textContent, btn: !!document.querySelector('[data-buy="slipper"]') }));
   const p1 = (await S(pa)).pesetas;
-  check('comprar: descuenta 40.000 pesetas y es tuyo (una vez)', after.owned === 1 && p0 - p1 === 40000 && /TUYO/.test(after.own) && !after.btn, JSON.stringify({ after, p0, p1 }));
-  check('no se puede comprar dos veces', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /Ya tienes/.test(e.message))) && (await S(pa)).pesetas === p1);
+  check('comprar: descuenta 30.000 pesetas y es tuyo (una vez)', after.owned === 1 && p0 - p1 === 30000 && /TUYO/.test(after.own) && !after.btn, JSON.stringify({ after, p0, p1 }));
+  check('no se puede comprar dos veces', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /Ya tienes/.test(e.message))) && (await S(pa)).pesetas === p1);
   // lo comprado se usa desde su tarjeta («¡USAR!»): se cierra la tienda y empieza la animación
   const uses = await pa.evaluate(() => [...document.querySelectorAll('#arm-grid [data-use]')].map(b => b.dataset.use).join());
   check('solo lo que tienes tiene el botón ¡USAR!', uses === 'slipper', uses);
@@ -865,6 +865,50 @@ console.log('35. La Armería');
   check('las 7 animaciones (martillo, chancla, oca, toro, aspiradora, prensa y sello) terminan bien', ok.every(Boolean), ok.join());
   check('La Armería: sin errores en consola', ea.length === 0, ea.join(' | '));
   await ca.close();
+}
+
+console.log('36. Logros diarios');
+{
+  const cd = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const pd = await cd.newPage(); const ed = watchErrors(pd); await mockTime(pd);
+  await open(pd); await pd.evaluate(() => { AAP.giftTest.off = true; }); await pd.waitForTimeout(300);
+  const b0 = await pd.evaluate(() => ({ vis: document.querySelector('#daily-btn').offsetWidth > 0, n: +document.querySelector('#daily-count').textContent, x: document.querySelector('#daily-btn').getBoundingClientRect().x }));
+  check('botón LOGROS a un lado, con aviso de premios por recoger', b0.vis && b0.n >= 1 && b0.x < 30, JSON.stringify(b0));
+  await pd.click('#daily-btn'); await pd.waitForTimeout(400);
+  const v = await pd.evaluate(() => ({ open: document.querySelector('#panel-daily').classList.contains('open'), days: document.querySelectorAll('.dl-day').length, now: document.querySelector('.dl-day.now small')?.textContent,
+    mis: [...document.querySelectorAll('.dl-mis .dl-txt > b')].map(b => b.textContent), timer: document.querySelector('#dl-timer').textContent, bonus: document.querySelector('.dl-cnt')?.textContent }));
+  check('panel: calendario de 7 días (hoy, el día 1), 3 misiones distintas, cuenta atrás y cofre de la jornada 0/3', v.open && v.days === 7 && v.now === 'DÍA 1' && v.mis.length === 3 && new Set(v.mis).size === 3 && /^\d+:\d\d:\d\d$/.test(v.timer) && v.bonus === '0/3', JSON.stringify(v));
+  await pd.screenshot({ path: 'tests/out/36-logros.png' });
+  const t0 = (await S(pd)).tomatoes;
+  await pd.click('.dl-day.now', { force: true }); await pd.waitForTimeout(500);
+  check('día 1: +20 tomates y queda marcado', (await S(pd)).tomatoes === t0 + 20 && await pd.locator('.dl-day.got').count() === 1);
+  check('el premio del día solo una vez', await pd.evaluate(() => AAP.backend.claimLoginDay().then(() => false, e => /Ya has recogido/.test(e.message))));
+  check('misión sin completar: no se puede recoger', await pd.evaluate(() => AAP.backend.claimMission(0).then(() => false, e => /Todavía no/.test(e.message))) && await pd.locator('[data-mission="0"]:disabled').count() === 1);
+  // se juega: los contadores de hoy suben hasta cumplir las 3 misiones
+  await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), st = AAP.state.stats, key = { t: 'tomatoesThrown', f: 'falls', c: 'totalClicks', h: 'hits', p: 'perfects', o: 'chestsOpened' };
+    for (const i of [0, 1, 2]) { const m = D.missionFor(AAP.state.daily.date, i); st[key[m.k]] += m.goal; } (await import('./js/state.js')).changed(false); });
+  await pd.waitForTimeout(300);
+  const p0 = (await S(pd)).pesetas;
+  for (const i of [0, 1, 2]) { await pd.click(`[data-mission="${i}"]`, { force: true }); await pd.waitForTimeout(350); }
+  const after = await pd.evaluate(() => ({ done: AAP.state.daily.done.slice().sort().join(), ok: document.querySelectorAll('.dl-mis.done').length, bonus: !!document.querySelector('[data-bonus]') }));
+  check('3 misiones cumplidas: premios recogidos y se abre el cofre de la jornada', after.done === '0,1,2' && after.ok === 3 && after.bonus && (await S(pd)).pesetas > p0, JSON.stringify(after));
+  const c0 = (await S(pd)).chestsOpened, rb = await pd.evaluate(() => AAP.backend.claimDailyBonus().then(r => r.cards.length));
+  check('cofre de la jornada: cofre de diamante (3 cartas), una vez', rb >= 3 && (await S(pd)).chestsOpened === c0 + 1 && await pd.evaluate(() => AAP.backend.claimDailyBonus().then(() => false, e => /Ya has recogido/.test(e.message))));
+  // racha: ayer fue el día 6 → hoy toca el 7 (cofre de diamante + 200 pesetas); si fallas un día, vuelve al 1
+  const r7 = await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), k = AAP.backend.todayKey(); AAP.state.daily.login_date = D.prevDay(k); AAP.state.daily.login_streak = 6; return AAP.backend.claimLoginDay().then(r => ({ day: r.day, cards: r.cards.length, chest: r.chest })); });
+  check('día 7 seguido: cofre de diamante', r7.day === 7 && r7.cards >= 3 && r7.chest === 'diamond', JSON.stringify(r7));
+  const r1 = await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), k = AAP.backend.todayKey(); AAP.state.daily.login_date = D.prevDay(D.prevDay(k)); AAP.state.daily.login_streak = 5; return AAP.backend.claimLoginDay().then(r => r.day); });
+  check('si fallas un día, vuelve al día 1', r1 === 1);
+  // día nuevo: misiones nuevas desde cero
+  const nd = await pd.evaluate(async () => { AAP.state.daily.date = '2000-01-01'; await AAP.backend.dailySync(); return { date: AAP.state.daily.date, done: AAP.state.daily.done.length, bonus: AAP.state.daily.bonus }; });
+  check('al cambiar el día, las misiones empiezan de cero', nd.date === await pd.evaluate(() => AAP.backend.todayKey()) && nd.done === 0 && !nd.bonus, JSON.stringify(nd));
+  await pd.click('[data-dtab="inv"]', { force: true }); await pd.waitForTimeout(300);
+  const iv = await pd.evaluate(() => ({ you: document.querySelector('.inv-card.you span').textContent, fr: document.querySelector('.inv-card.fr span').textContent, note: document.querySelector('#inv-note').textContent }));
+  check('«Invita y gana»: 700 para ti, 300 para tu amigo (sin cuenta, pide entrar)', iv.you === '+700' && iv.fr === '+300' && /cuenta/.test(iv.note), JSON.stringify(iv));
+  await pd.screenshot({ path: 'tests/out/36-invita.png' });
+  await pd.reload(); await pd.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
+  check('los logros de hoy se guardan al volver a abrir', await pd.evaluate(() => AAP.state.daily.login_date === AAP.backend.todayKey()));
+  check('logros: sin errores en consola', ed.length === 0, ed.join(' | '));
+  await cd.close();
 }
 
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));

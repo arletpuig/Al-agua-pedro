@@ -26,21 +26,21 @@ export const CARDS = {
   plusultra: { id: 'plusultra', name: 'Plus Ultra', rarity: 'common', max: 25, icon: 'plusultra',
     desc: 'Más allá de la diana: si fallas, a veces recuperas los tomates que has lanzado.',
     effect: L => `${pct(CARDS.plusultra.value(L))} de recuperar los tomates al fallar`, value: dimin(0.5, 10) },
-  hacienda: { id: 'hacienda', name: 'Hacienda Inversa', rarity: 'epic', max: 20, icon: 'hacienda',
+  hacienda: { id: 'hacienda', name: 'Hacienda Inversa', rarity: 'epic', max: 30, icon: 'hacienda',
     desc: 'Cada vez que gastas pesetas (cofres o mejoras), Hacienda te devuelve una parte.',
     effect: L => `te devuelve el ${pct(CARDS.hacienda.value(L))} de lo que gastas`, value: dimin(0.12, 8) },
-  puerta: { id: 'puerta', name: 'Puerta Giratoria', rarity: 'common', max: 20, icon: 'puerta',
+  puerta: { id: 'puerta', name: 'Puerta Giratoria', rarity: 'common', max: 30, icon: 'puerta',
     desc: 'Cada vez que mejoras una carta sales con un regalito: tomates.',
     effect: L => `${2 * L} tomates por cada mejora`, value: L => 2 * L },
-  paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 15, icon: 'paguitas',
+  paguitas: { id: 'paguitas', name: 'Paguitas', rarity: 'epic', max: 20, icon: 'paguitas',
     desc: 'Cada 75 segundos caen 3 monedas del cielo: ¡tócalas antes de que lleguen al suelo! Cada nivel hace que valgan más.',
     effect: L => `3 monedas = ${paguitaTotal(L)} pesetas cada ${PAGUITA_EVERY} s`,
     // segundos entre lluvias (siempre los mismos con la carta; 0 = sin carta)
     value: L => (L > 0 ? PAGUITA_EVERY : 0) },
-  pegasus: { id: 'pegasus', name: 'Chantaje Pegasus', rarity: 'epic', max: 20, icon: 'pegasus',
+  pegasus: { id: 'pegasus', name: 'Chantaje Pegasus', rarity: 'epic', max: 30, icon: 'pegasus',
     desc: 'Tienes pinchado el móvil del Presidente. Si fallas, a veces el chantaje funciona y no pierdes la racha. Cuanto más nivel, más a menudo.',
     effect: L => `${pct(CARDS.pegasus.value(L))} de salvar la racha al fallar`, value: dimin(0.6, 8) },
-  amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'common', max: 20, icon: 'amnistia',
+  amnistia: { id: 'amnistia', name: 'Amnistía', rarity: 'common', max: 30, icon: 'amnistia',
     desc: 'Tus fallos quedan perdonados: a veces, aunque no aciertes en el centro, Pedro cae igual al agua.',
     effect: L => `${pct(CARDS.amnistia.value(L))} de fallos perdonados`, value: dimin(0.30, 8) },
 };
@@ -107,7 +107,7 @@ export const PAGUITA_EVERY = 75;                 // segundos entre lluvias de pa
 // Lo que suman las 3 monedas de cada lluvia: sube en todos los niveles (igual que fn_paguitas_total)
 // nivel 1: 3 pesetas; nivel 2: 6; nivel 3: 9... (cada moneda vale el nivel de la carta)
 export const PAGUITA_RULES = { mult: 3 };        // con un servidor anterior a schema_v27 vale 1 (cada moneda = nivel)
-export const paguitaTotal = L => 3 * PAGUITA_RULES.mult * Math.max(0, Math.min(15, L));
+export const paguitaTotal = L => 3 * PAGUITA_RULES.mult * Math.max(0, Math.min(20, L));
 // lo que vale cada una de las 3 monedas (repartido: si no sale exacto, alguna vale 1 más)
 export function paguitaCoins(L) { const t = paguitaTotal(L), b = Math.floor(t / PAGUITA); return Array.from({ length: PAGUITA }, (_, i) => b + (i < t - b * PAGUITA ? 1 : 0)); }
 export const paguitaValue = L => Math.max(...paguitaCoins(L));   // la moneda que más vale

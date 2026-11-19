@@ -18,6 +18,8 @@ export const state = {
   serverStreak: false,                              // el servidor guarda las pesetas de las rachas (schema_v17.sql)
   installClaimed: false,                            // regalo por instalar la app (una vez por cuenta)
   armory: [],
+  daily: {},                                        // logros diarios de hoy (misiones, cofre y calendario de 7 días)
+  invite: { code: null, paid: 0, seen: 0 },          // invitaciones: tu código y amigos que ya te han pagado
   timeOffset: 0,                                    // diferencia entre la hora del servidor y la del móvil
   wheelCap: null,                                   // nivel según el servidor, si va por detrás del juego (las tiradas esperan)                                       // objetos de La Armería que tiene el jugador (no se gastan)
 };
@@ -40,7 +42,8 @@ export function load() {
       state.wheelLevel = d.wheelLevel || Math.max(1, levelOf(state.stats) - 1);
       state.wheelLevel = Math.min(state.wheelLevel, Math.max(1, levelOf(state.stats)));   // curva nueva: si bajas de nivel, la siguiente subida da ruleta
       state.legendSpins = d.legendSpins | 0; state.legendAds = d.legendAds | 0; state.streak = d.streak | 0; state.installClaimed = !!d.installClaimed; state.armory = Array.isArray(d.armory) ? d.armory.filter(x => typeof x === 'string') : [];
-      if (state.installClaimed && !state.armory.includes('hammer')) state.armory.push('hammer');   // martillo: regalo de la app
+      if (state.installClaimed && !state.armory.includes('hammer')) state.armory.push('hammer');
+      state.daily = d.daily && typeof d.daily === 'object' ? d.daily : {};   // martillo: regalo de la app
       // partida guardada cuando un tomate costaba 100 clics: se conserva lo ya ganado
       if (d.cpt !== CONFIG.CLICKS_PER_TOMATO && !state.stats.legacyClicks && state.stats.totalClicks > 0) {
         const t = state.stats.totalClicks; state.stats.legacyClicks = t - (t % 100); state.stats.legacyTomatoes = Math.floor(t / 100);
@@ -55,7 +58,7 @@ export function load() {
   derive(); return state;
 }
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ cpt: CONFIG.CLICKS_PER_TOMATO, stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, welcomeOfferedAt: state.welcomeOfferedAt, welcomeClaimed: state.welcomeClaimed, wheelLevel: state.wheelLevel, legendSpins: state.legendSpins, legendAds: state.legendAds, streak: state.streak, installClaimed: state.installClaimed, armory: state.armory, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ cpt: CONFIG.CLICKS_PER_TOMATO, stats: state.stats, cards: state.cards, dailyClaimedOn: state.dailyClaimedOn, falconUntil: state.falconUntil, welcomeOfferedAt: state.welcomeOfferedAt, welcomeClaimed: state.welcomeClaimed, wheelLevel: state.wheelLevel, legendSpins: state.legendSpins, legendAds: state.legendAds, streak: state.streak, installClaimed: state.installClaimed, armory: state.armory, daily: state.daily, tutorialSeen: state.tutorialSeen, sound: state.sound, music: state.music })); } catch (e) {}
 }
 export function onChange(fn) { listeners.add(fn); }
 export function changed(sync = true) { derive(); if (sync) state.dirty = true; save(); listeners.forEach(f => f(state)); }
@@ -106,7 +109,9 @@ export function applyServer(row, sent) {
   state.legendSpins = +(row.legend_spins || 0); state.legendAds = +(row.legend_ads || 0);
   state.serverStreak = 'streak_pesetas' in row; if ('install_claimed' in row) state.installClaimed = !!row.install_claimed;
   if ('armory' in row) state.armory = Array.isArray(row.armory) ? row.armory.slice() : [];
-  PAGUITA_RULES.mult = +row.rules >= 27 ? 3 : 1;       // paguitas ×3 cuando el servidor está al día
+  PAGUITA_RULES.mult = +row.rules >= 27 ? 3 : 1;
+  if ('daily' in row) state.daily = row.daily || {};
+  if ('invites_paid' in row) state.invite = { code: row.invite_code || state.invite.code, paid: +row.invites_paid || 0, seen: +row.invites_seen || 0 };       // paguitas ×3 cuando el servidor está al día
   if ('welcome_claimed' in row) { state.welcomeClaimed = !!row.welcome_claimed; state.welcomeOfferedAt = row.welcome_offered_at ? Date.parse(row.welcome_offered_at) : null; }
   state.updatedAt = row.updated_at || null; state.dirty = pending;
   derive(); save(); listeners.forEach(f => f(state));
@@ -114,6 +119,6 @@ export function applyServer(row, sent) {
 export function hasProgress() { const s = state.stats; return s.totalClicks > 0 || s.chestsOpened > 0 || s.tomatoesThrown > 0; }
 // Vacía el progreso local (al cerrar sesión: el progreso queda en la cuenta).
 export function resetProgress() {
-  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false; state.welcomeOfferedAt = null; state.welcomeClaimed = false; state.wheelLevel = 1; state.noWheel = false; state.legendSpins = 0; state.legendAds = 0; state.streak = 0; state.serverStreak = false; state.installClaimed = false; state.armory = []; state.wheelCap = null; PAGUITA_RULES.mult = 3;
+  Object.keys(state.stats).forEach(k => state.stats[k] = 0); state.cards = emptyCards(); state.dailyClaimedOn = null; state.falconUntil = 0; state.updatedAt = null; state.dirty = false; state.welcomeOfferedAt = null; state.welcomeClaimed = false; state.wheelLevel = 1; state.noWheel = false; state.legendSpins = 0; state.legendAds = 0; state.streak = 0; state.serverStreak = false; state.installClaimed = false; state.armory = []; state.daily = {}; state.invite = { code: null, paid: 0, seen: 0 }; state.wheelCap = null; PAGUITA_RULES.mult = 3;
   derive(); save(); listeners.forEach(f => f(state));
 }

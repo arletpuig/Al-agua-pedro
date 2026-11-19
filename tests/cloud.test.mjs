@@ -5,7 +5,7 @@ import { launch, devices, check, summary, watchErrors, open, tap, S, stopAt, idl
 const psql = (sql, role, uid) => execFileSync('psql', ['-h', process.env.PGHOST || '/tmp', '-p', process.env.PGPORT || '5433', '-U', 'postgres', '-d', 'aap', '-At', '-q', '-v', 'ON_ERROR_STOP=1', '-c',
   (role ? `set role ${role}; ` : '') + (uid ? `set request.jwt.claim.sub = '${uid}'; ` : '') + sql], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const lit = v => typeof v === 'number' ? String(v) : v === null ? 'null' : typeof v === 'object' ? `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb` : `'${String(v).replace(/'/g, "''")}'`;
-const COMPOSITE = new Set(['save_progress', 'buy_armory_item', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title', 'set_region']);
+const COMPOSITE = new Set(['save_progress', 'buy_armory_item', 'daily_sync', 'upgrade_card', 'import_guest', 'claim_ad_reward', 'update_profile', 'set_title', 'set_region']);
 const users = new Map(); // token -> usuario
 const payRequests = [];
 const calls = [];
@@ -52,7 +52,9 @@ async function bridge(page) {
       if (p.startsWith('/rest/v1/rpc/')) {
         const fn = p.split('/').pop(), args = Object.entries(body).map(([k, v]) => `${k} => ${lit(v)}`).join(', ');
         const sql = COMPOSITE.has(fn) ? `select to_jsonb(x) from public.${fn}(${args}) x` : `select public.${fn}(${args})`;
-        return json(200, JSON.parse(psql(sql, me ? 'authenticated' : 'anon', me?.id)));
+        const out = psql(sql, me ? 'authenticated' : 'anon', me?.id);   // texto o vacío (void): como PostgREST, un texto JSON o null
+        let v; try { v = out === '' ? null : JSON.parse(out); } catch { v = out; }
+        return json(200, v);
       }
       return json(404, { message: 'no route ' + p });
     } catch (e) { const m = /ERROR:\s+(.*)/.exec(String(e.stderr || e.message)); return json(400, { message: m ? m[1] : 'error' }); }
@@ -337,25 +339,88 @@ console.log('O. La Armería en el servidor');
   // por debajo del nivel 10, el servidor no vende
   psql(`update public.profiles set tomatoes_thrown = 10, hits = 0, falls = 0 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
-  check('por debajo del nivel 10 el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /nivel 10/.test(e.message))));
+  check('por debajo del nivel 10 el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /nivel 10/.test(e.message))));
   psql(`update public.profiles set tomatoes_thrown = 3000, hits = 0, falls = 0, wheel_level = greatest(wheel_level, public.fn_player_level(3000, 0, 0)), chest_pesetas = chest_pesetas + 100000 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
   before = db(email);
-  const r1 = await page.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => 'ok', e => e.message));
+  const r1 = await page.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => 'ok', e => e.message));
   row = db(email); s = await S(page);
-  check('comprar en el servidor: cobra 40.000 y guarda el objeto', r1 === 'ok' && row.pesetas_spent === before.pesetas_spent + 40000 && row.armory.includes('slipper') && s.pesetas === row.pesetas
+  check('comprar en el servidor: cobra 30.000 y guarda el objeto', r1 === 'ok' && row.pesetas_spent === before.pesetas_spent + 30000 && row.armory.includes('slipper') && s.pesetas === row.pesetas
     && await page.evaluate(() => AAP.state.armory.includes('slipper')), JSON.stringify({ r1, a: row.armory }));
-  check('no se puede comprar dos veces (ni cobrar dos veces)', await page.evaluate(() => AAP.backend.buyArmory('slipper', 40000).then(() => false, e => /Ya tienes/.test(e.message))) && db(email).pesetas_spent === row.pesetas_spent);
-  check('sin pesetas suficientes, el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('stamp', 650000).then(() => false, e => /pesetas suficientes/.test(e.message))) && !db(email).armory.includes('stamp'));
+  check('no se puede comprar dos veces (ni cobrar dos veces)', await page.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /Ya tienes/.test(e.message))) && db(email).pesetas_spent === row.pesetas_spent);
+  check('sin pesetas suficientes, el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('stamp', 480000).then(() => false, e => /pesetas suficientes/.test(e.message))) && !db(email).armory.includes('stamp'));
   check('el martillo no se vende (es regalo) y un objeto inventado tampoco', await page.evaluate(() => Promise.all(['hammer', 'misil'].map(id => AAP.backend.buyArmory(id, 1).then(() => false, e => /no se vende/.test(e.message))))).then(r => r.every(Boolean)));
   check('un jugador no puede darse objetos a sí mismo', (() => { try { psql(`update public.profiles set armory = '["stamp"]'`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
   // dos compras a la vez: solo se cobra una
   psql(`update public.profiles set chest_pesetas = chest_pesetas + 125000 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
   before = db(email);
-  const twice = await page.evaluate(() => Promise.allSettled([AAP.backend.buyArmory('goose', 80000), AAP.backend.buyArmory('goose', 80000)]).then(r => r.map(x => x.status).join()));
+  const twice = await page.evaluate(() => Promise.allSettled([AAP.backend.buyArmory('goose', 60000), AAP.backend.buyArmory('goose', 60000)]).then(r => r.map(x => x.status).join()));
   row = db(email);
-  check('dos compras seguidas del mismo objeto: se cobra una sola vez', row.pesetas_spent === before.pesetas_spent + 80000 && row.armory.filter(x => x === 'goose').length === 1, twice);
+  check('dos compras seguidas del mismo objeto: se cobra una sola vez', row.pesetas_spent === before.pesetas_spent + 60000 && row.armory.filter(x => x === 'goose').length === 1, twice);
+}
+
+console.log('Q. Logros diarios e invitaciones en el servidor');
+{
+  const today = psql(`select ((now() at time zone 'Europe/Madrid')::date)::text`);
+  await page.evaluate(() => AAP.backend.dailySync()); row = db(email);
+  check('logros: el servidor guarda el día y los contadores del principio', row.daily.date === today && row.daily.base && +row.daily.base.t <= row.tomatoes_thrown && +row.daily.base.c <= row.total_clicks, JSON.stringify(row.daily).slice(0, 120));
+  // los contadores del principio del día = los de ahora: ninguna misión cumplida todavía
+  psql(`update public.profiles set daily = jsonb_set(daily, '{base}', jsonb_build_object('t', tomatoes_thrown, 'f', falls, 'c', total_clicks, 'h', hits, 'p', perfects, 'o', chests_opened)) where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  check('misión sin completar: el servidor no la da', await page.evaluate(() => AAP.backend.claimMission(0).then(() => false, e => /Todavía no/.test(e.message))));
+  // se ponen los contadores del principio del día a 0: todas las misiones quedan cumplidas
+  psql(`update public.profiles set daily = jsonb_set(daily, '{base}', '{"t":0,"f":0,"c":0,"h":0,"p":0,"o":0}') where user_id = '${row.user_id}'`);
+  psql(`update public.profiles set tomatoes_thrown = greatest(tomatoes_thrown, 200), hits = greatest(hits, 100), perfects = greatest(perfects, 30), falls = greatest(falls, 30), chests_opened = greatest(chests_opened, 5), total_clicks = greatest(total_clicks, 50000) where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  before = db(email);
+  const m0 = await page.evaluate(() => AAP.backend.claimMission(0).then(r => r, e => ({ err: e.message })));
+  row = db(email); const L = +psql(`select least(50, public.fn_player_level(${row.tomatoes_thrown}, ${row.hits}, ${row.falls}))`);
+  check('misión fácil en el servidor: tomates según el nivel', m0.tomatoes === 15 + L && row.chest_tomatoes === before.chest_tomatoes + 15 + L && row.daily.done.includes('0'), JSON.stringify(m0));
+  check('y no se cobra dos veces', await page.evaluate(() => AAP.backend.claimMission(0).then(() => false, e => /Ya has recogido/.test(e.message))));
+  await page.evaluate(() => AAP.backend.claimMission(1)); await page.evaluate(() => AAP.backend.claimMission(2));
+  before = db(email); const bo = await page.evaluate(() => AAP.backend.claimDailyBonus().then(r => r.cards.length, e => e.message)); row = db(email);
+  check('cofre de la jornada en el servidor (tras las 3 misiones)', bo >= 3 && row.chests_opened === before.chests_opened + 1 && row.daily.bonus === true, String(bo));
+  before = db(email); const d1 = await page.evaluate(() => AAP.backend.claimLoginDay().then(r => r, e => ({ err: e.message }))); row = db(email);
+  check('calendario: día 1 = +20 tomates, una vez al día', d1.day === 1 && row.chest_tomatoes === before.chest_tomatoes + 20 && await page.evaluate(() => AAP.backend.claimLoginDay().then(() => false, e => /Ya has recogido/.test(e.message))), JSON.stringify(d1));
+  psql(`update public.profiles set daily = daily || jsonb_build_object('login_date', ((now() at time zone 'Europe/Madrid')::date - 1)::text, 'login_streak', 6) where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  before = db(email); const d7 = await page.evaluate(() => AAP.backend.claimLoginDay().then(r => r, e => ({ err: e.message }))); row = db(email);
+  check('calendario: día 7 seguido = cofre de diamante + 200 pesetas', d7.day === 7 && d7.cards?.length >= 3 && row.chest_pesetas >= before.chest_pesetas + 200 && row.chests_opened === before.chests_opened + 1, JSON.stringify({ day: d7.day, err: d7.err }));
+  // invitaciones: un amigo nuevo usa el código
+  const code = await page.evaluate(() => AAP.backend.inviteCode());
+  check('cada jugador tiene su código de invitación', /^[0-9A-F]{6}$/.test(code) && db(email).invite_code === code, code);
+  const fid = psql(`insert into auth.users (email, raw_user_meta_data) values ('amigo${Date.now()}@test.com', '{"username":"Amiguete"}') returning id`);
+  const fr0 = JSON.parse(psql(`select to_jsonb(p) from public.profiles p where user_id = '${fid}'`));
+  const red = JSON.parse(psql(`select public.redeem_invite('${code.toLowerCase()}')`, 'authenticated', fid));
+  const fr = JSON.parse(psql(`select to_jsonb(p) from public.profiles p where user_id = '${fid}'`));
+  check('el amigo recibe su regalo al registrarse (300 pesetas y 150 tomates) y sabe quién le invitó', red.reward.pesetas === 300 && fr.chest_pesetas === fr0.chest_pesetas + 300 && fr.chest_tomatoes === fr0.chest_tomatoes + 150 && red.inviter === row.username,
+    JSON.stringify({ rw: red.reward, inv: red.inviter, me: row.username, p: [fr0.chest_pesetas, fr.chest_pesetas], t: [fr0.chest_tomatoes, fr.chest_tomatoes] }));
+  const again = (() => { try { psql(`select public.redeem_invite('${code}')`, 'authenticated', fid); return false; } catch (e) { return /Ya has usado/.test(String(e.stderr)); } })();
+  const self = await page.evaluate(c => AAP.backend.redeemInvite(c).then(() => false, e => /ti mismo/.test(e.message)), code);
+  check('una invitación por amigo y nadie se invita a sí mismo', again && self);
+  const old = psql(`insert into auth.users (email) values ('viejo${Date.now()}@test.com') returning id`); psql(`update public.profiles set created_at = now() - interval '10 days' where user_id = '${old}'`);
+  check('solo cuentas nuevas', (() => { try { psql(`select public.redeem_invite('${code}')`, 'authenticated', old); return false; } catch (e) { return /cuentas nuevas/.test(String(e.stderr)); } })());
+  before = db(email); const c1 = await page.evaluate(() => AAP.backend.claimInvites()); row = db(email);
+  check('quien invita aún no cobra si su amigo no ha jugado (pendiente)', c1.paid === 0 && c1.total === 1 && c1.pending === 1 && row.chest_pesetas === before.chest_pesetas, JSON.stringify({ paid: c1.paid, total: c1.total, pending: c1.pending }));
+  psql(`update public.profiles set tomatoes_thrown = 10, hits = 0, falls = 0, chest_tomatoes = 200 where user_id = '${fid}'`);
+  before = db(email); const c2 = await page.evaluate(() => AAP.backend.claimInvites()); row = db(email);
+  check('cuando su amigo juega 10 tomates: +700 pesetas (una vez)', c2.paid === 1 && row.chest_pesetas === before.chest_pesetas + 700 && row.invites_paid === 1 && (await page.evaluate(() => AAP.backend.claimInvites())).paid === 0, JSON.stringify({ paid: c2.paid }));
+  // el amigo, en su móvil: entra con el enlace, se registra y le sale su regalo
+  const cf = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const pf = await cf.newPage(); const ef = watchErrors(pf); await bridge(pf);
+  await open(pf, URL_LOGIN + '&amigo=' + code); await pf.evaluate(() => { AAP.giftTest.off = true; });
+  check('el enlace de invitación se guarda y se quita de la dirección', !/amigo=/.test(pf.url()) && await pf.evaluate(() => localStorage.getItem('alaguapedro.invite')) === code);
+  await pf.click('.tab-s[data-tab="register"]'); const femail = `amiga${Date.now()}@test.com`;
+  await pf.fill('#form-register [name=username]', 'Amiga'); await pf.fill('#form-register [name=email]', femail); await pf.fill('#form-register [name=password]', 'secreto1'); await pf.click('#form-register button');
+  await pf.waitForSelector('#reward-pop.open', { timeout: 8000 }).catch(() => {});
+  const fp = await pf.evaluate(() => ({ open: document.querySelector('#reward-pop').classList.contains('open'), t: document.querySelector('#reward-pop').innerText }));
+  const frow = db(femail);
+  check('al amigo le sale «REGALO POR INVITACIÓN» de quien le invitó, y lo tiene en su cuenta', fp.open && /REGALO POR INVITACI/i.test(fp.t) && fp.t.includes(row.username) && /300/.test(fp.t) && frow.chest_pesetas >= 300 && frow.chest_tomatoes >= 150, fp.t.replace(/\s+/g, ' ').slice(0, 200));
+  await pf.screenshot({ path: 'tests/out/Q-regalo-invitacion.png' });
+  check('amigo: sin errores en consola', ef.length === 0, ef.join(' | ')); await cf.close();
+  before = db(email); const c3 = await page.evaluate(() => AAP.backend.claimInvites());
+  check('el segundo amigo queda pendiente hasta que juegue', c3.total === 2 && c3.pending === 1 && c3.paid === 0, JSON.stringify({ t: c3.total, p: c3.pending }));
+  check('nadie puede leer ni tocar la tabla de invitaciones', (() => { try { psql(`select count(*) from public.referrals`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
 }
 
 console.log('F. Ranking');

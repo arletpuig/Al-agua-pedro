@@ -63,7 +63,31 @@ export function claimable() {
   const d = today(), ms = missions(d);
   return (D.loginDay(d, d.date).claimed ? 0 : 1) + ms.filter(m => !m.done && m.prog >= m.goal).length + (ms.every(m => m.done) && !d.bonus ? 1 : 0);
 }
-function badge() { const n = claimable(), b = $('#daily-count'); if (!b) return; b.textContent = n; b.classList.toggle('hidden', !n); $('#daily-btn').classList.toggle('ready', n > 0); }
+// en la pantalla principal: punto rojo si hay algo por recoger, barra con el progreso de las 3 misiones
+// y, mientras juegas, una burbuja con la misión que avanza (y el aviso cuando la completas)
+let seen = null, peekT = 0;
+function badge() {
+  const btn = $('#daily-btn'); if (!btn) return;
+  const n = claimable(), d = today(), ms = missions(d);
+  $('#daily-dot').classList.toggle('hidden', !n); btn.classList.toggle('ready', n > 0);
+  const pct = ms.reduce((a, m) => a + (m.done ? 1 : m.prog / m.goal), 0) / 3;
+  $('#daily-fill').style.width = Math.round(pct * 100) + '%'; btn.classList.toggle('all', ms.every(m => m.done || m.prog >= m.goal));
+  const now = ms.map(m => m.prog), prev = seen && seen.date === d.date ? seen.p : null; seen = { date: d.date, p: now };
+  if (!prev || dailyTest.off) return;
+  const won = ms.find((m, i) => !m.done && m.prog >= m.goal && prev[i] < m.goal);
+  const moved = ms.filter((m, i) => !m.done && m.prog < m.goal && m.prog > prev[i]).sort((a, b) => b.prog / b.goal - a.prog / a.goal)[0];
+  if (won) peek(won, true); else if (moved && !$('#daily-peek').classList.contains('win')) peek(moved, false);
+}
+function peek(m, win) {
+  if ($('#panel-daily').classList.contains('open')) return;
+  const el = $('#daily-peek');
+  $('#dp-txt').textContent = win ? '🏆 ¡MISIÓN CUMPLIDA!' : D.TEXT[m.k](m.goal);
+  $('#dp-num').textContent = win ? '¡Recógela!' : `${fmt(m.prog)}/${fmt(m.goal)}`;
+  $('#dp-fill').style.width = Math.round(Math.min(1, m.prog / m.goal) * 100) + '%';
+  if (win) { el.classList.remove('show'); void el.offsetWidth; SFX.upgrade?.(); }
+  el.classList.toggle('win', win); el.classList.add('show');
+  clearTimeout(peekT); peekT = setTimeout(() => el.classList.remove('show', 'win'), win ? 4000 : 2200);
+}
 // cuenta atrás hasta medianoche (hora de España); al cambiar el día se empieza de cero
 function tick() {
   const ms = backend.msToNextDaily(), el = $('#dl-timer');
@@ -72,7 +96,7 @@ function tick() {
 }
 
 // ---------- panel
-function open() { setTab('day'); render(); ui.openPanel('#panel-daily'); backend.dailySync().then(render).catch(() => {}); checkInvites(); }
+function open() { clearTimeout(peekT); $('#daily-peek').classList.remove('show', 'win'); setTab('day'); render(); ui.openPanel('#panel-daily'); backend.dailySync().then(render).catch(() => {}); checkInvites(); }
 function setTab(t) {
   tab = t; document.querySelectorAll('#panel-daily [data-dtab]').forEach(b => b.classList.toggle('on', b.dataset.dtab === t));
   $('#dl-day').classList.toggle('hidden', t !== 'day'); $('#dl-inv').classList.toggle('hidden', t !== 'inv');

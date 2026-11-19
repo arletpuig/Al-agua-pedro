@@ -794,8 +794,8 @@ console.log('35. La Armería');
   check('jugador nuevo: La Armería cerrada (candado, «NV 10») y aviso de cuándo se abre', lock0.locked && lock0.tag === 'NV 10' && await vis('#armory-tease') && /nivel 10/.test(await pa.textContent('#armory-tease'))
     && !(await pa.evaluate(() => document.querySelector('#panel-armory').classList.contains('open'))), JSON.stringify(lock0));
   check('sin nivel 10 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /nivel 10/.test(e.message))));
-  const btn = await pa.evaluate(() => { const r = document.querySelector('#armory-btn').getBoundingClientRect(); return { x: r.x, w: r.width, top: r.top }; });
-  check('el botón está a un lado (fuera del menú de abajo) y no tapa el juego', btn.x < 20 && btn.w < 80 && btn.top > 150, JSON.stringify(btn));
+  const btn = await pa.evaluate(() => { const r = document.querySelector('#armory-btn').getBoundingClientRect(), t = document.querySelector('#basket').getBoundingClientRect(); return { x: r.x, w: r.width, top: r.top, tom: Math.round(t.bottom) }; });
+  check('el botón está arriba a un lado, pequeño, justo debajo de los contadores (sin taparlos)', btn.x < 20 && btn.w < 60 && btn.top >= btn.tom && btn.top < btn.tom + 40, JSON.stringify(btn));
   // nivel 10 con el sistema de niveles de verdad: se abre sola
   await pa.evaluate(async () => { const st = AAP.state.stats; st.tomatoesThrown = 2200; st.hits = 1200; (await import('./js/state.js')).changed(false); });
   await pa.waitForTimeout(300);
@@ -871,8 +871,21 @@ console.log('36. Logros diarios');
 {
   const cd = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const pd = await cd.newPage(); const ed = watchErrors(pd); await mockTime(pd);
   await open(pd); await pd.evaluate(() => { AAP.giftTest.off = true; }); await pd.waitForTimeout(300);
-  const b0 = await pd.evaluate(() => ({ vis: document.querySelector('#daily-btn').offsetWidth > 0, n: +document.querySelector('#daily-count').textContent, x: document.querySelector('#daily-btn').getBoundingClientRect().x }));
-  check('botón LOGROS a un lado, con aviso de premios por recoger', b0.vis && b0.n >= 1 && b0.x < 30, JSON.stringify(b0));
+  const b0 = await pd.evaluate(() => { const r = q => document.querySelector(q).getBoundingClientRect(), d = r('#daily-btn'), a = r('#armory-btn');
+    return { vis: d.width > 0, dot: !document.querySelector('#daily-dot').classList.contains('hidden'), x: d.x, w: d.width, top: d.top, atop: a.top, abot: a.bottom, w2: a.width }; });
+  check('botones LOGROS y Armería arriba a la izquierda, pequeños y sin solaparse; punto rojo con premios por recoger', b0.vis && b0.dot && b0.x < 20 && b0.w <= 56 && b0.w2 <= 56 && b0.atop < b0.top && b0.abot <= b0.top + 2 && b0.top < 200, JSON.stringify(b0));
+  // jugando: la barra del botón avanza y sale la burbuja con la misión; al completarla, «¡MISIÓN CUMPLIDA!»
+  const pk = await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), S = await import('./js/state.js'), st = AAP.state.stats, key = { t: 'tomatoesThrown', f: 'falls', c: 'totalClicks', h: 'hits', p: 'perfects', o: 'chestsOpened' };
+    AAP.state.daily = D.todayState(AAP.state.daily, st, AAP.backend.todayKey()); S.changed(false);
+    const m = D.missionFor(AAP.state.daily.date, 0), w0 = document.querySelector('#daily-fill').style.width;
+    st[key[m.k]] += Math.max(1, Math.floor(m.goal / 2)); S.changed(false);
+    const r1 = { w0, w1: document.querySelector('#daily-fill').style.width, show: document.querySelector('#daily-peek').classList.contains('show'), txt: document.querySelector('#dp-txt').textContent, num: document.querySelector('#dp-num').textContent };
+    st[key[m.k]] += m.goal; S.changed(false);
+    return { ...r1, win: document.querySelector('#daily-peek').classList.contains('win'), wtxt: document.querySelector('#dp-txt').textContent, goal: D.TEXT[m.k](m.goal) }; });
+  check('progreso en la pantalla principal: barra y burbuja con la misión', pk.w0 === '0%' && parseInt(pk.w1) > 0 && pk.show && pk.txt === pk.goal && /\//.test(pk.num), JSON.stringify(pk));
+  check('al completar la misión: «¡MISIÓN CUMPLIDA!»', pk.win && /MISIÓN CUMPLIDA/.test(pk.wtxt));
+  await pd.screenshot({ path: 'tests/out/36-mision-cumplida.png' });
+  await pd.evaluate(async () => { AAP.state.daily = {}; (await import('./js/state.js')).changed(false); });
   await pd.click('#daily-btn'); await pd.waitForTimeout(400);
   const v = await pd.evaluate(() => ({ open: document.querySelector('#panel-daily').classList.contains('open'), days: document.querySelectorAll('.dl-day').length, now: document.querySelector('.dl-day.now small')?.textContent,
     mis: [...document.querySelectorAll('.dl-mis .dl-txt > b')].map(b => b.textContent), timer: document.querySelector('#dl-timer').textContent, bonus: document.querySelector('.dl-cnt')?.textContent }));

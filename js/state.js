@@ -101,7 +101,10 @@ export function applyServer(row, sent) {
   const s = state.stats, delta = {}; COUNTERS.forEach(k => delta[k] = sent ? Math.max(0, s[k] - sent[k]) : 0);
   s.totalClicks = +row.total_clicks; s.legacyClicks = +(row.legacy_clicks || 0); s.legacyTomatoes = +(row.legacy_tomatoes || 0); s.tomatoesThrown = row.tomatoes_thrown; s.hits = row.hits; s.perfects = row.perfects || 0; s.falls = row.falls;
   s.pesetasEarned = row.pesetas_earned || 0; s.streakPesetas = +(row.streak_pesetas || 0); s.tomatoesRefunded = row.tomatoes_refunded || 0; s.paguitasPesetas = row.paguitas_pesetas || 0; s.chestTomatoes = row.chest_tomatoes || 0; s.chestPesetas = row.chest_pesetas || 0; s.pesetasSpent = row.pesetas_spent || 0; s.chestsOpened = row.chests_opened || 0;
+  // nivel según el servidor: si va por detrás (aún no ha recibido los últimos lanzamientos), las tiradas de ruleta esperan
+  const sL = levelOf({ tomatoesThrown: +row.tomatoes_thrown, hits: +row.hits, falls: +row.falls });
   let pending = false; COUNTERS.forEach(k => { if (delta[k]) { s[k] += delta[k]; pending = true; } });
+  state.wheelCap = sL < levelOf(s) ? sL : null;
   const c = emptyCards(); CARD_IDS.forEach(id => { if (row.cards?.[id]) c[id] = { level: row.cards[id].level | 0, frags: row.cards[id].frags | 0 }; }); state.cards = c;
   state.dailyClaimedOn = row.daily_claimed_on || null; state.falconUntil = row.falcon_until ? Date.parse(row.falcon_until) : 0;
   // servidor sin actualizar (falta schema_v13.sql): se ven los niveles, pero la ruleta espera

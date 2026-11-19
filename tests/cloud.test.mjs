@@ -51,7 +51,7 @@ async function bridge(page) {
       if (p === '/rest/v1/leaderboard') return json(200, JSON.parse(psql(`select coalesce(jsonb_agg(to_jsonb(l)), '[]') from public.leaderboard l`, 'anon')));
       if (p.startsWith('/rest/v1/rpc/')) {
         const fn = p.split('/').pop(), args = Object.entries(body).map(([k, v]) => `${k} => ${lit(v)}`).join(', ');
-        const sql = COMPOSITE.has(fn) ? `select to_jsonb(x) from public.${fn}(${args}) x` : `select public.${fn}(${args})`;
+        const sql = COMPOSITE.has(fn) ? `select to_jsonb(x) from public.${fn}(${args}) x` : fn === 'ack_invites' ? `select public.${fn}(${args})` : `select to_jsonb(public.${fn}(${args}))`;   // como PostgREST: un texto llega como texto JSON
         const out = psql(sql, me ? 'authenticated' : 'anon', me?.id);   // texto o vacío (void): como PostgREST, un texto JSON o null
         let v; try { v = out === '' ? null : JSON.parse(out); } catch { v = out; }
         return json(200, v);
@@ -432,6 +432,41 @@ console.log('Q. Logros diarios e invitaciones en el servidor');
   before = db(email); const c3 = await page.evaluate(() => AAP.backend.claimInvites());
   check('el segundo amigo queda pendiente hasta que juegue', c3.total === 2 && c3.pending === 1 && c3.paid === 0, JSON.stringify({ t: c3.total, p: c3.pending }));
   check('nadie puede leer ni tocar la tabla de invitaciones', (() => { try { psql(`select count(*) from public.referrals`, 'authenticated', row.user_id); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
+}
+
+console.log('R. Falcón: los clics hechos con él no se pierden; la ruleta del nivel no se queda esperando');
+{
+  await page.evaluate(() => AAP.backend.dailySync()); row = db(email);
+  const uid = row.user_id, cpt1 = 1 + +psql(`select public.fn_card_level(cards, 'inflacion') from public.profiles where user_id = '${uid}'`);
+  const save = clicks => JSON.parse(psql(`select to_jsonb(x) from public.save_progress(${clicks}, ${row.tomatoes_thrown}, ${row.hits}, ${row.perfects}, ${row.falls}, ${row.pesetas_earned}, ${row.tomatoes_refunded}, ${row.paguitas_pesetas}, ${row.streak_pesetas}) x`, 'authenticated', uid));
+  // último guardado hace 60 s con el Falcón en marcha; terminó hace 5 s y se guarda ahora: 60 s pulsando ×5 (×3 de racha) = 13.500 pulsaciones-clic
+  const got = 60 * 10 * 3 * 5 * cpt1;
+  psql(`update public.profiles set updated_at = now() - interval '60 seconds', falcon_until = now() - interval '5 seconds' where user_id = '${uid}'`);
+  let r1 = save(row.total_clicks + got);
+  check('Falcón que termina justo antes de guardar: el servidor acepta todos los clics hechos con él', +r1.total_clicks === row.total_clicks + got, JSON.stringify({ sent: got, ok: r1.total_clicks - row.total_clicks }));
+  row = db(email);
+  psql(`update public.profiles set updated_at = now() - interval '60 seconds', falcon_until = now() - interval '2 hours' where user_id = '${uid}'`);
+  r1 = save(row.total_clicks + got);
+  check('sin Falcón, el límite contra trampas sigue igual', +r1.total_clicks < row.total_clicks + got, String(r1.total_clicks - row.total_clicks));
+  psql(`update public.profiles set falcon_until = null where user_id = '${uid}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  // pulsando sin parar: se guarda mientras juegas (antes cada toque retrasaba el guardado y no se guardaba hasta parar)
+  const n0 = calls.filter(c => c.endsWith('/rpc/save_progress')).length;
+  await page.evaluate(() => { AAP.guardTest && (AAP.guardTest.off = true); });
+  for (let i = 0; i < 30; i++) { await tap(page, 1); await page.waitForTimeout(300); }
+  const n1 = calls.filter(c => c.endsWith('/rpc/save_progress')).length;
+  check('pulsando sin parar 9 s: se guarda por el camino', n1 - n0 >= 1, `${n1 - n0} guardados`);
+  await idle(page);
+  // el juego creía que el servidor iba por detrás (tiradas en espera): en el siguiente guardado se pone al día solo
+  const w = await page.evaluate(async () => { const LU = await import('./js/levelup.js'), S = await import('./js/state.js'), L = (await import('./js/levels.js')).levelOf(AAP.state.stats);
+    AAP.state.wheelLevel = Math.max(1, L - 1); AAP.state.wheelCap = AAP.state.wheelLevel; const before = LU.pending();
+    AAP.state.stats.totalClicks += 5; S.changed(); await AAP.backend.dailySync(); return { before, after: LU.pending(), cap: AAP.state.wheelCap }; });
+  check('las tiradas «en espera» se desbloquean en el siguiente guardado (sin cerrar el juego)', w.before === 0 && w.after >= 1 && w.cap === null, JSON.stringify(w));
+  const w2 = await page.evaluate(async () => { const L = (await import('./js/levels.js')).levelOf(AAP.state.stats); AAP.state.wheelCap = AAP.state.wheelLevel; (await import('./js/levelup.js')).syncChip();
+    document.querySelector('#lvl-chip').click(); await new Promise(r => setTimeout(r, 1500)); return { wheel: document.querySelector('#wheel-overlay').classList.contains('open'), cap: AAP.state.wheelCap }; });
+  check('y al tocar el nivel se comprueba con el servidor y sale la ruleta', w2.wheel && w2.cap === null, JSON.stringify(w2));
+  await page.evaluate(() => { document.querySelector('#wheel-close').click(); }); await page.waitForTimeout(400);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
 }
 
 console.log('F. Ranking');

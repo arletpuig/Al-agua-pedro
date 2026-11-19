@@ -73,7 +73,7 @@ scene.ready ? start() : scene.bus.once('ready', start);
 onChange(() => { ui.hud(); syncChip('auto'); });
 backend.syncTime().then(() => ui.hud());
 setInterval(() => {                       // reloj: Falcón, punto de cofre diario
-  const on = falconActive(); if (on && !falconWas) { scene.falconFly?.(); ui.showToast('✈️ ¡El Falcón despega! Clics ×5'); } falconWas = on;
+  const on = falconActive(); if (on && !falconWas) { scene.falconFly?.(); ui.showToast('✈️ ¡El Falcón despega! Clics ×5'); } if (!on && falconWas && state.dirty) pushNow(); falconWas = on;
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
@@ -158,7 +158,7 @@ function pushNow(keepalive = false) {
   return saving;
 }
 backend.setFlush(() => state.dirty ? pushNow() : Promise.resolve());
-onChange(() => { if (sb.auth.user && state.dirty) { clearTimeout(saveTimer); saveTimer = setTimeout(() => pushNow(), CONFIG.AUTOSAVE_MS); } });
+onChange(() => { if (sb.auth.user && state.dirty && !saveTimer) saveTimer = setTimeout(() => { saveTimer = null; pushNow(); }, CONFIG.AUTOSAVE_MS); });   // mientras juegas, se guarda cada pocos segundos (antes cada toque lo retrasaba)
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && sb.auth.user && state.dirty) pushNow(true); });
 
 async function afterLogin(user) {
@@ -264,7 +264,7 @@ function traducir(m = '') {
   const t = { 'Invalid login credentials': 'Correo o contraseña incorrectos', 'User already registered': 'Ese correo ya tiene cuenta', 'Email not confirmed': 'Confirma tu correo antes de entrar', 'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres', 'Failed to fetch': 'Sin conexión con el servidor', 'NetworkError': 'Sin conexión con el servidor', 'rate limit': 'Demasiados intentos. Espera un momento.', 'Could not find the function': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'schema cache': 'El servidor todavía no está actualizado. Inténtalo más tarde.', 'weak': 'La contraseña es demasiado débil', 'invalid format': 'El correo no es válido', 'security purposes': 'Demasiados intentos. Espera un momento.' };
   for (const k in t) if (m.includes(k)) return t[k];
   // solo se muestran tal cual los mensajes propios del juego (en castellano); cualquier otro error técnico se sustituye
-  return /^(No |Ya |Te faltan|La carta|La Armería|Ese objeto|Ese código|Las invitaciones|Esa misión|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack|No tienes tiradas|No tienes pesetas|Esa comunidad|Solo puedes|Esta tirada|Ya has recogido)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
+  return /^(No |Ya |Te faltan|La carta|La Armería|Ese objeto|Ese código|Las invitaciones|Esa misión|Tus tiradas|Esta tirada|Los anuncios|Necesitas|El perfil|Cofre|Carta|Si el correo|El nombre|Ese nombre|Esa bandera|El acceso|El regalo|Todavía|Primero|El título|El Falcón|Esa oferta|Ese pack|No tienes tiradas|No tienes pesetas|Esa comunidad|Solo puedes|Esta tirada|Ya has recogido)/.test(m) ? m : 'No se ha podido completar la acción. Inténtalo de nuevo.';
 }
 // ---------- arranque de sesión ----------
 (async () => {

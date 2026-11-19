@@ -21,8 +21,8 @@ export const celebrating = () => running;
 export function initLevels(uiRef, busyFn, failFn, reloadFn) {
   ui = uiRef; isBusy = busyFn; fail = failFn; reload = reloadFn;
   fxUp = createFx($('#lvlup-overlay')); fxWheel = createFx($('#wheel-overlay'));
-  $('#lvl-chip').addEventListener('click', () => { SFX.ui(); if (pending() > 0 && !running) openWheelFrom('level'); else openLevels(); });
-  $('#levels-body').addEventListener('click', e => { if (e.target.closest('[data-spin]')) openWheelFrom('level'); else if (e.target.closest('[data-legend]')) openWheelFrom('legend'); });
+  $('#lvl-chip').addEventListener('click', async () => { SFX.ui(); if (!pending() && state.wheelCap != null) { await backend.syncWheelCap(); syncChip(); } if (pending() > 0 && !running) openWheelFrom('level'); else openLevels(); });
+  $('#levels-body').addEventListener('click', e => { if (e.target.closest('[data-spin]')) openWheelFrom('level'); else if (e.target.closest('[data-wait]')) backend.syncWheelCap().then(() => { syncChip(); renderLevels(); if (pending()) openWheelFrom('level'); }); else if (e.target.closest('[data-legend]')) openWheelFrom('legend'); });
   $('#wheel-close').addEventListener('click', () => { if (!spinning) closeWheel(); });
   buildLights();
   syncChip();
@@ -86,6 +86,7 @@ function queueCelebrate(opts) {
 async function celebrate({ mode, from, to }) {
   const L = to || LV.levelOf(state.stats), ov = $('#lvlup-overlay'), fast = levelTest.fast;
   let intro = false; try { intro = mode === 'pending' && !localStorage.getItem(INTRO_KEY); localStorage.setItem(INTRO_KEY, '1'); } catch (e) {}
+  if (state.wheelCap != null) { await backend.syncWheelCap(); syncChip(); }
   const start = mode === 'up' ? from : L;
   setTier(ov, start); ov.classList.remove('go', 'named', 'ready', 'legend');
   $('#lvlup-num').textContent = start;
@@ -198,7 +199,7 @@ async function spin(src) {
   const go = () => SOURCES[src].go(levelTest.rng);
   const req = go().catch(async e => {
     if (src !== 'level' || !reload || !/No tienes tiradas/.test(e.message)) throw e;
-    await reload(); if (!pending()) throw new Error('Esta tirada ya estaba girada');
+    await reload(); if (!pending()) throw new Error(state.wheelCap != null ? 'Tus tiradas llegarán en cuanto el servidor termine de contar tu nivel' : 'Esta tirada ya estaba girada');
     return go().catch(async e2 => {
       // el servidor y el juego no cuentan igual los niveles: este móvil tiene una versión vieja del juego guardada
       if (!/No tienes tiradas/.test(e2.message)) throw e2;
@@ -273,7 +274,7 @@ export function renderLevels() {
       <span class="lvl-medal xl"><svg><use href="#ic-medal"/></svg><b>${info.level}</b></span>
       <div><small>NIVEL ${info.level} DE ${LV.MAX_LEVEL}</small><h3>${esc(info.name)}</h3>
         <div class="lvl-bar big"><i style="width:${(info.pct * 100).toFixed(1)}%"></i><small>${info.max ? 'NIVEL MÁXIMO' : `${fmt(info.into)} / ${fmt(info.need)} XP`}</small></div></div></div>
-    ${p ? `<button class="btn-gold spin-cta" data-spin><span>¡TIENES ${p} TIRADA${p > 1 ? 'S' : ''} DE RULETA!</span></button>` : ''}
+    ${p ? `<button class="btn-gold spin-cta" data-spin><span>¡TIENES ${p} TIRADA${p > 1 ? 'S' : ''} DE RULETA!</span></button>` : state.wheelCap != null && LV.levelOf(state.stats) > state.wheelLevel ? '<button class="btn-gold spin-cta" data-wait><span>🔄 COMPROBAR MIS TIRADAS</span></button>' : ''}
     ${ls ? `<button class="btn-gold spin-cta legend" data-legend><span>¡${ls} TIRADA${ls > 1 ? 'S' : ''} LEGENDARIA${ls > 1 ? 'S' : ''}!</span></button>` : ''}
     ${info.level < LV.MAX_LEVEL || !LV.isLegendLevel(info.level) ? `<div class="lv-next-leg">${crown}<span>Próxima <b>ruleta legendaria</b>: nivel ${nl}${nl > info.level ? ` · faltan ${nl - info.level}` : ''}</span></div>` : ''}
     <p class="lv-how"><b>Experiencia:</b> +${LV.XP.thrown} por tomate lanzado · +${LV.XP.hit} por impacto · +${LV.XP.fall} cada vez que Pedro cae al agua. <b>Cada nivel = un giro de ruleta; cada 10, la legendaria.</b></p>`;

@@ -335,14 +335,17 @@ console.log('N. Regalo por instalar la app, en el servidor');
 
 console.log('O. La Armería en el servidor');
 {
-  row = db(email);
-  check('el regalo de la app también dio el martillo de goma (en el servidor)', JSON.stringify(row.armory).includes('hammer'), JSON.stringify(row.armory));
-  // por debajo del nivel 10, el servidor no vende
+  row = db(email); const orig = { t: row.tomatoes_thrown, h: row.hits, f: row.falls, w: row.wheel_level, ct: row.chest_tomatoes };
+  await page.evaluate(() => localStorage.setItem('alaguapedro.armory50', '1'));   // la gran celebración del nivel 50 se prueba en el juego
+  check('antes del nivel 50, el regalo de la app no da todavía el martillo', !JSON.stringify(row.armory).includes('hammer'), JSON.stringify(row.armory));
+  // por debajo del nivel 50, el servidor no vende
   psql(`update public.profiles set tomatoes_thrown = 10, hits = 0, falls = 0 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
-  check('por debajo del nivel 10 el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /nivel 10/.test(e.message))));
-  psql(`update public.profiles set tomatoes_thrown = 3000, hits = 0, falls = 0, wheel_level = greatest(wheel_level, public.fn_player_level(3000, 0, 0)), chest_pesetas = chest_pesetas + 100000 where user_id = '${row.user_id}'`);
+  check('por debajo del nivel 50 el servidor no vende', await page.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /nivel 50/.test(e.message))));
+  psql(`update public.profiles set tomatoes_thrown = 200000, chest_tomatoes = chest_tomatoes + 200000, hits = 0, falls = 0, wheel_level = 50, chest_pesetas = chest_pesetas + 100000 where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  await page.waitForFunction(() => AAP.state.armory.includes('hammer'), null, { timeout: 8000 }).catch(() => {});
+  check('al llegar al nivel 50, el martillo de la app llega solo (en el servidor)', JSON.stringify(db(email).armory).includes('hammer'), JSON.stringify(db(email).armory));
   before = db(email);
   const r1 = await page.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => 'ok', e => e.message));
   row = db(email); s = await S(page);
@@ -359,6 +362,9 @@ console.log('O. La Armería en el servidor');
   const twice = await page.evaluate(() => Promise.allSettled([AAP.backend.buyArmory('goose', 60000), AAP.backend.buyArmory('goose', 60000)]).then(r => r.map(x => x.status).join()));
   row = db(email);
   check('dos compras seguidas del mismo objeto: se cobra una sola vez', row.pesetas_spent === before.pesetas_spent + 60000 && row.armory.filter(x => x === 'goose').length === 1, twice);
+  // vuelta al nivel de antes (las pruebas de después cuentan con él)
+  psql(`update public.profiles set tomatoes_thrown = ${orig.t}, hits = ${orig.h}, falls = ${orig.f}, wheel_level = ${orig.w}, chest_tomatoes = ${orig.ct} where user_id = '${row.user_id}'`);
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
 }
 
 console.log('Q. Logros diarios e invitaciones en el servidor');
@@ -497,17 +503,17 @@ console.log('S. Pulsaciones, martillo de la app y avisos en el servidor');
   const goals = JSON.parse(psql(`select jsonb_agg(public.fn_daily_mission((daily->>'date')::date, i, (daily->>'lv')::integer)) from public.profiles, generate_series(0, 2) i where user_id = '${uid}'`));
   const jsGoals = await page.evaluate(async () => { const D = await import('./js/daily-rules.js'), d = AAP.state.daily; return [0, 1, 2].map(i => { const m = D.missionFor(d.date, i, d.lv); return [m.id, m.k, m.goal]; }); });
   check('retos de nivel en el servidor: los mismos objetivos que en el juego', row.daily.lv === lvNow && JSON.stringify(goals) === JSON.stringify(jsGoals), JSON.stringify({ lv: row.daily.lv, goals, jsGoals }));
-  // martillo: regalo de la app antes del nivel 10 → llega al llegar al 10
+  // martillo: regalo de la app antes del nivel 50 → llega al llegar al 50
   const fid = psql(`insert into auth.users (email) values ('app${Date.now()}@test.com') returning id`);
   const inst = JSON.parse(psql(`select public.claim_install_reward()`, 'authenticated', fid));
   const f1 = JSON.parse(psql(`select to_jsonb(p) from public.profiles p where user_id = '${fid}'`));
-  check('regalo de la app en el nivel 1: cofre y 150 pesetas, el martillo todavía no', inst.reward.hammer_at === 10 && !inst.reward.item && f1.install_claimed && !JSON.stringify(f1.armory).includes('hammer'), JSON.stringify(inst.reward).slice(0, 120));
-  const early = (() => { try { psql(`select public.claim_app_hammer()`, 'authenticated', fid); return false; } catch (e) { return /nivel 10/.test(String(e.stderr)); } })();
-  psql(`update public.profiles set tomatoes_thrown = 3000, hits = 1500, chest_tomatoes = 3000 where user_id = '${fid}'`);
+  check('regalo de la app en el nivel 1: cofre y 150 pesetas, el martillo todavía no', inst.reward.hammer_at === 50 && !inst.reward.item && f1.install_claimed && !JSON.stringify(f1.armory).includes('hammer'), JSON.stringify(inst.reward).slice(0, 120));
+  const early = (() => { try { psql(`select public.claim_app_hammer()`, 'authenticated', fid); return false; } catch (e) { return /nivel 50/.test(String(e.stderr)); } })();
+  psql(`update public.profiles set tomatoes_thrown = 200000, hits = 0, chest_tomatoes = 200000 where user_id = '${fid}'`);
   const got = JSON.parse(psql(`select to_jsonb(x) from public.claim_app_hammer() x`, 'authenticated', fid));
   const twice = (() => { try { psql(`select public.claim_app_hammer()`, 'authenticated', fid); return false; } catch (e) { return /Ya tienes/.test(String(e.stderr)); } })();
-  check('en el nivel 10 llega el martillo (antes no; y solo una vez)', early && JSON.stringify(got.armory).includes('hammer') && twice);
-  const noApp = psql(`insert into auth.users (email) values ('noapp${Date.now()}@test.com') returning id`); psql(`update public.profiles set tomatoes_thrown = 3000, hits = 1500 where user_id = '${noApp}'`);
+  check('en el nivel 50 llega el martillo (antes no; y solo una vez)', early && JSON.stringify(got.armory).includes('hammer') && twice);
+  const noApp = psql(`insert into auth.users (email) values ('noapp${Date.now()}@test.com') returning id`); psql(`update public.profiles set tomatoes_thrown = 200000, chest_tomatoes = 200000 where user_id = '${noApp}'`);
   check('sin la app no hay martillo gratis', (() => { try { psql(`select public.claim_app_hammer()`, 'authenticated', noApp); return false; } catch (e) { return /instálala/.test(String(e.stderr)); } })());
   // avisos
   const ep = 'https://fcm.googleapis.com/fcm/send/prueba-' + Date.now(), pk = 'B' + 'x'.repeat(86), au = 'a'.repeat(22);

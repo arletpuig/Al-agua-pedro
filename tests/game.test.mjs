@@ -799,15 +799,18 @@ console.log('35. La Armería');
   const vis = sel => pa.evaluate(s => { const e = document.querySelector(s); return !!e && !e.classList.contains('hidden') && e.offsetWidth > 0; }, sel);
   const lock0 = await pa.evaluate(() => ({ locked: document.querySelector('#armory-btn').classList.contains('locked'), tag: document.querySelector('#armory-tag').textContent }));
   await pa.click('#armory-btn'); await pa.waitForTimeout(200);
-  check('jugador nuevo: La Armería cerrada (candado, «NV 10») y aviso de cuándo se abre', lock0.locked && lock0.tag === 'NV 10' && await vis('#armory-tease') && /nivel 10/.test(await pa.textContent('#armory-tease'))
+  check('jugador nuevo: La Armería cerrada (candado, «NV 50») y aviso de cuándo se abre', lock0.locked && lock0.tag === 'NV 50' && await vis('#armory-tease') && /nivel 50/.test(await pa.textContent('#armory-tease'))
     && !(await pa.evaluate(() => document.querySelector('#panel-armory').classList.contains('open'))), JSON.stringify(lock0));
-  check('sin nivel 10 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /nivel 10/.test(e.message))));
+  check('sin nivel 50 no se puede comprar', await pa.evaluate(() => AAP.backend.buyArmory('slipper', 30000).then(() => false, e => /nivel 50/.test(e.message))));
   const btn = await pa.evaluate(() => { const r = document.querySelector('#armory-btn').getBoundingClientRect(), t = document.querySelector('#basket').getBoundingClientRect(); return { x: r.x, w: r.width, top: r.top, tom: Math.round(t.bottom) }; });
   check('el botón está arriba a un lado, pequeño, justo debajo de los contadores (sin taparlos)', btn.x < 20 && btn.w < 60 && btn.top >= btn.tom && btn.top < btn.tom + 40, JSON.stringify(btn));
-  // nivel 10 con el sistema de niveles de verdad: se abre sola
-  await pa.evaluate(async () => { const st = AAP.state.stats; st.tomatoesThrown = 2200; st.hits = 1200; (await import('./js/state.js')).changed(false); });
+  // nivel 49: todavía cerrada; nivel 50 (el máximo) con el sistema de niveles de verdad: se abre sola
+  await pa.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats; st.tomatoesThrown = Math.ceil(L.XP_AT[48] / 10); st.hits = 0; st.chestTomatoes += st.tomatoesThrown; (await import('./js/state.js')).changed(false); });
   await pa.waitForTimeout(300);
-  check('al llegar al nivel 10 se desbloquea sola', await pa.evaluate(() => !document.querySelector('#armory-btn').classList.contains('locked') && (AAP.state.stats.tomatoesThrown * 10 + AAP.state.stats.hits * 5) >= 27200));
+  check('en el nivel 49 sigue cerrada', await pa.evaluate(() => document.querySelector('#armory-btn').classList.contains('locked') && AAP.state.stats.tomatoesThrown > 0));
+  await pa.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats; const t = Math.ceil(L.XP_AT[49] / 10); st.chestTomatoes += t - st.tomatoesThrown; st.tomatoesThrown = t; (await import('./js/state.js')).changed(false); });
+  await pa.waitForTimeout(300);
+  check('al llegar al nivel 50 se desbloquea sola', await pa.evaluate(async () => !document.querySelector('#armory-btn').classList.contains('locked') && (await import('./js/levels.js')).levelOf(AAP.state.stats) === 50));
   await pa.click('#armory-btn'); await pa.waitForTimeout(400);
   const intro = await pa.evaluate(() => { const e = document.querySelector('#arm-intro'); return !e.classList.contains('hidden') && /Bienvenido a La Armería/.test(e.textContent) && /para siempre/.test(e.textContent); });
   await pa.click('#arm-intro-ok', { force: true }); await pa.waitForTimeout(150);
@@ -940,14 +943,36 @@ console.log('36. Logros diarios');
   await pd.click('#daily-btn', { force: true }); await pd.waitForTimeout(300);
   check('el panel dice de qué nivel son los retos de hoy', /^Retos de nivel \d+$/.test(await pd.locator('#dl-lv').textContent()));
   await pd.click('#panel-daily [data-close]', { force: true }); await pd.waitForTimeout(200);
-  // martillo de goma: con la app antes del nivel 10 no se da; llega al abrirse La Armería
+  // martillo de goma: con la app antes del nivel 50 no se da; llega al abrirse La Armería
   const hm = await pd.evaluate(() => AAP.backend.claimInstall().then(r => ({ item: r.item || null, at: r.hammer_at, has: AAP.state.armory.includes('hammer') }), e => ({ err: e.message })));
-  check('regalo de la app antes del nivel 10: cofre y pesetas, pero el martillo espera a La Armería', hm.item === null && hm.at === 10 && !hm.has, JSON.stringify(hm));
-  await pd.evaluate(async () => { const st = AAP.state.stats; st.tomatoesThrown += 3000; st.hits += 1500; st.chestTomatoes += 3000; (await import('./js/state.js')).changed(false); });
+  check('regalo de la app antes del nivel 50: cofre y pesetas, pero el martillo espera a La Armería', hm.item === null && hm.at === 50 && !hm.has, JSON.stringify(hm));
+  await pd.evaluate(async () => { localStorage.setItem('alaguapedro.armory50', '1'); const st = AAP.state.stats; st.tomatoesThrown += 200000; st.chestTomatoes += 200000; (await import('./js/state.js')).changed(false); });
   await pd.waitForTimeout(5500);
-  check('al llegar al nivel 10 (se abre La Armería), el martillo es tuyo', await pd.evaluate(() => AAP.state.armory.includes('hammer')) && /martillo de goma ya es tuyo/.test(await pd.locator('#toast').textContent()));
+  check('al llegar al nivel 50 (se abre La Armería), el martillo es tuyo', await pd.evaluate(() => AAP.state.armory.includes('hammer')) && /martillo de goma ya es tuyo/.test(await pd.locator('#toast').textContent()));
   check('logros: sin errores en consola', ed.length === 0, ed.join(' | '));
   await cd.close();
+}
+
+console.log('37. Nivel 50: se abre La Armería (gran celebración)');
+{
+  const cz = await browser.newContext({ ...devices['iPhone 13'], deviceScaleFactor: 1 }); const pz = await cz.newPage(); const ez = watchErrors(pz); await mockTime(pz);
+  await open(pz); await pz.evaluate(async () => { AAP.giftTest.off = true; AAP.levelTest.off = true; (await import('./js/armory-unlock.js')).unlockTest.fast = true;
+    const L = await import('./js/levels.js'), st = AAP.state.stats; st.tomatoesThrown = Math.ceil(L.XP_AT[48] / 10); st.chestTomatoes += st.tomatoesThrown; (await import('./js/state.js')).changed(false); });
+  await pz.waitForTimeout(1500);
+  check('en el nivel 49 no hay celebración', await pz.locator('#a50-overlay.open').count() === 0);
+  await pz.evaluate(async () => { const L = await import('./js/levels.js'), st = AAP.state.stats, t = Math.ceil(L.XP_AT[49] / 10); st.chestTomatoes += t - st.tomatoesThrown; st.tomatoesThrown = t; (await import('./js/state.js')).changed(false); });
+  await pz.waitForSelector('#a50-overlay.open', { timeout: 6000 }).catch(() => {});
+  const seen = [];
+  for (let i = 0; i < 40; i++) { const c = await pz.evaluate(() => document.querySelector('#a50-overlay').className); for (const k of ['s1', 's2', 's3', 's4', 's5']) if (c.includes(k) && !seen.includes(k)) seen.push(k); if (seen.includes('s5')) break; await pz.waitForTimeout(60); }
+  const a = await pz.evaluate(() => ({ medal: document.querySelector('.a50-medal b').textContent, title: document.querySelector('#a50-title').textContent, items: document.querySelectorAll('#a50-items span.in').length, go: getComputedStyle(document.querySelector('#a50-go')).opacity }));
+  check('al llegar al 50: medalla «50», puertas que se abren con Abascal, «¡LA ARMERÍA ESTÁ ABIERTA!» y los 7 objetos', seen.join() === 's1,s2,s3,s4,s5' && a.medal === '50' && /ARMERÍA/.test(a.title) && a.items === 7, JSON.stringify({ seen, a }));
+  await pz.waitForTimeout(400); await pz.screenshot({ path: 'tests/out/37-nivel50.png' });
+  await pz.click('#a50-go', { force: true }); await pz.waitForTimeout(500);
+  check('«¡ENTRAR A LA ARMERÍA!» abre La Armería', await pz.locator('#panel-armory.open').count() === 1 && await pz.locator('#a50-overlay.open').count() === 0);
+  await pz.reload(); await pz.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await pz.waitForTimeout(2500);
+  check('la celebración se ve una sola vez', await pz.locator('#a50-overlay.open').count() === 0);
+  check('nivel 50: sin errores en consola', ez.length === 0, ez.join(' | '));
+  await cz.close();
 }
 
 console.log('21. Consola'); check('sin errores en consola', errors.length === 0, errors.join(' | '));

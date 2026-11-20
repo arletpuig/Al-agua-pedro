@@ -74,11 +74,11 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     <button class="sq" id="btn-settings" aria-label="Ajustes"><svg><use href="#ic-gear"/></svg></button>
   </header>
   <div id="falcon-badge" class="boost hidden"><svg><use href="#ic-plane"/></svg>FALCÓN ×5 <span class="tm" id="falcon-time">10:00</span></div>
-  <!-- La Armería (desde el nivel 10) y la mochila con los objetos comprados -->
-  <button id="armory-btn" class="armory-btn locked" aria-label="La Armería"><img src="assets/armeria/icono.png" alt="" width="64" height="64"><i class="arm-lock">🔒</i><span class="arm-tag" id="armory-tag">NV 10</span></button>
+  <!-- La Armería (desde el nivel 50) y la mochila con los objetos comprados -->
+  <button id="armory-btn" class="armory-btn locked" aria-label="La Armería"><img src="assets/armeria/icono.png" alt="" width="64" height="64"><i class="arm-lock">🔒</i><span class="arm-tag" id="armory-tag">NV 50</span></button>
   <button id="daily-btn" class="daily-btn" aria-label="Logros diarios"><span class="db-ic"><svg viewBox="0 0 48 48"><path d="M15 4 h7 l2 9 2-9 h7 l-5 14 h-8z" fill="#ff4b5c"/><path d="M15 4 h4 l5 14 h-4z" fill="#c4161c"/><circle cx="24" cy="29" r="14" fill="#ffd23f" stroke="#0a0b18" stroke-width="3"/><circle cx="24" cy="29" r="9.5" fill="none" stroke="#e8a412" stroke-width="2"/><path d="M24 21.5 l2.3 4.7 5.2.7-3.8 3.6.9 5.1-4.6-2.4-4.6 2.4.9-5.1-3.8-3.6 5.2-.7z" fill="#fff"/></svg></span><span class="db-tag">LOGROS</span><span class="db-bar"><i id="daily-fill"></i></span><i class="db-dot hidden" id="daily-dot"></i></button>
   <div id="daily-peek" class="daily-peek" aria-live="polite"><b id="dp-txt"></b><span class="dp-bar"><i id="dp-fill"></i></span><small id="dp-num"></small></div>
-  <div id="armory-tease" class="armory-tease hidden"><b>🔒 LA ARMERÍA</b><span>Se desbloquea en el <b>nivel 10</b>. Abascal te espera con su arsenal…</span><div class="tease-bar"><i id="tease-fill"></i></div><small id="tease-lvl">Nivel 1 de 10</small></div>
+  <div id="armory-tease" class="armory-tease hidden"><b>🔒 LA ARMERÍA</b><span>Se desbloquea en el <b>nivel 50</b>, el máximo. Abascal te espera con su arsenal…</span><div class="tease-bar"><i id="tease-fill"></i></div><small id="tease-lvl">Nivel 1 de 50</small></div>
 
   <!-- instalar la app, a la vista: icono del juego con su regalo -->
   <button id="install-fab" class="install-fab hidden" aria-label="Instala la app y llévate un regalo"><i class="if-glow"></i><img src="assets/icons/icon-192.png?v=71" alt="" width="48" height="48"><svg class="if-gift"><use href="#ic-chest-dia"/></svg><span>¡APP!</span></button>
@@ -350,6 +350,25 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
     </div>
   </div>
 
+  <!-- nivel 50: se abre La Armería (la gran celebración) -->
+  <div id="a50-overlay" class="overlay a50-ov" role="dialog" aria-labelledby="a50-title">
+    <i class="a50-flash"></i><i class="a50-rays"></i><i class="a50-spot"></i>
+    <div class="a50-stage">
+      <div class="a50-medal"><svg><use href="#ic-medal"/></svg><b>50</b></div>
+      <p class="a50-kicker">¡NIVEL MÁXIMO!</p>
+      <div class="a50-booth">
+        <div class="a50-bunting"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <img src="assets/armeria/abascal.png" alt="" width="300" height="283">
+        <i class="a50-door l"></i><i class="a50-door r"></i><b class="a50-lock">🔒</b>
+      </div>
+      <h2 class="a50-title" id="a50-title">¡LA ARMERÍA<br>ESTÁ ABIERTA!</h2>
+      <div class="a50-items" id="a50-items"></div>
+      <p class="a50-sub">Has llegado a lo más alto. Abascal te abre su arsenal: compra objetos con tus pesetas y úsalos contra Pedro.</p>
+      <button class="btn-gold big" id="a50-go"><span>¡ENTRAR A LA ARMERÍA!</span></button>
+      <button class="install-later" id="a50-later" type="button">Más tarde</button>
+    </div>
+  </div>
+
   <!-- avisos: ¿te aviso cuando esté listo el cofre? -->
   <div id="push-overlay" class="overlay install-ov push-ov">
     <i class="rays"></i>
@@ -369,7 +388,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
       <img class="install-icon" src="assets/icons/icon-192.png?v=71" alt="" width="96" height="96">
       <h2 class="t-big" id="install-title">¡Llévate el juego!</h2>
       <p class="install-sub">Instala AL AGUA PEDRO en tu móvil: a pantalla completa, más rápido y a un toque desde tu pantalla de inicio.</p>
-      <div class="install-gift"><svg><use href="#ic-chest-dia"/></svg><span><b>REGALO</b>Cofre de diamante + 150 pesetas<em class="ig-hammer">🔨 + el martillo de goma para La Armería</em><small>al abrir el juego desde la app (el martillo, al llegar al nivel 10)</small></span></div>
+      <div class="install-gift"><svg><use href="#ic-chest-dia"/></svg><span><b>REGALO</b>Cofre de diamante + 150 pesetas<em class="ig-hammer">🔨 + el martillo de goma para La Armería</em><small>al abrir el juego desde la app (el martillo, al llegar al nivel 50)</small></span></div>
       <ol class="install-steps hidden" id="install-ios">
         <li><i>1</i><span>En <b>Safari</b>, pulsa <b>Compartir</b> <svg class="ios-ic" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span></li>
         <li><i>2</i><span>Elige <b>«Añadir a pantalla de inicio»</b> <svg class="ios-ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span></li>
@@ -541,7 +560,7 @@ if (/github\.io$/.test(location.hostname)) { var m = document.createElement('met
 })();
 </script>
 <!-- cada módulo con su ?v= (lo genera tools/version.py): nadie se queda con código viejo guardado -->
-<script type="importmap">{"imports":{"./js/ads.js":"./js/ads.js?v=71","./js/armory.js":"./js/armory.js?v=71","./js/audio.js":"./js/audio.js?v=71","./js/avatars.js":"./js/avatars.js?v=71","./js/backend.js":"./js/backend.js?v=71","./js/cards-art.js":"./js/cards-art.js?v=71","./js/config.js":"./js/config.js?v=71","./js/daily-rules.js":"./js/daily-rules.js?v=71","./js/daily.js":"./js/daily.js?v=71","./js/darkfix.js":"./js/darkfix.js?v=71","./js/economy.js":"./js/economy.js?v=71","./js/fx.js":"./js/fx.js?v=71","./js/game/arena.js":"./js/game/arena.js?v=71","./js/game/armory-art.js":"./js/game/armory-art.js?v=71","./js/game/pedro-anims.js":"./js/game/pedro-anims.js?v=71","./js/game/pedro-rig.js":"./js/game/pedro-rig.js?v=71","./js/game/preview.js":"./js/game/preview.js?v=71","./js/game/stage-art.js":"./js/game/stage-art.js?v=71","./js/game/weapons.js":"./js/game/weapons.js?v=71","./js/gift.js":"./js/gift.js?v=71","./js/guard.js":"./js/guard.js?v=71","./js/install.js":"./js/install.js?v=71","./js/levels.js":"./js/levels.js?v=71","./js/levelup.js":"./js/levelup.js?v=71","./js/main.js":"./js/main.js?v=71","./js/nozoom.js":"./js/nozoom.js?v=71","./js/payments.js":"./js/payments.js?v=71","./js/play.js":"./js/play.js?v=71","./js/push.js":"./js/push.js?v=71","./js/share.js":"./js/share.js?v=71","./js/state.js":"./js/state.js?v=71","./js/streak.js":"./js/streak.js?v=71","./js/supabase.js":"./js/supabase.js?v=71","./js/tour.js":"./js/tour.js?v=71","./js/ui.js":"./js/ui.js?v=71","./js/update.js":"./js/update.js?v=71"}}</script>
+<script type="importmap">{"imports":{"./js/ads.js":"./js/ads.js?v=71","./js/armory-unlock.js":"./js/armory-unlock.js?v=71","./js/armory.js":"./js/armory.js?v=71","./js/audio.js":"./js/audio.js?v=71","./js/avatars.js":"./js/avatars.js?v=71","./js/backend.js":"./js/backend.js?v=71","./js/cards-art.js":"./js/cards-art.js?v=71","./js/config.js":"./js/config.js?v=71","./js/daily-rules.js":"./js/daily-rules.js?v=71","./js/daily.js":"./js/daily.js?v=71","./js/darkfix.js":"./js/darkfix.js?v=71","./js/economy.js":"./js/economy.js?v=71","./js/fx.js":"./js/fx.js?v=71","./js/game/arena.js":"./js/game/arena.js?v=71","./js/game/armory-art.js":"./js/game/armory-art.js?v=71","./js/game/pedro-anims.js":"./js/game/pedro-anims.js?v=71","./js/game/pedro-rig.js":"./js/game/pedro-rig.js?v=71","./js/game/preview.js":"./js/game/preview.js?v=71","./js/game/stage-art.js":"./js/game/stage-art.js?v=71","./js/game/weapons.js":"./js/game/weapons.js?v=71","./js/gift.js":"./js/gift.js?v=71","./js/guard.js":"./js/guard.js?v=71","./js/install.js":"./js/install.js?v=71","./js/levels.js":"./js/levels.js?v=71","./js/levelup.js":"./js/levelup.js?v=71","./js/main.js":"./js/main.js?v=71","./js/nozoom.js":"./js/nozoom.js?v=71","./js/payments.js":"./js/payments.js?v=71","./js/play.js":"./js/play.js?v=71","./js/push.js":"./js/push.js?v=71","./js/share.js":"./js/share.js?v=71","./js/state.js":"./js/state.js?v=71","./js/streak.js":"./js/streak.js?v=71","./js/supabase.js":"./js/supabase.js?v=71","./js/tour.js":"./js/tour.js?v=71","./js/ui.js":"./js/ui.js?v=71","./js/update.js":"./js/update.js?v=71"}}</script>
 <script type="module" src="js/main.js?v=71"></script>
 <noscript><section style="padding:24px;color:#fff;font-family:sans-serif"><h1>Al Agua Pedro</h1><p>Juego satírico gratis para navegador: pulsa para conseguir tomates, lánzalos a la diana y, si aciertas en el centro, Pedro cae a la pecera de las pirañas. Gana pesetas, abre cofres, mejora tus cartas y compite en el ranking.</p><p>Necesitas activar JavaScript para jugar.</p></section></noscript>
 </body>

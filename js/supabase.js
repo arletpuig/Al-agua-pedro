@@ -108,7 +108,7 @@ export const ackInvites = () => rpc('ack_invites', {});
 export const pushPublicKey = () => rpc('push_public_key', {});                                  // avisos: clave pública del servidor
 export const savePushSub = (endpoint, p256dh, auth) => rpc('save_push_sub', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth });
 export const deletePushSub = endpoint => rpc('delete_push_sub', { p_endpoint: endpoint });
-export const claimAppHammer = () => rpc('claim_app_hammer', {});                               // martillo de la app (nivel 10) -> profile
+export const claimAppHammer = () => rpc('claim_app_hammer', {});                               // martillo de la app (nivel 50) -> profile
 export const buyArmory = item => rpc('buy_armory_item', { p_item: item });              // La Armería: comprar un objeto -> profile
 export const claimInstall = () => rpc('claim_install_reward', {});                       // regalo por instalar la app -> { reward, profile }                             // tirada legendaria comprada
 // Pagos (Stripe): crea la página de pago en la función «crear-pago» y consulta si una compra ya se ha entregado

@@ -1,14 +1,16 @@
-// La Armería: puesto de feria de Abascal (desde el nivel 10). Aquí se compran los objetos y, una vez tuyos, se usan contra Pedro
+// La Armería: puesto de feria de Abascal (desde el nivel 50, el máximo). Aquí se compran los objetos y, una vez tuyos, se usan contra Pedro
 // directamente desde su tarjeta («¡USAR!»). Los objetos no se gastan.
 import { state, onChange } from './state.js';
 import { backend } from './backend.js';
-import { levelOf } from './levels.js';
+import { levelOf, ARMORY_LEVEL } from './levels.js';
 import { SFX } from './audio.js';
 import { drawIcon } from './game/weapons.js';
 import { dream } from './game/preview.js';
 import { createFx } from './fx.js';
+import { playUnlock, unlockSeen } from './armory-unlock.js';
+const screenBusy = () => [...document.querySelectorAll('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour')].some(el => el.getClientRects().length > 0) || isBusy?.() || ui.gated?.();
 
-export const UNLOCK_LEVEL = 10;
+export const UNLOCK_LEVEL = ARMORY_LEVEL;   // nivel 50
 // c1/c2: colores de la tarjeta de cada objeto (cada uno con su estilo de «exclusivo»)
 export const ARMORY = [
   { id: 'hammer', name: 'Martillo de goma', price: 0, desc: '¡BONK! Un golpe de juguete', tier: 'REGALO', c1: '#36f0b0', c2: '#0a7a5a' },
@@ -65,7 +67,7 @@ export function refresh() {
   const on = unlocked(), b = $('#armory-btn'); if (!b) return;
   b.classList.toggle('locked', !on && !state.armory.length); b.classList.toggle('fresh', on && !seen());
   $('#armory-tag').textContent = on || state.armory.length ? 'ARMERÍA' : `NV ${UNLOCK_LEVEL}`;
-  if (wasUnlocked === false && on && !armoryTest.off) { SFX.levelUp?.(); ui.showToast('🔓 ¡LA ARMERÍA ESTÁ ABIERTA! Abascal te espera con su arsenal', 4200); }
+  if (on && !armoryTest.off && !unlockSeen()) playUnlock({ busy: screenBusy, onEnter: () => { ui.closeAll(); openArmory(); } });   // nivel 50: la gran celebración (una vez)
   wasUnlocked = on;
   if (on) $('#armory-tease').classList.add('hidden');
   // con la app instalada (y su regalo recogido): al abrirse La Armería llega el martillo de goma

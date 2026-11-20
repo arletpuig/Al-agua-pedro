@@ -58,7 +58,7 @@ const start = () => {
   try { gatePedro(); } catch (e) {}
   window.__aapReady = true; ui.loadingOff(); initPlay(scene, ui, { onVolleyEnd: r => { afterThrow(); pushNow(); if (r?.[0]?.fall) maybeOffer(); offerInstall(levelOf(state.stats)); } });
   initInstall(ui, isBusy, e => fail(e)); if (!ui.gated()) installReward();
-  initArmory(ui, scene, isBusy, e => fail(e), openInstall);   // La Armería (nivel 10) y la mochila
+  initArmory(ui, scene, isBusy, e => fail(e), openInstall);   // La Armería (nivel 50) y la mochila
   initPush(ui, e => fail(e));   // avisos
   initDaily(ui, e => fail(e)); if (!hasBackend || TEST_HOST || GUEST_OK) backend.dailySync().catch(() => {});   // logros diarios e invitaciones
   initGuard(ui);     // anti-autoclicker

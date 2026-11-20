@@ -42,7 +42,7 @@ export function load() {
       state.wheelLevel = d.wheelLevel || Math.max(1, levelOf(state.stats) - 1);
       state.wheelLevel = Math.min(state.wheelLevel, Math.max(1, levelOf(state.stats)));   // curva nueva: si bajas de nivel, la siguiente subida da ruleta
       state.legendSpins = d.legendSpins | 0; state.legendAds = d.legendAds | 0; state.streak = d.streak | 0; state.installClaimed = !!d.installClaimed; state.armory = Array.isArray(d.armory) ? d.armory.filter(x => typeof x === 'string') : [];
-      if (state.installClaimed && !state.armory.includes('hammer') && levelOf(state.stats) >= 10) state.armory.push('hammer');
+      if (state.installClaimed && !state.armory.includes('hammer') && levelOf(state.stats) >= 50) state.armory.push('hammer');
       state.daily = d.daily && typeof d.daily === 'object' ? d.daily : {};   // martillo: regalo de la app
       // partida guardada cuando un tomate costaba 100 clics: se conserva lo ya ganado
       if (d.cpt !== CONFIG.CLICKS_PER_TOMATO && !state.stats.legacyClicks && state.stats.totalClicks > 0) {

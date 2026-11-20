@@ -16,6 +16,7 @@ export const XP_AT = [0, 600, 1900, 3600, 5850, 8700, 12200, 16450, 21450, 27200
   844970, 908560, 975100, 1044640, 1117240, 1192960, 1271840, 1353940, 1439310, 1528010, 1620090, 1715590,
   1814570, 1917090];
 export const XP = { thrown: 10, hit: 5, fall: 20 };
+export const ARMORY_LEVEL = 50;   // La Armería (y el martillo de la app) se abren en el nivel máximo
 export const xpOf = s => XP.thrown * (s.tomatoesThrown || 0) + XP.hit * (s.hits || 0) + XP.fall * (s.falls || 0);
 export function levelOfXp(xp) { let L = 1; while (L < MAX_LEVEL && xp >= XP_AT[L]) L++; return L; }
 export const levelOf = stats => levelOfXp(xpOf(stats));

@@ -2075,7 +2075,8 @@ revoke execute on function public.save_progress(bigint, integer, integer, intege
 --    Inflación, Falcón ni racha). Lo guarda save_progress, con su propio tope contra automatizaciones (25 por segundo).
 --  · Logros diarios más difíciles y según el nivel: los objetivos crecen con el nivel que tenías al empezar el día.
 --    La misión de clics pasa a ser de pulsaciones («Pulsa ¡DALE! N veces»).
---  · El martillo de goma (regalo de la app) se entrega al llegar al nivel 10, cuando se abre La Armería.
+--  · La Armería se abre en el nivel 50 (el máximo): desde ahí se compran los objetos. Lo que ya tenías se queda.
+--  · El martillo de goma (regalo de la app) se entrega al llegar al nivel 50, cuando se abre La Armería.
 --  · Avisos (notificaciones push): suscripciones de cada móvil y qué aviso toca a cada hora (cofre diario y recordatorio).
 -- Conserva todos los jugadores y su progreso. Se puede ejecutar más de una vez.
 
@@ -2173,7 +2174,26 @@ end $$;
 revoke all on function public.claim_daily_mission(integer) from public, anon;
 grant execute on function public.claim_daily_mission(integer) to authenticated;
 
--- ============================================================ martillo de goma: al llegar al nivel 10
+-- ============================================================ La Armería: desde el nivel 50
+create or replace function public.buy_armory_item(p_item text) returns public.profiles
+language plpgsql security definer set search_path = public as $$
+declare cur public.profiles; row_out public.profiles; price integer := public.fn_armory_price(p_item);
+begin
+  if auth.uid() is null then raise exception 'Necesitas iniciar sesión'; end if;
+  select * into cur from public.profiles where user_id = auth.uid() for update;
+  if not found then raise exception 'El perfil no existe'; end if;
+  if price is null then raise exception 'Ese objeto no se vende'; end if;
+  if public.fn_player_level(cur.tomatoes_thrown, cur.hits, cur.falls) < 50 then raise exception 'La Armería se desbloquea en el nivel 50'; end if;
+  if cur.armory ? p_item then raise exception 'Ya tienes ese objeto'; end if;
+  if cur.pesetas < price then raise exception 'No tienes pesetas suficientes'; end if;
+  update public.profiles set pesetas_spent = pesetas_spent + price, armory = armory || to_jsonb(p_item), updated_at = now()
+  where user_id = auth.uid() returning * into row_out;
+  return row_out;
+end $$;
+revoke all on function public.buy_armory_item(text) from public, anon;
+grant execute on function public.buy_armory_item(text) to authenticated;
+
+-- ============================================================ martillo de goma: al llegar al nivel 50
 create or replace function public.claim_install_reward() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare cur public.profiles; row_out public.profiles; roll jsonb; rw jsonb; hammer boolean;
@@ -2182,10 +2202,10 @@ begin
   select * into cur from public.profiles where user_id = auth.uid() for update;
   if not found then raise exception 'El perfil no existe'; end if;
   if cur.install_claimed then raise exception 'Ya has recogido el regalo de la app'; end if;
-  hammer := public.fn_player_level(cur.tomatoes_thrown, cur.hits, cur.falls) >= 10;   -- antes del nivel 10, el martillo espera a que se abra La Armería
+  hammer := public.fn_player_level(cur.tomatoes_thrown, cur.hits, cur.falls) >= 50;   -- antes del nivel 50, el martillo espera a que se abra La Armería
   roll := public.fn_roll_chest('diamond', cur.cards);
   rw := jsonb_set(roll->'reward', '{pesetas}', to_jsonb(coalesce((roll->'reward'->>'pesetas')::integer, 0) + 150));
-  rw := rw || jsonb_build_object('item', case when hammer then 'hammer' end, 'hammer_at', 10);
+  rw := rw || jsonb_build_object('item', case when hammer then 'hammer' end, 'hammer_at', 50);
   update public.profiles set cards = roll->'cards', chest_tomatoes = chest_tomatoes + coalesce((rw->>'tomatoes')::integer, 0),
     chest_pesetas = chest_pesetas + (rw->>'pesetas')::integer, chests_opened = chests_opened + 1, install_claimed = true,
     armory = case when not hammer or armory ? 'hammer' then armory else armory || '["hammer"]'::jsonb end, updated_at = now()
@@ -2195,7 +2215,7 @@ end $$;
 revoke all on function public.claim_install_reward() from public, anon;
 grant execute on function public.claim_install_reward() to authenticated;
 
--- con la app y ya en el nivel 10: el martillo pasa a La Armería
+-- con la app y ya en el nivel 50: el martillo pasa a La Armería
 create or replace function public.claim_app_hammer() returns public.profiles
 language plpgsql security definer set search_path = public as $$
 declare cur public.profiles; row_out public.profiles;
@@ -2205,7 +2225,7 @@ begin
   if not found then raise exception 'El perfil no existe'; end if;
   if not cur.install_claimed then raise exception 'El martillo es el regalo de la app: instálala para conseguirlo'; end if;
   if cur.armory ? 'hammer' then raise exception 'Ya tienes el martillo'; end if;
-  if public.fn_player_level(cur.tomatoes_thrown, cur.hits, cur.falls) < 10 then raise exception 'La Armería se desbloquea en el nivel 10'; end if;
+  if public.fn_player_level(cur.tomatoes_thrown, cur.hits, cur.falls) < 50 then raise exception 'La Armería se desbloquea en el nivel 50'; end if;
   update public.profiles set armory = armory || '["hammer"]'::jsonb, updated_at = now() where user_id = auth.uid() returning * into row_out;
   return row_out;
 end $$;

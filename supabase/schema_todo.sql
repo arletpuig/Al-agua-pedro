@@ -1670,8 +1670,8 @@ create or replace function public.fn_level_of_xp(p_xp bigint) returns integer la
   select 1 + count(*)::integer from unnest(array[300, 800, 1500, 2400, 3500, 4800, 6400, 8300, 10560, 13720, 17700, 22600, 28540, 35640, 44020, 53800, 65110, 78080, 92850, 109550, 128330, 149330, 172690, 198560, 227100, 258450, 292780, 330240, 370990, 415190, 463010, 514620, 570190, 629880, 693870, 762340, 835460, 913420, 996390, 1084560, 1178110, 1277230, 1382110, 1492940, 1609910, 1733220, 1863060, 1999630, 2143130]::bigint[]) t where p_xp >= t $$;
 
 -- quien queda en un nivel más bajo que su última ruleta: la siguiente subida vuelve a dar ruleta
-update public.profiles set wheel_level = greatest(1, public.fn_player_level(tomatoes_thrown, hits, falls))
-where wheel_level > public.fn_player_level(tomatoes_thrown, hits, falls);
+-- (corrección de un solo uso, ya aplicada: desactivada para que volver a ejecutar este archivo o el «todo en uno»
+--  no baje el contador de tiradas con la escala antigua y regale ruletas)
 
 -- ===================================================================== schema_v22.sql
 -- AL AGUA PEDRO · versión 22 del esquema (ejecutar DESPUÉS de schema_v21.sql; o ejecuta schema_todo.sql, que lo incluye todo).
@@ -1711,8 +1711,8 @@ create or replace function public.fn_level_of_xp(p_xp bigint) returns integer la
   select 1 + count(*)::integer from unnest(array[450, 1300, 2450, 3950, 5850, 8200, 11050, 14400, 18250, 22270, 27320, 33550, 41090, 50100, 60740, 73160, 87520, 103990, 122750, 143960, 167810, 194470, 224140, 257000, 293240, 333060, 376650, 424220, 475970, 532100, 592830, 658370, 728930, 804730, 885990, 972940, 1065790, 1164780, 1270140, 1382100, 1500900, 1626770, 1759950, 1900690, 2049230, 2205810, 2370690, 2544110, 2726330]::bigint[]) t where p_xp >= t $$;
 
 -- quien queda en un nivel más bajo que su última ruleta: la siguiente subida vuelve a dar ruleta
-update public.profiles set wheel_level = greatest(1, public.fn_player_level(tomatoes_thrown, hits, falls))
-where wheel_level > public.fn_player_level(tomatoes_thrown, hits, falls);
+-- (corrección de un solo uso, ya aplicada: desactivada para que volver a ejecutar este archivo o el «todo en uno»
+--  no baje el contador de tiradas con la escala antigua y regale ruletas)
 
 -- ===================================================================== schema_v24.sql
 -- AL AGUA PEDRO · versión 24 del esquema (ejecutar DESPUÉS de schema_v23.sql; o ejecuta schema_todo.sql, que lo incluye todo).
@@ -1726,8 +1726,8 @@ create or replace function public.fn_level_of_xp(p_xp bigint) returns integer la
   select 1 + count(*)::integer from unnest(array[600, 1900, 3600, 5850, 8700, 12200, 16450, 21450, 27200, 33230, 40810, 50150, 61470, 74990, 90940, 109570, 131110, 155820, 183950, 215770, 251540, 291540, 336040, 385330, 439690, 499410, 564800, 636150, 713770, 797970, 889060, 987360, 1093200, 1206900, 1328790, 1459210, 1598490, 1746980, 1905020, 2072960, 2251150, 2439950, 2639720, 2850820, 3073620, 3308490, 3555800, 3815930, 4089260]::bigint[]) t where p_xp >= t $$;
 
 -- quien queda en un nivel más bajo que su última ruleta: la siguiente subida vuelve a dar ruleta
-update public.profiles set wheel_level = greatest(1, public.fn_player_level(tomatoes_thrown, hits, falls))
-where wheel_level > public.fn_player_level(tomatoes_thrown, hits, falls);
+-- (corrección de un solo uso, ya aplicada: desactivada para que volver a ejecutar este archivo o el «todo en uno»
+--  no baje el contador de tiradas con la escala antigua y regale ruletas)
 
 -- ===================================================================== schema_v25.sql
 -- AL AGUA PEDRO · versión 25 del esquema (ejecutar DESPUÉS de schema_v24.sql; o ejecuta schema_todo.sql, que lo incluye todo).

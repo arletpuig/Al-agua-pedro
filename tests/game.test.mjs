@@ -967,6 +967,8 @@ console.log('37. Nivel 50: se abre La Armería (gran celebración)');
   const a = await pz.evaluate(() => ({ medal: document.querySelector('.a50-medal b').textContent, title: document.querySelector('#a50-title').textContent, items: document.querySelectorAll('#a50-items span.in').length, go: getComputedStyle(document.querySelector('#a50-go')).opacity }));
   check('al llegar al 50: medalla «50», puertas que se abren con Abascal, «¡LA ARMERÍA ESTÁ ABIERTA!» y los 7 objetos', seen.join() === 's1,s2,s3,s4,s5' && a.medal === '50' && /ARMERÍA/.test(a.title) && a.items === 7, JSON.stringify({ seen, a }));
   await pz.waitForTimeout(400); await pz.screenshot({ path: 'tests/out/37-nivel50.png' });
+  const lock = await pz.evaluate(() => ({ later: !!document.querySelector('#a50-later'), z: +getComputedStyle(document.querySelector('#a50-overlay')).zIndex, toastHidden: (AAP.ui.showToast('prueba'), getComputedStyle(document.querySelector('#toast')).display === 'none') }));
+  check('no se puede saltar ni tapar: sin «Más tarde», por encima de todo y sin avisos encima', !lock.later && lock.z >= 9000 && lock.toastHidden, JSON.stringify(lock));
   await pz.click('#a50-go', { force: true }); await pz.waitForTimeout(500);
   check('«¡ENTRAR A LA ARMERÍA!» abre La Armería', await pz.locator('#panel-armory.open').count() === 1 && await pz.locator('#a50-overlay.open').count() === 0);
   await pz.reload(); await pz.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 }); await pz.waitForTimeout(2500);

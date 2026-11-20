@@ -6,7 +6,7 @@ import { SFX } from './audio.js';
 
 const $ = s => document.querySelector(s);
 const ASKED_KEY = 'alaguapedro.pushAsked';
-let ui, fail, busy = false;
+let ui, fail, busy = false, ready = false;   // ready: el servidor ya tiene sus claves (la función «avisos» está en marcha)
 export const pushTest = { off: false };
 
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -23,7 +23,9 @@ export function initPush(uiRef, failFn) {
   $('#push-no')?.addEventListener('click', () => { SFX.ui(); close(); });
   refresh();
 }
+export function checkReady() { return sb.pushPublicKey().then(k => { ready = !!k; return refresh(); }, () => refresh()); }
 export async function refresh() {
+  $('#btn-push')?.classList.toggle('hidden', !ready);
   const on = await enabled(); $('#sw-push')?.classList.toggle('on', on);
   const sm = $('#btn-push small'); if (sm) sm.textContent = on ? 'Activados' : !supported() ? (isIOS() && !standalone() ? 'Instala la app para recibirlos' : 'Este navegador no los admite') : Notification.permission === 'denied' ? 'Bloqueados en el navegador' : 'Cofre diario y recordatorios';
 }
@@ -54,11 +56,11 @@ async function turnOff() {
 }
 async function save(sub) { const j = sub.toJSON(); await sb.savePushSub(j.endpoint, j.keys.p256dh, j.keys.auth); }
 // al entrar con la cuenta: si este aparato ya tenía los avisos, se vuelven a guardar a su nombre
-export async function afterLogin() { try { if (supported() && Notification.permission === 'granted') { const sub = await currentSub(); if (sub) await save(sub); } } catch (e) {} refresh(); }
+export async function afterLogin() { await checkReady(); try { if (supported() && Notification.permission === 'granted') { const sub = await currentSub(); if (sub) await save(sub); } } catch (e) {} refresh(); }
 
 // después de abrir el cofre diario: «¿Te aviso mañana?» (como mucho una vez cada 3 días; nunca si ya están o están bloqueados)
 export async function offer() {
-  if (pushTest.off || !supported() || !sb.auth.user || Notification.permission !== 'default' || await enabled()) return;
+  if (pushTest.off || !ready || !supported() || !sb.auth.user || Notification.permission !== 'default' || await enabled()) return;
   let last = 0; try { last = +localStorage.getItem(ASKED_KEY) || 0; } catch (e) {}
   if (Date.now() - last < 3 * 86400e3) return;
   try { localStorage.setItem(ASKED_KEY, String(Date.now())); } catch (e) {}

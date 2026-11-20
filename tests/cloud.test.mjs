@@ -533,7 +533,7 @@ console.log('S. Pulsaciones, martillo de la app y avisos en el servidor');
   psql(`update public.profiles set updated_at = now() where user_id = '${uid}'`);
   await page.evaluate(([e]) => import('./js/supabase.js').then(m => m.deletePushSub(e)), [ep]);
   check('y se pueden quitar', psql(`select count(*) from public.push_subs where endpoint = '${ep}'`) === '0');
-  const pv = await page.evaluate(async () => { localStorage.removeItem('alaguapedro.pushAsked'); Object.defineProperty(Notification, 'permission', { get: () => 'default', configurable: true }); const P = await import('./js/push.js'); const perm = Notification.permission; await P.offer();
+  const pv = await page.evaluate(async () => { localStorage.removeItem('alaguapedro.pushAsked'); Object.defineProperty(Notification, 'permission', { get: () => 'default', configurable: true }); const P = await import('./js/push.js'); await P.checkReady(); const perm = Notification.permission; await P.offer();
     const open = document.querySelector('#push-overlay').classList.contains('open'), txt = document.querySelector('#push-overlay').innerText;
     document.querySelector('#push-no').click(); await P.offer(); return { perm, open, txt: txt.replace(/\s+/g, ' ').trim().slice(0, 40), closed: !document.querySelector('#push-overlay').classList.contains('open') }; });
   check('tras el cofre diario: «¿Te aviso mañana?» (y si dices «Ahora no», no insiste)', pv.perm === 'default' && pv.open && /Te aviso/.test(pv.txt) && pv.closed, JSON.stringify(pv));

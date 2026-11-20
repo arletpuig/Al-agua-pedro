@@ -9,5 +9,5 @@ create or replace function public.fn_level_of_xp(p_xp bigint) returns integer la
   select 1 + count(*)::integer from unnest(array[600, 1900, 3600, 5850, 8700, 12200, 16450, 21450, 27200, 33230, 40810, 50150, 61470, 74990, 90940, 109570, 131110, 155820, 183950, 215770, 251540, 291540, 336040, 385330, 439690, 499410, 564800, 636150, 713770, 797970, 889060, 987360, 1093200, 1206900, 1328790, 1459210, 1598490, 1746980, 1905020, 2072960, 2251150, 2439950, 2639720, 2850820, 3073620, 3308490, 3555800, 3815930, 4089260]::bigint[]) t where p_xp >= t $$;
 
 -- quien queda en un nivel más bajo que su última ruleta: la siguiente subida vuelve a dar ruleta
-update public.profiles set wheel_level = greatest(1, public.fn_player_level(tomatoes_thrown, hits, falls))
-where wheel_level > public.fn_player_level(tomatoes_thrown, hits, falls);
+-- (corrección de un solo uso, ya aplicada: desactivada para que volver a ejecutar este archivo o el «todo en uno»
+--  no baje el contador de tiradas con la escala antigua y regale ruletas)

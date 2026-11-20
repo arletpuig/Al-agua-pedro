@@ -8,7 +8,8 @@ import { drawIcon } from './game/weapons.js';
 import { dream } from './game/preview.js';
 import { createFx } from './fx.js';
 import { playUnlock, unlockSeen } from './armory-unlock.js';
-const screenBusy = () => [...document.querySelectorAll('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour')].some(el => el.getClientRects().length > 0) || isBusy?.() || ui.gated?.();
+import { celebrating } from './levelup.js';
+const screenBusy = () => [...document.querySelectorAll('.panel.open, .overlay.open, .gift-drop:not(.hidden), #tour')].some(el => el.getClientRects().length > 0) || isBusy?.() || ui.gated?.() || celebrating();   // tampoco a la vez que la celebración de subir de nivel
 
 export const UNLOCK_LEVEL = ARMORY_LEVEL;   // nivel 50
 // c1/c2: colores de la tarjeta de cada objeto (cada uno con su estilo de «exclusivo»)

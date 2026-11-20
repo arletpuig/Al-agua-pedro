@@ -19,8 +19,9 @@ export async function playUnlock({ busy, onEnter }) {
   if (playing) return false; playing = true;
   try {
     let ok = 0; while (ok < 3) { await sleep(unlockTest.fast ? 40 : 400); ok = busy() ? 0 : ok + 1; }
-    markSeen();
-    return await run(onEnter);
+    const r = await run(onEnter);
+    markSeen();          // solo cuando se ha visto entera (si cierras el juego a medias, se vuelve a ver)
+    return r;
   } finally { playing = false; }
 }
 
@@ -30,7 +31,7 @@ async function run(onEnter) {
   // preparar: los 7 objetos dibujados (aún invisibles)
   $('#a50-items').innerHTML = ITEMS.map((id, i) => `<span style="--i:${i}"><canvas width="96" height="96" data-icon="${id}"></canvas></span>`).join('');
   $('#a50-items').querySelectorAll('canvas').forEach(cv => { try { drawIcon(cv, cv.dataset.icon); } catch (e) {} });
-  ov.className = 'overlay a50-ov open s0'; fx.resize();
+  ov.className = 'overlay a50-ov open s0'; document.body.classList.add('a50-on'); fx.resize();   // nada se pone encima ni la corta
   const center = () => { const r = ov.getBoundingClientRect(); return [r.width / 2, r.height * 0.32]; };
   // 1) oscuridad y redoble
   SFX.drumroll?.(1.8); await w(1700);
@@ -50,9 +51,9 @@ async function run(onEnter) {
   SFX.cheer?.();
   await w(900);
   ov.classList.add('s5');
-  // 5) entrar ya o más tarde
-  const go = await new Promise(res => { $('#a50-go').onclick = () => res(true); $('#a50-later').onclick = () => res(false); });
-  SFX.ui?.(); ov.className = 'overlay a50-ov'; fx.clear();
-  if (go) onEnter?.();
-  return go;
+  // 5) solo se sale entrando en La Armería
+  await new Promise(res => { $('#a50-go').onclick = () => res(); });
+  SFX.ui?.(); ov.className = 'overlay a50-ov'; document.body.classList.remove('a50-on'); fx.clear();
+  onEnter?.();
+  return true;
 }

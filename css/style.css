@@ -1543,7 +1543,8 @@ svg { display: block; }
 @media (prefers-reduced-motion: reduce) { .push-bell { animation: none; } }
 
 /* v71: nivel 50 · se abre La Armería (gran celebración) */
-.a50-ov { background: #000; overflow: hidden; z-index: 46; }
+.a50-ov { background: #000; overflow: hidden; z-index: 9000; touch-action: none; }
+body.a50-on #toast, body.a50-on .toast { display: none !important; }   /* durante la celebración no sale ningún aviso encima */
 .a50-ov .fx-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 .a50-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 4; }
 .a50-ov.s1 .a50-flash { animation: a50-flash .6s ease-out; }
@@ -1595,9 +1596,9 @@ svg { display: block; }
 .a50-items span.in { opacity: 1; transform: none; transition: transform .35s cubic-bezier(.2, 1.8, .4, 1), opacity .1s; }
 .a50-items canvas { width: 34px; height: 34px; }
 .a50-sub { max-width: 330px; margin: 4px 0 2px; font: 700 13px/1.25 'Baloo 2'; color: #ffe9c9; opacity: 0; transition: opacity .4s; }
-.a50-ov #a50-go, .a50-ov #a50-later { opacity: 0; pointer-events: none; transform: translateY(16px); transition: opacity .3s, transform .3s; }
+.a50-ov #a50-go { opacity: 0; pointer-events: none; transform: translateY(16px); transition: opacity .3s, transform .3s; }
 .a50-ov.s5 .a50-sub { opacity: 1; }
-.a50-ov.s5 #a50-go, .a50-ov.s5 #a50-later { opacity: 1; pointer-events: auto; transform: none; }
+.a50-ov.s5 #a50-go { opacity: 1; pointer-events: auto; transform: none; }
 .a50-ov.s5 #a50-go { animation: badge 1.2s .4s ease-in-out infinite; }
 @media (max-height: 640px) { .a50-booth { width: min(190px, 52vw); } .a50-title { font-size: 25px; } .a50-medal { width: 110px; height: 110px; } .a50-sub { display: none; } }
 @media (prefers-reduced-motion: reduce) { .a50-rays, .a50-bunting i, .a50-ov.s5 #a50-go, .a50-ov.s1 .a50-stage { animation: none; } }

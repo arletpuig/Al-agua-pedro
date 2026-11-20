@@ -289,10 +289,11 @@ console.log('K2. Subir de nivel jugando (con cuenta): siempre sale la ruleta');
   }
   check('subiendo de nivel jugando, cada vez sale la celebración y la ruleta da su premio (4 veces seguidas)', res.every(r => r.lv1 > r.lv0 && r.shown && /GIRAR/.test(r.btn) && /PREMIO|BOTE|LEGENDARIO/.test(r.prize) && r.wl === r.srvLv), JSON.stringify(res));
   // el juego cree que hay una tirada pero el servidor ya la dio (p. ej. girada en otro dispositivo): se pone al día sin colgarse
+  await page.evaluate(() => { const t = document.querySelector('#toast'); window.__toasts = []; new MutationObserver(() => window.__toasts.push(t.textContent)).observe(t, { childList: true, characterData: true, subtree: true }); });
   await page.evaluate(() => { AAP.state.wheelLevel -= 1; return import('./js/levelup.js').then(m => m.syncChip()); });
   await page.click('#lvl-chip'); await page.waitForSelector('#wheel-overlay.open', { timeout: 8000 });
   await page.click('#wheel-btn', { force: true }); await page.waitForTimeout(2500);
-  const stale = await page.evaluate(() => ({ open: document.querySelector('#wheel-overlay').classList.contains('open'), toast: document.querySelector('#toast').textContent, dot: !document.querySelector('#lvl-dot').classList.contains('hidden'), wl: AAP.state.wheelLevel }));
+  const stale = await page.evaluate(() => ({ open: document.querySelector('#wheel-overlay').classList.contains('open'), toast: window.__toasts.join(' · '), dot: !document.querySelector('#lvl-dot').classList.contains('hidden'), wl: AAP.state.wheelLevel }));
   check('si el servidor ya había dado esa tirada, el juego se pone al día y avisa (sin colgarse)', !stale.open && /ya estaba girada/.test(stale.toast) && !stale.dot && stale.wl === db(email).wheel_level, JSON.stringify(stale));
   await page.evaluate(() => { AAP.levelTest.off = true; });
 }
@@ -364,14 +365,14 @@ console.log('Q. Logros diarios e invitaciones en el servidor');
 {
   const today = psql(`select ((now() at time zone 'Europe/Madrid')::date)::text`);
   await page.evaluate(() => AAP.backend.dailySync()); row = db(email);
-  check('logros: el servidor guarda el día y los contadores del principio', row.daily.date === today && row.daily.base && +row.daily.base.t <= row.tomatoes_thrown && +row.daily.base.c <= row.total_clicks, JSON.stringify(row.daily).slice(0, 120));
+  check('logros: el servidor guarda el día y los contadores del principio', row.daily.date === today && row.daily.base && +row.daily.base.t <= row.tomatoes_thrown && +row.daily.base.k <= row.taps && row.daily.lv >= 1, JSON.stringify(row.daily).slice(0, 120));
   // los contadores del principio del día = los de ahora: ninguna misión cumplida todavía
-  psql(`update public.profiles set daily = jsonb_set(daily, '{base}', jsonb_build_object('t', tomatoes_thrown, 'f', falls, 'c', total_clicks, 'h', hits, 'p', perfects, 'o', chests_opened)) where user_id = '${row.user_id}'`);
+  psql(`update public.profiles set daily = jsonb_set(daily, '{base}', jsonb_build_object('t', tomatoes_thrown, 'f', falls, 'k', taps, 'h', hits, 'p', perfects, 'o', chests_opened)) where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
   check('misión sin completar: el servidor no la da', await page.evaluate(() => AAP.backend.claimMission(0).then(() => false, e => /Todavía no/.test(e.message))));
   // se ponen los contadores del principio del día a 0: todas las misiones quedan cumplidas
-  psql(`update public.profiles set daily = jsonb_set(daily, '{base}', '{"t":0,"f":0,"c":0,"h":0,"p":0,"o":0}') where user_id = '${row.user_id}'`);
-  psql(`update public.profiles set tomatoes_thrown = greatest(tomatoes_thrown, 200), hits = greatest(hits, 100), perfects = greatest(perfects, 30), falls = greatest(falls, 30), chests_opened = greatest(chests_opened, 5), total_clicks = greatest(total_clicks, 50000) where user_id = '${row.user_id}'`);
+  psql(`update public.profiles set daily = jsonb_set(daily, '{base}', '{"t":0,"f":0,"k":0,"h":0,"p":0,"o":0}') where user_id = '${row.user_id}'`);
+  psql(`update public.profiles set tomatoes_thrown = greatest(tomatoes_thrown, 200), hits = greatest(hits, 100), perfects = greatest(perfects, 30), falls = greatest(falls, 60), chests_opened = greatest(chests_opened, 5), total_clicks = greatest(total_clicks, 50000), taps = greatest(taps, 5000) where user_id = '${row.user_id}'`);
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
   before = db(email);
   const m0 = await page.evaluate(() => AAP.backend.claimMission(0).then(r => r, e => ({ err: e.message })));
@@ -476,6 +477,64 @@ console.log('R. Falcón: los clics hechos con él no se pierden; la ruleta del n
   await page.evaluate(() => document.querySelector('#wheel-close').click()); await page.waitForTimeout(400);
   check('si el servidor no contesta, la ruleta deja de girar, avisa y se puede cerrar', !hang.spinning && /conexión/.test(hang.toast) && await page.locator('#wheel-overlay.open').count() === 0, JSON.stringify(hang));
   await page.evaluate(async () => { (await import('./js/supabase.js')).netTest.timeout = 15000; AAP.levelTest.fast = false; });
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+}
+
+console.log('S. Pulsaciones, martillo de la app y avisos en el servidor');
+{
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); AAP.guardTest && (AAP.guardTest.off = true); });
+  await idle(page); before = db(email);
+  await tap(page, 30); await page.evaluate(() => AAP.backend.dailySync()); row = db(email);
+  check('las pulsaciones con el dedo se guardan en el servidor (una por toque)', +row.taps === +before.taps + 30 && +row.total_clicks >= +before.total_clicks + 30, `${row.taps - before.taps} pulsaciones, ${row.total_clicks - before.total_clicks} clics`);
+  const uid = row.user_id;
+  psql(`update public.profiles set updated_at = now() - interval '10 seconds' where user_id = '${uid}'`);
+  const capped = JSON.parse(psql(`select to_jsonb(x) from public.save_progress(${row.total_clicks + 900000}, ${row.tomatoes_thrown}, ${row.hits}, ${row.perfects}, ${row.falls}, ${row.pesetas_earned}, ${row.tomatoes_refunded}, ${row.paguitas_pesetas}, ${row.streak_pesetas}, ${+row.taps + 999999}) x`, 'authenticated', uid));
+  check('y no se pueden inventar: como mucho 25 por segundo', +capped.taps - +row.taps <= 600 + 25 * 12 && +capped.taps > +row.taps, String(capped.taps - row.taps));
+  await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
+  // los retos de hoy se fijan con el nivel del principio del día
+  const lvNow = +psql(`select least(50, public.fn_player_level(tomatoes_thrown, hits, falls)) from public.profiles where user_id = '${uid}'`);
+  psql(`update public.profiles set daily = '{}'::jsonb where user_id = '${uid}'`); await page.evaluate(() => AAP.backend.dailySync()); row = db(email);
+  const goals = JSON.parse(psql(`select jsonb_agg(public.fn_daily_mission((daily->>'date')::date, i, (daily->>'lv')::integer)) from public.profiles, generate_series(0, 2) i where user_id = '${uid}'`));
+  const jsGoals = await page.evaluate(async () => { const D = await import('./js/daily-rules.js'), d = AAP.state.daily; return [0, 1, 2].map(i => { const m = D.missionFor(d.date, i, d.lv); return [m.id, m.k, m.goal]; }); });
+  check('retos de nivel en el servidor: los mismos objetivos que en el juego', row.daily.lv === lvNow && JSON.stringify(goals) === JSON.stringify(jsGoals), JSON.stringify({ lv: row.daily.lv, goals, jsGoals }));
+  // martillo: regalo de la app antes del nivel 10 → llega al llegar al 10
+  const fid = psql(`insert into auth.users (email) values ('app${Date.now()}@test.com') returning id`);
+  const inst = JSON.parse(psql(`select public.claim_install_reward()`, 'authenticated', fid));
+  const f1 = JSON.parse(psql(`select to_jsonb(p) from public.profiles p where user_id = '${fid}'`));
+  check('regalo de la app en el nivel 1: cofre y 150 pesetas, el martillo todavía no', inst.reward.hammer_at === 10 && !inst.reward.item && f1.install_claimed && !JSON.stringify(f1.armory).includes('hammer'), JSON.stringify(inst.reward).slice(0, 120));
+  const early = (() => { try { psql(`select public.claim_app_hammer()`, 'authenticated', fid); return false; } catch (e) { return /nivel 10/.test(String(e.stderr)); } })();
+  psql(`update public.profiles set tomatoes_thrown = 3000, hits = 1500, chest_tomatoes = 3000 where user_id = '${fid}'`);
+  const got = JSON.parse(psql(`select to_jsonb(x) from public.claim_app_hammer() x`, 'authenticated', fid));
+  const twice = (() => { try { psql(`select public.claim_app_hammer()`, 'authenticated', fid); return false; } catch (e) { return /Ya tienes/.test(String(e.stderr)); } })();
+  check('en el nivel 10 llega el martillo (antes no; y solo una vez)', early && JSON.stringify(got.armory).includes('hammer') && twice);
+  const noApp = psql(`insert into auth.users (email) values ('noapp${Date.now()}@test.com') returning id`); psql(`update public.profiles set tomatoes_thrown = 3000, hits = 1500 where user_id = '${noApp}'`);
+  check('sin la app no hay martillo gratis', (() => { try { psql(`select public.claim_app_hammer()`, 'authenticated', noApp); return false; } catch (e) { return /instálala/.test(String(e.stderr)); } })());
+  // avisos
+  const ep = 'https://fcm.googleapis.com/fcm/send/prueba-' + Date.now(), pk = 'B' + 'x'.repeat(86), au = 'a'.repeat(22);
+  await page.evaluate(([e, p, a]) => import('./js/supabase.js').then(m => m.savePushSub(e, p, a)), [ep, pk, au]);
+  check('cada aparato guarda su suscripción a los avisos', psql(`select count(*) from public.push_subs where endpoint = '${ep}' and user_id = '${uid}'`) === '1');
+  check('suscripciones raras no se aceptan', await page.evaluate(() => import('./js/supabase.js').then(m => m.savePushSub('http://malo', 'x', 'y')).then(() => false, e => /no es válida/.test(e.message))));
+  check('nadie puede leer las suscripciones ni las claves desde el juego', ['push_subs', 'push_config'].every(t => { try { psql(`select count(*) from public.${t}`, 'authenticated', uid); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })
+    && (() => { try { psql(`select public.push_due(10)`, 'authenticated', uid); return false; } catch (e) { return /permission denied/.test(String(e.stderr)); } })());
+  psql(`update public.push_config set vapid_public = 'BClavePublicaDePrueba' where id = 1`);
+  check('la clave pública se puede pedir (sin cuenta también)', await page.evaluate(() => import('./js/supabase.js').then(m => m.pushPublicKey())) === 'BClavePublicaDePrueba');
+  psql(`update public.profiles set daily_claimed_on = null, updated_at = now() - interval '2 days', daily = daily || jsonb_build_object('login_date', ((now() at time zone 'Europe/Madrid')::date - 1)::text, 'login_streak', 4) where user_id = '${uid}'`);
+  const due10 = JSON.parse(psql(`select public.push_due(10)`, 'service_role')), again10 = JSON.parse(psql(`select public.push_due(10)`, 'service_role'));
+  check('a las 10: aviso del cofre diario a quien no lo ha abierto (una vez al día)', due10.some(x => x.endpoint === ep && x.kind === 'chest') && !again10.some(x => x.endpoint === ep), JSON.stringify(due10.map(x => x.kind)));
+  const due19 = JSON.parse(psql(`select public.push_due(19)`, 'service_role'));
+  check('a las 19: recordatorio a quien no ha jugado hoy, con su racha', due19.some(x => x.endpoint === ep && x.kind === 'play' && x.streak === 4), JSON.stringify(due19.map(x => [x.kind, x.streak])));
+  check('a otras horas no se avisa', JSON.parse(psql(`select public.push_due(15)`, 'service_role')).length === 0);
+  psql(`update public.profiles set updated_at = now() where user_id = '${uid}'`);
+  await page.evaluate(([e]) => import('./js/supabase.js').then(m => m.deletePushSub(e)), [ep]);
+  check('y se pueden quitar', psql(`select count(*) from public.push_subs where endpoint = '${ep}'`) === '0');
+  const pv = await page.evaluate(async () => { localStorage.removeItem('alaguapedro.pushAsked'); Object.defineProperty(Notification, 'permission', { get: () => 'default', configurable: true }); const P = await import('./js/push.js'); const perm = Notification.permission; await P.offer();
+    const open = document.querySelector('#push-overlay').classList.contains('open'), txt = document.querySelector('#push-overlay').innerText;
+    document.querySelector('#push-no').click(); await P.offer(); return { perm, open, txt: txt.replace(/\s+/g, ' ').trim().slice(0, 40), closed: !document.querySelector('#push-overlay').classList.contains('open') }; });
+  check('tras el cofre diario: «¿Te aviso mañana?» (y si dices «Ahora no», no insiste)', pv.perm === 'default' && pv.open && /Te aviso/.test(pv.txt) && pv.closed, JSON.stringify(pv));
+  await page.screenshot({ path: 'tests/out/S-ajustes.png' });
+  await page.evaluate(() => { document.querySelector('#btn-settings')?.click(); }); await page.waitForTimeout(300);
+  check('en Ajustes: fila «Avisos» con su interruptor', await page.locator('#btn-push #sw-push').count() === 1 && /Avisos/.test(await page.locator('#btn-push').innerText()));
+  await page.evaluate(() => document.querySelectorAll('.panel.open').forEach(p => p.classList.remove('open')));
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
 }
 

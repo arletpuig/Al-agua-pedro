@@ -113,11 +113,11 @@ export const backend = {
   // ---------- logros diarios
   async dailySync() {
     if (this.cloud) { const { r, sent } = await cloudOp(sb.dailySync); applyServer(r, sent); return state.daily; }
-    state.daily = { ...D.todayState(state.daily, state.stats, this.todayKey()), local: true }; changed(false); return state.daily;
+    state.daily = { ...D.todayState(state.daily, state.stats, this.todayKey(), LV.levelOf(state.stats)), local: true }; changed(false); return state.daily;
   },
   async claimMission(slot) {
     if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimDailyMission(slot)); applyServer(r.profile, sent); return r.reward; }
-    const d = D.todayState(state.daily, state.stats, this.todayKey()), m = D.missionFor(d.date, slot);
+    const d = D.todayState(state.daily, state.stats, this.todayKey(), LV.levelOf(state.stats)), m = D.missionFor(d.date, slot, d.lv);
     if (d.done.includes(String(slot))) throw new Error('Ya has recogido esa misión');
     if (D.progress(d, state.stats, m) < m.goal) throw new Error('Todavía no has completado esa misión');
     const rw = D.rewardFor(slot, LV.levelOf(state.stats)); d.done.push(String(slot)); state.daily = { ...d, local: true };
@@ -125,14 +125,14 @@ export const backend = {
   },
   async claimDailyBonus() {
     if (this.cloud) { const { r, sent } = await cloudOp(sb.claimDailyBonus); applyServer(r.profile, sent); return r.reward; }
-    const d = D.todayState(state.daily, state.stats, this.todayKey());
+    const d = D.todayState(state.daily, state.stats, this.todayKey(), LV.levelOf(state.stats));
     if (d.done.length < 3) throw new Error('Te faltan misiones de hoy');
     if (d.bonus) throw new Error('Ya has recogido el cofre de hoy');
     const rw = E.rollChest('diamond', state.cards); E.applyChestCards(state.cards, rw.cards); d.bonus = true; state.daily = { ...d, local: true }; applyChestLocal(rw, 0); return rw;
   },
   async claimLoginDay() {
     if (this.cloud) { const { r, sent } = await cloudOp(sb.claimLoginDay); applyServer(r.profile, sent); return r.reward; }
-    const key = this.todayKey(), d = D.todayState(state.daily, state.stats, key), L = D.loginDay(d, key);
+    const key = this.todayKey(), d = D.todayState(state.daily, state.stats, key, LV.levelOf(state.stats)), L = D.loginDay(d, key);
     if (L.claimed) throw new Error('Ya has recogido el premio de hoy');
     const g = D.LOGIN[L.day - 1]; let rw = { tomatoes: g.tomatoes || 0, pesetas: g.pesetas || 0, cards: [] };
     d.login_date = key; d.login_streak = L.day; state.daily = { ...d, local: true };
@@ -169,7 +169,17 @@ export const backend = {
     if (this.cloud) { const { r, sent } = await cloudOp(() => sb.claimInstall()); applyServer(r.profile, sent); return r.reward; }
     if (state.installClaimed) throw new Error('Ya has recogido el regalo de la app');
     const reward = E.rollChest('diamond', state.cards); E.applyChestCards(state.cards, reward.cards); reward.pesetas += INSTALL_PESETAS;
-    state.installClaimed = true; if (!state.armory.includes('hammer')) state.armory.push('hammer'); reward.item = 'hammer'; applyChestLocal(reward, 0); return reward;
+    state.installClaimed = true;
+    if (LV.levelOf(state.stats) >= 10) { if (!state.armory.includes('hammer')) state.armory.push('hammer'); reward.item = 'hammer'; } else reward.hammer_at = 10;   // el martillo, al abrirse La Armería
+    applyChestLocal(reward, 0); return reward;
+  },
+  // con la app y en el nivel 10: el martillo de goma pasa a La Armería
+  async claimAppHammer() {
+    if (this.cloud) { const { r, sent } = await cloudOp(sb.claimAppHammer); applyServer(r, sent); return; }
+    if (!state.installClaimed) throw new Error('El martillo es el regalo de la app: instálala para conseguirlo');
+    if (state.armory.includes('hammer')) throw new Error('Ya tienes el martillo');
+    if (LV.levelOf(state.stats) < 10) throw new Error('La Armería se desbloquea en el nivel 10');
+    state.armory.push('hammer'); changed(false);
   },
   // Vídeo recompensado de la tienda (El Falcón o Sobre de la Moncloa). Con cuenta lo concede el servidor, con límite diario.
   async watchAd(placement) {

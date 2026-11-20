@@ -7,7 +7,7 @@ const listeners = new Set();
 
 export const state = {
   clicks: 0, tomatoes: 0, pesetas: 0,
-  stats: { totalClicks: 0, legacyClicks: 0, legacyTomatoes: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0, tomatoesRefunded: 0, paguitasPesetas: 0, streakPesetas: 0 },
+  stats: { totalClicks: 0, legacyClicks: 0, legacyTomatoes: 0, tomatoesEarned: 0, tomatoesThrown: 0, hits: 0, perfects: 0, falls: 0, pesetasEarned: 0, chestTomatoes: 0, chestPesetas: 0, pesetasSpent: 0, chestsOpened: 0, tomatoesRefunded: 0, paguitasPesetas: 0, streakPesetas: 0, taps: 0 },   // taps: pulsaciones con el dedo (sin multiplicar)
   cards: emptyCards(), dailyClaimedOn: null, falconUntil: 0,
   tutorialSeen: false, sound: true, music: false, dirty: false, updatedAt: null, welcome: false,
   welcomeOfferedAt: null, welcomeClaimed: false,   // regalo de bienvenida (cofre en paracaídas)
@@ -42,7 +42,7 @@ export function load() {
       state.wheelLevel = d.wheelLevel || Math.max(1, levelOf(state.stats) - 1);
       state.wheelLevel = Math.min(state.wheelLevel, Math.max(1, levelOf(state.stats)));   // curva nueva: si bajas de nivel, la siguiente subida da ruleta
       state.legendSpins = d.legendSpins | 0; state.legendAds = d.legendAds | 0; state.streak = d.streak | 0; state.installClaimed = !!d.installClaimed; state.armory = Array.isArray(d.armory) ? d.armory.filter(x => typeof x === 'string') : [];
-      if (state.installClaimed && !state.armory.includes('hammer')) state.armory.push('hammer');
+      if (state.installClaimed && !state.armory.includes('hammer') && levelOf(state.stats) >= 10) state.armory.push('hammer');
       state.daily = d.daily && typeof d.daily === 'object' ? d.daily : {};   // martillo: regalo de la app
       // partida guardada cuando un tomate costaba 100 clics: se conserva lo ya ganado
       if (d.cpt !== CONFIG.CLICKS_PER_TOMATO && !state.stats.legacyClicks && state.stats.totalClicks > 0) {
@@ -91,7 +91,7 @@ export function applyChestLocal(reward, price) {
 }
 export function setTutorialSeen() { state.tutorialSeen = true; save(); }
 export function setSound(v, music = state.music) { state.sound = v; state.music = music; save(); }
-const COUNTERS = ['totalClicks', 'tomatoesThrown', 'hits', 'perfects', 'falls', 'pesetasEarned', 'tomatoesRefunded', 'paguitasPesetas', 'streakPesetas'];
+const COUNTERS = ['totalClicks', 'tomatoesThrown', 'hits', 'perfects', 'falls', 'pesetasEarned', 'tomatoesRefunded', 'paguitasPesetas', 'streakPesetas', 'taps'];
 export function snapshot() { return { ...state.stats }; }
 // Sustituye el estado por la fila del servidor. Si se pasa `sent` (copia de los contadores enviados),
 // se conserva lo que el jugador haya hecho mientras la petición estaba en curso.
@@ -100,7 +100,7 @@ export function applyServer(row, sent) {
   if (state.updatedAt && row.updated_at && Date.parse(row.updated_at) < Date.parse(state.updatedAt)) return; // fila antigua
   const s = state.stats, delta = {}; COUNTERS.forEach(k => delta[k] = sent ? Math.max(0, s[k] - sent[k]) : 0);
   s.totalClicks = +row.total_clicks; s.legacyClicks = +(row.legacy_clicks || 0); s.legacyTomatoes = +(row.legacy_tomatoes || 0); s.tomatoesThrown = row.tomatoes_thrown; s.hits = row.hits; s.perfects = row.perfects || 0; s.falls = row.falls;
-  s.pesetasEarned = row.pesetas_earned || 0; s.streakPesetas = +(row.streak_pesetas || 0); s.tomatoesRefunded = row.tomatoes_refunded || 0; s.paguitasPesetas = row.paguitas_pesetas || 0; s.chestTomatoes = row.chest_tomatoes || 0; s.chestPesetas = row.chest_pesetas || 0; s.pesetasSpent = row.pesetas_spent || 0; s.chestsOpened = row.chests_opened || 0;
+  s.pesetasEarned = row.pesetas_earned || 0; s.streakPesetas = +(row.streak_pesetas || 0); s.tomatoesRefunded = row.tomatoes_refunded || 0; s.paguitasPesetas = row.paguitas_pesetas || 0; s.chestTomatoes = row.chest_tomatoes || 0; s.chestPesetas = row.chest_pesetas || 0; s.pesetasSpent = row.pesetas_spent || 0; s.chestsOpened = row.chests_opened || 0; state.serverTaps = 'taps' in row; if (state.serverTaps) s.taps = +row.taps || 0;
   // nivel según el servidor: si va por detrás (aún no ha recibido los últimos lanzamientos), las tiradas de ruleta esperan
   const sL = levelOf({ tomatoesThrown: +row.tomatoes_thrown, hits: +row.hits, falls: +row.falls });
   let pending = false; COUNTERS.forEach(k => { if (delta[k]) { s[k] += delta[k]; pending = true; } });

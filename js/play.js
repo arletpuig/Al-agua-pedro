@@ -52,7 +52,7 @@ function onPress(e) {
 }
 function onTap(e) {
   if (!allowTap(e)) return;   // anti-autoclicker: con la prueba «¿Sigues ahí?» pendiente, los toques no cuentan
-  SFX.click(); taps++;
+  SFX.click(); taps++; state.stats.taps = (state.stats.taps || 0) + 1;   // cada toque con el dedo (para los logros)
   const C = CONFIG.COMBO;
   combo.heat = Math.min(C.max, combo.heat + C.perTap); combo.last = performance.now() / 1000;
   const before = combo.mult; combo.mult = levelFor(combo.heat);

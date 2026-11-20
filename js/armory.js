@@ -24,6 +24,7 @@ const fmt = n => n.toLocaleString('es-ES');
 const SEEN_KEY = 'alaguapedro.armorySeen', INTRO_KEY = 'alaguapedro.armoryIntro';
 export const armoryTest = { off: false, noIntro: false };
 let ui, scene, isBusy, fail, openInstall, wasUnlocked = null, confirmId = null, confirmTimer = 0, buying = false, shopKey = '', stopDream = null, fxWin = null, winId = null;
+let hammerAsked = false;   // el martillo de la app se pide una vez por sesión
 
 export const unlocked = () => levelOf(state.stats) >= UNLOCK_LEVEL;
 const owned = id => state.armory.includes(id);
@@ -67,6 +68,11 @@ export function refresh() {
   if (wasUnlocked === false && on && !armoryTest.off) { SFX.levelUp?.(); ui.showToast('🔓 ¡LA ARMERÍA ESTÁ ABIERTA! Abascal te espera con su arsenal', 4200); }
   wasUnlocked = on;
   if (on) $('#armory-tease').classList.add('hidden');
+  // con la app instalada (y su regalo recogido): al abrirse La Armería llega el martillo de goma
+  if (on && state.installClaimed && !state.armory.includes('hammer') && !hammerAsked) {
+    hammerAsked = true;
+    backend.claimAppHammer().then(() => setTimeout(() => { SFX.levelUp?.(); ui.showToast('🔨 ¡Regalo por tener la app! El martillo de goma ya es tuyo en La Armería', 4200); }, 4400), () => {});
+  }
   // la tienda solo se redibuja si cambia algo suyo (redibujar a cada momento se comía los toques)
   if ($('#panel-armory')?.classList.contains('open') && key() !== shopKey) renderShop();
 }

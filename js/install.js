@@ -69,7 +69,8 @@ export async function checkReward() {
     ui.showToast('📲 ¡Gracias por instalar la app! Aquí tienes tu regalo', 3200); SFX.levelUp?.();
     await ui.chestOpening('diamond', reward); ui.hud();
     if (reward.extra) ui.pesetaGain(reward.extra);
-    if (reward.item === 'hammer') ui.showToast('🔨 ¡Martillo de goma en tu mochila! Úsalo contra Pedro', 3600);
+    if (reward.item === 'hammer') ui.showToast('🔨 ¡Martillo de goma en La Armería! Úsalo contra Pedro', 3600);
+    else if (reward.hammer_at) setTimeout(() => ui.showToast(`🔨 Y en el nivel ${reward.hammer_at}, cuando se abra La Armería, te llevas el martillo de goma`, 4200), 3700);
   } catch (e) { if (!/Ya has recogido/.test(e.message)) fail?.(e); }
   claiming = false; refresh();
 }

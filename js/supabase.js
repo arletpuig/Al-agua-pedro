@@ -78,7 +78,7 @@ export async function fetchUser() { const u = await req('/auth/v1/user'); if (se
 
 export async function getProfile() { const rows = await req(`/rest/v1/profiles?select=*&user_id=eq.${auth.user.id}`); return rows?.[0] || null; }
 // Guardado validado en el servidor. Devuelve la fila resultante.
-export const saveProgress = (s, keepalive = false, streak = false) => rpc('save_progress', { p_total_clicks: s.totalClicks, p_tomatoes_thrown: s.tomatoesThrown, p_hits: s.hits, p_perfects: s.perfects, p_falls: s.falls, p_pesetas_earned: s.pesetasEarned, p_tomatoes_refunded: s.tomatoesRefunded || 0, p_paguitas_pesetas: s.paguitasPesetas || 0, ...(streak ? { p_streak_pesetas: s.streakPesetas || 0 } : {}) }, { keepalive });
+export const saveProgress = (s, keepalive = false, streak = false, taps = false) => rpc('save_progress', { p_total_clicks: s.totalClicks, p_tomatoes_thrown: s.tomatoesThrown, p_hits: s.hits, p_perfects: s.perfects, p_falls: s.falls, p_pesetas_earned: s.pesetasEarned, p_tomatoes_refunded: s.tomatoesRefunded || 0, p_paguitas_pesetas: s.paguitasPesetas || 0, ...(streak ? { p_streak_pesetas: s.streakPesetas || 0 } : {}), ...(taps ? { p_taps: s.taps || 0 } : {}) }, { keepalive });
 export const openChest = kind => rpc('open_chest', { p_kind: kind });          // -> { reward, profile }
 export const claimDaily = () => rpc('claim_daily', {});                        // -> { reward, profile }
 export const upgradeCard = id => rpc('upgrade_card', { p_card: id });          // -> profile
@@ -105,6 +105,10 @@ export const myInviteCode = () => rpc('my_invite_code', {});                    
 export const redeemInvite = code => rpc('redeem_invite', { p_code: code });                      // -> { reward, inviter, profile }
 export const claimInvites = () => rpc('claim_invites', {});                                      // -> { paid, pesetas, total, pending, profile }
 export const ackInvites = () => rpc('ack_invites', {});
+export const pushPublicKey = () => rpc('push_public_key', {});                                  // avisos: clave pública del servidor
+export const savePushSub = (endpoint, p256dh, auth) => rpc('save_push_sub', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth });
+export const deletePushSub = endpoint => rpc('delete_push_sub', { p_endpoint: endpoint });
+export const claimAppHammer = () => rpc('claim_app_hammer', {});                               // martillo de la app (nivel 10) -> profile
 export const buyArmory = item => rpc('buy_armory_item', { p_item: item });              // La Armería: comprar un objeto -> profile
 export const claimInstall = () => rpc('claim_install_reward', {});                       // regalo por instalar la app -> { reward, profile }                             // tirada legendaria comprada
 // Pagos (Stripe): crea la página de pago en la función «crear-pago» y consulta si una compra ya se ha entregado

@@ -9,7 +9,7 @@ import { createFx } from './fx.js';
 const $ = s => document.querySelector(s);
 const fmt = n => (+n || 0).toLocaleString('es-ES');
 const INVITE_KEY = 'alaguapedro.invite';
-const ICON = { t: 'ic-tomato', f: 'ic-target', c: 'ic-play', h: 'ic-target', p: 'ic-crown', o: 'ic-chest' };
+const ICON = { t: 'ic-tomato', f: 'ic-target', k: 'ic-play', c: 'ic-play', h: 'ic-target', p: 'ic-crown', o: 'ic-chest' };
 const svg = id => `<svg><use href="#${id}"/></svg>`;
 let ui, fail, busy = false, tab = 'day', fxPop = null, lastKey = '', timer = 0;
 export const dailyTest = { off: false };
@@ -56,8 +56,8 @@ let inv = { total: 0, pending: 0 };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 // ---------- estado de hoy
-const today = () => D.todayState(backend.cloud && state.daily?.local ? {} : state.daily, state.stats, backend.todayKey());
-const missions = d => [0, 1, 2].map(i => { const m = D.missionFor(d.date, i); return { ...m, prog: Math.min(m.goal, D.progress(d, state.stats, m)), done: d.done.includes(String(i)) }; });
+const today = () => D.todayState(backend.cloud && state.daily?.local ? {} : state.daily, state.stats, backend.todayKey(), levelOf(state.stats));
+const missions = d => [0, 1, 2].map(i => { const m = D.missionFor(d.date, i, d.lv); return { ...m, prog: Math.min(m.goal, D.progress(d, state.stats, m)), done: d.done.includes(String(i)) }; });
 const key = () => { const d = today(); return [d.date, d.done.join(), d.bonus, d.login_date, ...missions(d).map(m => m.prog), state.pesetas].join('|'); };
 export function claimable() {
   const d = today(), ms = missions(d);
@@ -116,6 +116,7 @@ function render() {
   }).join('');
   // misiones
   const ms = missions(d);
+  $('#dl-lv').textContent = `Retos de nivel ${d.lv || lvl}`;
   $('#dl-missions').innerHTML = ms.map(m => {
     const rw = D.rewardFor(m.slot, lvl), pct = Math.round(m.prog / m.goal * 100), ready = !m.done && m.prog >= m.goal;
     return `<div class="dl-mis s${m.slot}${m.done ? ' done' : ''}${ready ? ' ready' : ''}"><div class="dl-ic">${svg(ICON[m.k])}</div>

@@ -883,9 +883,9 @@ console.log('36. Logros diarios');
     return { vis: d.width > 0, dot: !document.querySelector('#daily-dot').classList.contains('hidden'), x: d.x, w: d.width, top: d.top, atop: a.top, abot: a.bottom, w2: a.width }; });
   check('botones LOGROS y Armería arriba a la izquierda, pequeños y sin solaparse; punto rojo con premios por recoger', b0.vis && b0.dot && b0.x < 20 && b0.w <= 56 && b0.w2 <= 56 && b0.atop < b0.top && b0.abot <= b0.top + 2 && b0.top < 200, JSON.stringify(b0));
   // jugando: la barra del botón avanza y sale la burbuja con la misión; al completarla, «¡MISIÓN CUMPLIDA!»
-  const pk = await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), S = await import('./js/state.js'), st = AAP.state.stats, key = { t: 'tomatoesThrown', f: 'falls', c: 'totalClicks', h: 'hits', p: 'perfects', o: 'chestsOpened' };
-    AAP.state.daily = D.todayState(AAP.state.daily, st, AAP.backend.todayKey()); S.changed(false);
-    const m = D.missionFor(AAP.state.daily.date, 0), w0 = document.querySelector('#daily-fill').style.width;
+  const pk = await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), S = await import('./js/state.js'), st = AAP.state.stats, key = { t: 'tomatoesThrown', f: 'falls', k: 'taps', h: 'hits', p: 'perfects', o: 'chestsOpened' };
+    AAP.state.daily = D.todayState(AAP.state.daily, st, AAP.backend.todayKey(), 1); S.changed(false);
+    const m = D.missionFor(AAP.state.daily.date, 0, AAP.state.daily.lv), w0 = document.querySelector('#daily-fill').style.width;
     st[key[m.k]] += Math.max(1, Math.floor(m.goal / 2)); S.changed(false);
     const r1 = { w0, w1: document.querySelector('#daily-fill').style.width, show: document.querySelector('#daily-peek').classList.contains('show'), txt: document.querySelector('#dp-txt').textContent, num: document.querySelector('#dp-num').textContent };
     st[key[m.k]] += m.goal; S.changed(false);
@@ -905,8 +905,8 @@ console.log('36. Logros diarios');
   check('el premio del día solo una vez', await pd.evaluate(() => AAP.backend.claimLoginDay().then(() => false, e => /Ya has recogido/.test(e.message))));
   check('misión sin completar: no se puede recoger', await pd.evaluate(() => AAP.backend.claimMission(0).then(() => false, e => /Todavía no/.test(e.message))) && await pd.locator('[data-mission="0"]:disabled').count() === 1);
   // se juega: los contadores de hoy suben hasta cumplir las 3 misiones
-  await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), st = AAP.state.stats, key = { t: 'tomatoesThrown', f: 'falls', c: 'totalClicks', h: 'hits', p: 'perfects', o: 'chestsOpened' };
-    for (const i of [0, 1, 2]) { const m = D.missionFor(AAP.state.daily.date, i); st[key[m.k]] += m.goal; } (await import('./js/state.js')).changed(false); });
+  await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'), st = AAP.state.stats, key = { t: 'tomatoesThrown', f: 'falls', k: 'taps', h: 'hits', p: 'perfects', o: 'chestsOpened' };
+    for (const i of [0, 1, 2]) { const m = D.missionFor(AAP.state.daily.date, i, AAP.state.daily.lv); st[key[m.k]] += m.goal; } (await import('./js/state.js')).changed(false); });
   await pd.waitForTimeout(300);
   const p0 = (await S(pd)).pesetas;
   for (const i of [0, 1, 2]) { await pd.click(`[data-mission="${i}"]`, { force: true }); await pd.waitForTimeout(350); }
@@ -928,6 +928,24 @@ console.log('36. Logros diarios');
   await pd.screenshot({ path: 'tests/out/36-invita.png' });
   await pd.reload(); await pd.waitForFunction(() => window.AAP?.scene?.ready, null, { timeout: 20000 });
   check('los logros de hoy se guardan al volver a abrir', await pd.evaluate(() => AAP.state.daily.login_date === AAP.backend.todayKey()));
+  // retos según el nivel (las mismas cuentas que el servidor) y pulsaciones de verdad
+  const gl = await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'); return [D.goalFor(25, 't', 1), D.goalFor(25, 't', 46), D.goalFor(1500, 'k', 46), D.goalFor(4, 'o', 46), D.goalFor(150, 't', 50)].join(); });
+  check('retos según el nivel: nivel 1 = 25 tomates; nivel 46 = 95 tomates, 5.550 pulsaciones, 8 cofres', gl === '25,95,5550,8,590', gl);
+  const tp = await pd.evaluate(async () => { const s = AAP.state.stats, t0 = s.taps, c0 = s.totalClicks; AAP.state.falconUntil = Date.now() + 60000;
+    const b = document.querySelector('#btn-click'); for (let i = 0; i < 20; i++) b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 500 }));
+    AAP.state.falconUntil = 0; return { taps: s.taps - t0, clicks: s.totalClicks - c0 }; });
+  check('cada toque con el dedo cuenta 1 pulsación (aunque con el Falcón dé ×5 clics)', tp.taps === 20 && tp.clicks >= 100, JSON.stringify(tp));
+  const kt = await pd.evaluate(async () => { const D = await import('./js/daily-rules.js'); return { txt: D.TEXT.k(1500), m: D.missionFor('2026-11-24', 1, 1) }; });
+  check('misión de pulsaciones: «Pulsa ¡DALE! N veces»', /^Pulsa ¡DALE! 1\.?500 veces$/.test(kt.txt) && kt.m.k === 'k' && kt.m.goal === 1500, JSON.stringify(kt));
+  await pd.click('#daily-btn', { force: true }); await pd.waitForTimeout(300);
+  check('el panel dice de qué nivel son los retos de hoy', /^Retos de nivel \d+$/.test(await pd.locator('#dl-lv').textContent()));
+  await pd.click('#panel-daily [data-close]', { force: true }); await pd.waitForTimeout(200);
+  // martillo de goma: con la app antes del nivel 10 no se da; llega al abrirse La Armería
+  const hm = await pd.evaluate(() => AAP.backend.claimInstall().then(r => ({ item: r.item || null, at: r.hammer_at, has: AAP.state.armory.includes('hammer') }), e => ({ err: e.message })));
+  check('regalo de la app antes del nivel 10: cofre y pesetas, pero el martillo espera a La Armería', hm.item === null && hm.at === 10 && !hm.has, JSON.stringify(hm));
+  await pd.evaluate(async () => { const st = AAP.state.stats; st.tomatoesThrown += 3000; st.hits += 1500; st.chestTomatoes += 3000; (await import('./js/state.js')).changed(false); });
+  await pd.waitForTimeout(5500);
+  check('al llegar al nivel 10 (se abre La Armería), el martillo es tuyo', await pd.evaluate(() => AAP.state.armory.includes('hammer')) && /martillo de goma ya es tuyo/.test(await pd.locator('#toast').textContent()));
   check('logros: sin errores en consola', ed.length === 0, ed.join(' | '));
   await cd.close();
 }

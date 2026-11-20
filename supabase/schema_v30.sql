@@ -62,7 +62,7 @@ create or replace function public.fn_daily_goal(p_base integer, p_k text, p_leve
     else (select ((n + s * 50) / (s * 100)) * s from (select n, case when n < 5000 then 1 when n < 20000 then 5 when n < 100000 then 10 else 50 end as s
       from (select p_base * (100 + 6 * (least(greatest(p_level, 1), 50) - 1)) as n) a) b) end $$;
 drop function if exists public.fn_daily_mission(date, integer);
-create or replace function public.fn_daily_mission(p_day date, p_slot integer, p_level integer default 1) returns jsonb language sql immutable as $$
+create or replace function public.fn_daily_mission(p_day date, p_slot integer, p_level integer) returns jsonb language sql immutable as $$
   select jsonb_build_array(m->>0, m->>1, public.fn_daily_goal((m->>2)::integer, m->>1, p_level))
   from (select public.fn_daily_pool(p_slot) -> (((p_day - date '2026-01-01') * (case p_slot when 0 then 1 when 1 then 3 else 5 end) + p_slot) % 4) as m) x $$;
 create or replace function public.fn_daily_count(p public.profiles, k text) returns bigint language sql immutable as $$

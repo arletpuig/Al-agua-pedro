@@ -116,7 +116,7 @@ export function applyServer(row, sent) {
   if ('daily' in row || 'user_id' in row) state.daily = row.daily || {};   // con cuenta, los logros de hoy son siempre los del servidor
   if ('invites_paid' in row) state.invite = { code: row.invite_code || state.invite.code, paid: +row.invites_paid || 0, seen: +row.invites_seen || 0 };       // paguitas ×3 cuando el servidor está al día
   if ('welcome_claimed' in row) { state.welcomeClaimed = !!row.welcome_claimed; state.welcomeOfferedAt = row.welcome_offered_at ? Date.parse(row.welcome_offered_at) : null; }
-  state.updatedAt = row.updated_at || null; state.dirty = pending;
+  state.updatedAt = row.updated_at || null; state.dirty = pending; state.synced = Date.now();   // datos de la cuenta, al día
   derive(); save(); listeners.forEach(f => f(state));
 }
 export function hasProgress() { const s = state.stats; return s.totalClicks > 0 || s.chestsOpened > 0 || s.tomatoesThrown > 0; }

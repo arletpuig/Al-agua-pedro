@@ -544,6 +544,26 @@ console.log('S. Pulsaciones, martillo de la app y avisos en el servidor');
   await page.evaluate(async () => { const r = await (await import('./js/supabase.js')).getProfile(); AAP.state.updatedAt = null; (await import('./js/state.js')).applyServer(r); });
 }
 
+console.log('T. La app vuelve de segundo plano con datos viejos');
+{
+  await idle(page); await page.evaluate(() => { AAP.levelTest.off = true; document.querySelector('#wheel-close')?.click(); document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); });
+  await page.waitForTimeout(1500); await page.evaluate(() => AAP.backend.dailySync()); row = db(email);
+  // la app se quedó días en segundo plano: en memoria, un nivel menos y 10 tiradas que ya se giraron en otro aparato
+  const stale = await page.evaluate(async () => { const LU = await import('./js/levelup.js'), L = await import('./js/levels.js'), st = AAP.state.stats;
+    st.tomatoesThrown = Math.max(0, st.tomatoesThrown - 400); AAP.state.wheelLevel = Math.max(1, L.levelOf(st) - 10); AAP.state.dirty = false; LU.syncChip();
+    return { L: L.levelOf(st), p: LU.pending() }; });
+  await page.evaluate(() => { AAP.RESYNC.after = 0; const set = v => Object.defineProperty(document, 'visibilityState', { value: v, configurable: true });
+    set('hidden'); document.dispatchEvent(new Event('visibilitychange')); set('visible'); document.dispatchEvent(new Event('visibilitychange')); });
+  await page.waitForTimeout(5000);
+  const fresh = await page.evaluate(async () => ({ L: (await import('./js/levels.js')).levelOf(AAP.state.stats), wl: AAP.state.wheelLevel, p: (await import('./js/levelup.js')).pending(), chip: document.querySelector('#lvl-num').textContent }));
+  const srvL = +psql(`select public.fn_player_level(tomatoes_thrown, hits, falls) from public.profiles where user_id = '${row.user_id}'`);
+  check('al volver a la app se recarga la cuenta: nivel y tiradas como en el servidor (sin ruletas fantasma)', stale.p >= 10 && fresh.L === srvL && fresh.wl === row.wheel_level && fresh.p === Math.max(0, srvL - row.wheel_level) && +fresh.chip === srvL, JSON.stringify({ stale, fresh, srvL, srvW: row.wheel_level }));
+  await page.evaluate(() => { AAP.RESYNC.after = 30e3; delete document.visibilityState; });
+  // mientras no han llegado los datos de la cuenta, no hay tiradas
+  const p0 = await page.evaluate(async () => { const LU = await import('./js/levelup.js'), s0 = AAP.state.synced, w0 = AAP.state.wheelLevel; AAP.state.synced = 0; AAP.state.wheelLevel = 1; const p = LU.pending(); AAP.state.synced = s0; AAP.state.wheelLevel = w0; return p; });
+  check('con cuenta, hasta que llegan los datos del servidor no se ofrece ninguna ruleta', p0 === 0);
+}
+
 console.log('F. Ranking');
 await page.click('#tabs [data-panel="rank"]'); await page.waitForTimeout(700); const rank = await txt('#panel-rank .sheet-body');
 check('ranking con podio para los tres primeros', await page.locator('#rank-podium .pd:not(.empty)').count() >= 2 && await page.locator('#rank-podium .crown').count() === 1);

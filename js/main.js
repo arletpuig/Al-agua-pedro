@@ -19,7 +19,7 @@ import { initGift, maybeOffer, restoreGift, giftTest } from './gift.js';
 import { showVideo, PLACEMENTS, videosOn } from './ads.js';
 import { initPayments, openPack, consumeReturn, awaitPurchase } from './payments.js';
 import { maybeTour, startTour, tourTest } from './tour.js';
-import { initLevels, afterThrow, syncChip, checkPending, levelTest, openWheelFrom } from './levelup.js';
+import { initLevels, afterThrow, syncChip, checkPending, levelTest, openWheelFrom, celebrating } from './levelup.js';
 import { levelName, levelOf } from './levels.js';
 import { initInstall, maybeOffer as offerInstall, checkReward as installReward, refresh as installRefresh, installTest, open as openInstall } from './install.js';
 import { initArmory, armoryTest } from './armory.js';
@@ -29,6 +29,8 @@ const payReturn = consumeReturn();   // vuelta de la página de pago de Stripe
 captureInvite();                     // ¿viene con el enlace de un amigo? (?amigo=CODIGO)
 
 const $ = s => document.querySelector(s);
+let resyncing = false, hiddenAt = 0;
+const RESYNC = { after: 30e3 };   // tras 30 s fuera del juego, al volver se recarga la cuenta
 let saveTimer = null, saving = null, falconWas = false, opening = false, shareFile = null, shareURL = null;
 // Hay que jugar con cuenta. Solo las pruebas automáticas pueden jugar sin ella (?debug&guest).
 // La versión de pruebas (GitHub) juega sin cuenta y empieza siempre desde cero (index.html borra el progreso local al cargar).
@@ -79,7 +81,7 @@ setInterval(() => {                       // reloj: Falcón, punto de cofre diar
   ui.hud(); if ($('#panel-shop').classList.contains('open')) ui.shopTick();
 }, 1000);
 if (location.search.includes('debug')) import('./ads.js').then(m => { window.AAP = { ...(window.AAP || {}), adsTest: m.adsTest }; });
-if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest, CHAT, streakTest, installTest, guardTest, pushTest, armoryTest, dailyTest };
+if (location.search.includes('debug')) window.AAP = { state, scene, backend, E, ui, testRng, giftTest, tourTest, levelTest, paguitaTest, CHAT, streakTest, installTest, guardTest, pushTest, armoryTest, dailyTest, resync, RESYNC };
 
 // ---------- economía ----------
 const fail = e => { SFX.error(); ui.showToast(traducir(e.message), 2600, true); };
@@ -161,7 +163,25 @@ function pushNow(keepalive = false) {
 }
 backend.setFlush(() => state.dirty ? pushNow() : Promise.resolve());
 onChange(() => { if (sb.auth.user && state.dirty && !saveTimer) saveTimer = setTimeout(() => { saveTimer = null; pushNow(); }, CONFIG.AUTOSAVE_MS); });   // mientras juegas, se guarda cada pocos segundos (antes cada toque lo retrasaba)
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && sb.auth.user && state.dirty) pushNow(true); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); if (sb.auth.user && state.dirty) pushNow(true); }
+  else if (hiddenAt && Date.now() - hiddenAt >= RESYNC.after) resync();
+});
+window.addEventListener('pageshow', e => { if (e.persisted) resync(); });
+// Vuelve a cargar la cuenta del servidor (la app pudo quedarse días en segundo plano, o jugaste en otro aparato)
+async function resync(tries = 3) {
+  if (!sb.auth.user || resyncing) return false;
+  if (isBusy() || celebrating()) { setTimeout(() => resync(tries), 3000); return false; }
+  resyncing = true;
+  try {
+    if (state.dirty) await pushNow();
+    const row = await sb.getProfile(); if (!row) return false;
+    state.updatedAt = null; applyServer(row); ui.hud(); syncChip();
+    await backend.syncWheelCap(); syncChip();
+    return true;
+  } catch (e) { if (tries > 1) setTimeout(() => resync(tries - 1), 4000); return false; }
+  finally { resyncing = false; }
+}
 
 async function afterLogin(user) {
   try {
@@ -191,7 +211,7 @@ async function afterLogin(user) {
     if (payReturn && !payReturn.done) { payReturn.done = true;
       if (payReturn.status === 'ok') awaitPurchase(payReturn.session);
       else ui.showToast('Pago cancelado: no se te ha cobrado nada', 2800); }
-  } catch (e) { ui.showToast('No se pudo cargar tu progreso. Inténtalo más tarde.', 3500, true); }
+  } catch (e) { ui.showToast('No se pudo cargar tu progreso: reintentando…', 3500, true); setTimeout(() => resync(5), 3000); }
 }
 
 // ---------- cuenta ----------

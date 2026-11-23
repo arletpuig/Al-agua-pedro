@@ -15,7 +15,8 @@ const INTRO_KEY = 'alaguapedro.levelsIntro';
 let ui, isBusy, fail, reload = null, lastOffer = 0, fxUp = null, fxWheel = null, shownXp = null, queue = Promise.resolve(), running = false, spinning = false, waitingSpin = null;
 export const levelTest = { rng: null, fast: false, off: !!window.__AAP_NOLEVELUP };   // pruebas automáticas: premio fijo, animaciones rápidas o sin celebraciones
 export function levelTestReset() { lastOffer = 0; }
-export const pending = () => (state.noWheel ? 0 : Math.max(0, Math.min(LV.levelOf(state.stats), state.wheelCap ?? 99) - state.wheelLevel));
+// con cuenta, hasta que llegan los datos del servidor no hay tiradas (una copia vieja del móvil no puede regalar ruletas)
+export const pending = () => (state.noWheel || (backend.cloud && !state.synced) ? 0 : Math.max(0, Math.min(LV.levelOf(state.stats), state.wheelCap ?? 99) - state.wheelLevel));
 export const celebrating = () => running;
 
 export function initLevels(uiRef, busyFn, failFn, reloadFn) {
